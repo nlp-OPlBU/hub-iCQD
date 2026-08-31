@@ -8,7 +8,7 @@
 
    安装完成IK分词插件，ES正常运行
 
-![image-20260831144018848](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业.assets\image-20260831144018848.png)
+![image-20260831144018848](.\作业.assets\image-20260831144018848.png)
 
 ## 2. ES检索、条件过滤
 
@@ -22,12 +22,12 @@
 
    
 
-![image-20260831145502701](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业.assets\image-20260831145502701.png)
+![image-20260831145502701](.\作业.assets\image-20260831145502701.png)
 
 多种检索条件：
 
-![image-20260831150625065](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业.assets\image-20260831150625065.png)
+![image-20260831150625065](.\作业.assets\image-20260831150625065.png)
 
 使用ES完成向量检索
 
-![image-20260831151142916](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业.assets\image-20260831151142916.png)
+![image-20260831151142916](.\作业.assets\image-20260831151142916.png)
