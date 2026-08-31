@@ -1,0 +1,33 @@
+# 作业二
+
+## RAG101_01_读取数据集
+
+![image-20260831152310888](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831152310888.png)
+
+## RAG101_02_RAG检索TFIDF
+
+![image-20260831152428189](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831152428189.png)
+
+## RAG101_03_RAG检索BM25
+
+![image-20260831152600451](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831152600451.png)
+
+## RAG101_04_RAG检索BERT
+
+![image-20260831153007814](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831153007814.png)
+
+## RAG101_05_RAG检索BERT_Segment
+
+![image-20260831153317147](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831153317147.png)
+
+## RAG101_06_RAG重排序
+
+![image-20260831154557671](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831154557671.png)
+
+## RAG101_07_RAG多路召回
+
+![image-20260831154643029](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831154643029.png)
+
+## RAG101_08_RAG问答
+
+![](D:\LLM学习\project\projects\nlp_study\赵梓琪\week06\作业二_RAG.assets\image-20260831154825924.png)
