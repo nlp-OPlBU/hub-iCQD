@@ -1,0 +1,1142 @@
+app:
+  description: 深度研究助手：多查询检索 + 证据聚合 + 多轮补搜 + 引用驱动报告
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: workflow
+  name: DEEPSEARCH
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.19@5b68617c637b62d31e7f33a9f5677b76e88f81868fb04a728e208588564b72ea
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: ''
+    id: env-bocha-api-key
+    name: BOCHA_API_KEY
+    selector:
+    - env
+    - BOCHA_API_KEY
+    value: sk-3d2293ad83aa4823a7c7ce8dd5ff8c72
+    value_type: string
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1789439614825-source-1789439656195-target
+      selected: false
+      source: '1789439614825'
+      sourceHandle: source
+      target: '1789439656195'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1789439656195-source-1789441187176-target
+      selected: false
+      source: '1789439656195'
+      sourceHandle: source
+      target: '1789441187176'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 1789441187176-source-1789458375948-target
+      selected: false
+      source: '1789441187176'
+      sourceHandle: source
+      target: '1789458375948'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789458375948'
+        sourceType: iteration-start
+        targetType: http-request
+      id: 1789458375948start-source-17894583912440-target
+      selected: false
+      source: 1789458375948start
+      sourceHandle: source
+      target: '17894583912440'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789458375948'
+        sourceType: http-request
+        targetType: code
+      id: 17894583912440-source-17894583912441-target
+      selected: false
+      source: '17894583912440'
+      sourceHandle: source
+      target: '17894583912441'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: code
+      id: 1789458375948-source-17894583912442-target
+      selected: false
+      source: '1789458375948'
+      sourceHandle: source
+      target: '17894583912442'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17894583912442-source-17894583912443-target
+      selected: false
+      source: '17894583912442'
+      sourceHandle: source
+      target: '17894583912443'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 17894583912443-source-17894583912444-target
+      selected: false
+      source: '17894583912443'
+      sourceHandle: source
+      target: '17894583912444'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 17894583912444-source-17894583912450-target
+      selected: false
+      source: '17894583912444'
+      sourceHandle: source
+      target: '17894583912450'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '17894583912450'
+        sourceType: iteration-start
+        targetType: http-request
+      id: 17894583912450start-source-17894583912451-target
+      selected: false
+      source: 17894583912450start
+      sourceHandle: source
+      target: '17894583912451'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '17894583912450'
+        sourceType: http-request
+        targetType: code
+      id: 17894583912451-source-17894583912452-target
+      selected: false
+      source: '17894583912451'
+      sourceHandle: source
+      target: '17894583912452'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: code
+      id: 17894583912450-source-17894583912447-target
+      selected: false
+      source: '17894583912450'
+      sourceHandle: source
+      target: '17894583912447'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 17894583912447-source-1789440475948-target
+      selected: false
+      source: '17894583912447'
+      sourceHandle: source
+      target: '1789440475948'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1789440475948-source-1789461079906-target
+      source: '1789440475948'
+      sourceHandle: source
+      target: '1789461079906'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: topic
+          options: []
+          placeholder: 请输入研究主题
+          required: true
+          type: text-input
+          variable: topic
+      height: 108
+      id: '1789439614825'
+      position:
+        x: 93
+        y: 49
+      positionAbsolute:
+        x: 93
+        y: 49
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_tokens: 10000
+            temperature: 0.5
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 88000231-7422-4cce-8e73-80a97622cf7b
+          role: system
+          text: "你是深度研究规划智能体。围绕用户主题 {{{#1789439614825.topic#}}}，先拆解 5-8 个研究子问题，再为每个子问题生成\
+            \ 2-4 条检索查询。\n\n只输出一个 JSON 对象，不要 Markdown，不要解释，不要 <think>，不要代码块。\n\n格式：\n\
+            {\n  \"research_questions\": [\n    {\n      \"id\": \"RQ1\",\n      \"\
+            question\": \"子问题\",\n      \"queries\": [\"检索查询1\", \"检索查询2\"]\n    }\n\
+            \  ],\n  \"search_query\": [\"检索查询1\", \"检索查询2\"]\n}\n\n要求：\n1. 总查询数 25-30\
+            \ 条，search_query 必须包含所有 queries。\n2. 以中文为主，必要时加入 2-5 条英文查询。\n3. 每条查询 10-40\
+            \ 个字符，具体、可直接用于搜索引擎或学术数据库。\n4. 覆盖：现状、数据、案例、方法、工具、趋势、风险、争议、长尾场景、关键人物/机构/产品。\n\
+            5. 不要编造具体数据、人物观点、来源。\n6. 若主题过宽，自动增加时间、地域、行业、人群限定。\n7. 禁止输出\"以下是\"\"分析\"\
+            \"维度\"等额外内容。\n\n现在只输出 JSON。\n"
+        selected: false
+        structured_output_enabled: false
+        title: 查询规划 LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1789439656195'
+      position:
+        x: 376.3195079107729
+        y: 70
+      positionAbsolute:
+        x: 376.3195079107729
+        y: 70
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\nMAX_QUERIES = 30\n\ndef _extract_json(text):\n\
+          \    if text is None:\n        return None\n    if isinstance(text, (dict,\
+          \ list)):\n        return text\n    if not isinstance(text, str):\n    \
+          \    return None\n    s = text.strip()\n    s = re.sub(r'<think>[\\s\\S]*?</think>',\
+          \ '', s, flags=re.IGNORECASE)\n    s = s.replace('```json', '').replace('```',\
+          \ '').strip()\n\n    try:\n        return json.loads(s)\n    except Exception:\n\
+          \        pass\n\n    for left, right in (('{', '}'), ('[', ']')):\n    \
+          \    start = s.find(left)\n        end = s.rfind(right)\n        if start\
+          \ != -1 and end > start:\n            try:\n                return json.loads(s[start:end\
+          \ + 1])\n            except Exception:\n                continue\n    return\
+          \ None\n\ndef _collect(value, out):\n    if value is None:\n        return\n\
+          \    if isinstance(value, str):\n        v = value.strip()\n        if v:\n\
+          \            out.append(v)\n        return\n    if isinstance(value, list):\n\
+          \        for item in value:\n            _collect(item, out)\n        return\n\
+          \    if isinstance(value, dict):\n        for key in (\"search_query\",\
+          \ \"search_queries\", \"queries\",\n                    \"search_questions\"\
+          , \"questions\", \"query\",\n                    \"搜索问题\", \"搜索词\"):\n \
+          \           if key in value:\n                _collect(value[key], out)\n\
+          \        for v in value.values():\n            _collect(v, out)\n\ndef main(agent_output:\
+          \ str) -> dict:\n    data = _extract_json(agent_output)\n    raw = []\n\
+          \    _collect(data, raw)\n\n    # 兜底逻辑：如果 JSON 解析失败（raw 为空），尝试从原始文本提取带有数字编号的查询\n\
+          \    if not raw and agent_output:\n        # 移除 <think> 标签，保留内容用于正则提取\n\
+          \        clean_text = re.sub(r'<think>|</think>', '', agent_output)\n  \
+          \      # 匹配类似 \"1. 中国花炮产业...\" 或 \"- 烟花爆竹...\" 的格式\n        matches = re.findall(r'(?:^\\\
+          d+\\.|^-|\\*)\\s*(.+?)(?=\\n|$)', clean_text, flags=re.MULTILINE)\n    \
+          \    for m in matches:\n            q = m.strip()\n            # 过滤掉太短、包含\"\
+          查询\"、\"要求\"、\"格式\"等非查询词\n            if 5 <= len(q) <= 50 and not any(w\
+          \ in q for w in [\"查询\", \"要求\", \"格式\", \"输出\", \"RQ\", \"sub\", \"question\"\
+          ]):\n                raw.append(q)\n\n    seen = set()\n    queries = []\n\
+          \    for q in raw:\n        q = q.strip()\n        if q and q not in seen:\n\
+          \            seen.add(q)\n            queries.append(q)\n        if len(queries)\
+          \ >= MAX_QUERIES:\n            break\n\n    return {\"qresult\": queries}"
+        code_language: python3
+        outputs:
+          qresult:
+            children: null
+            type: array[string]
+        selected: false
+        title: 查询解析
+        type: code
+        variables:
+        - value_selector:
+          - '1789439656195'
+          - text
+          value_type: string
+          variable: agent_output
+      height: 51
+      id: '1789441187176'
+      position:
+        x: 655.9170474646376
+        y: 70
+      positionAbsolute:
+        x: 655.9170474646376
+        y: 70
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        error_handle_mode: terminated
+        flatten_output: true
+        height: 223
+        is_parallel: false
+        iterator_input_type: array[string]
+        iterator_selector:
+        - '1789441187176'
+        - qresult
+        output_selector:
+        - '17894583912441'
+        - results
+        output_type: array[object]
+        parallel_nums: 3
+        selected: false
+        start_node_id: 1789458375948start
+        title: 第一轮 · 广度检索
+        type: iteration
+        width: 677
+      height: 223
+      id: '1789458375948'
+      position:
+        x: 113.66035367058521
+        y: 217.56214671599878
+      positionAbsolute:
+        x: 113.66035367058521
+        y: 217.56214671599878
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 677
+      zIndex: 0
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1789458375948start
+      parentId: '1789458375948'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 137.6603536705852
+        y: 285.5621467159988
+      selectable: false
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.BOCHA_API_KEY#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: key-value-253
+            key: ''
+            type: text
+            value: '{"query":"{{#1789458375948.item#}}","summary":true,"count":10}'
+          type: json
+        desc: ''
+        headers: Content-Type:application/json
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789458375948'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1500
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 30
+          max_read_timeout: 60
+          max_write_timeout: 60
+        title: 博查搜索
+        type: http-request
+        url: https://api.bocha.cn/v1/web-search
+        variables: []
+      height: 136
+      id: '17894583912440'
+      parentId: '1789458375948'
+      position:
+        x: 139.83030564701585
+        y: 65
+      positionAbsolute:
+        x: 253.49065931760106
+        y: 282.5621467159988
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 1001
+    - data:
+        code: "import json\nimport re\n\ndef _load(x):\n    if isinstance(x, (dict,\
+          \ list)):\n        return x\n    if isinstance(x, str):\n        s = x.strip()\n\
+          \        s = re.sub(r'<think>[\\s\\S]*?</think>', '', s, flags=re.I)\n \
+          \       s = s.replace('```json', '').replace('```', '').strip()\n      \
+          \  try:\n            return json.loads(s)\n        except Exception:\n \
+          \           return {}\n    return {}\n\ndef _walk(obj):\n    out = []\n\
+          \    if isinstance(obj, dict):\n        if any(k in obj for k in (\"url\"\
+          , \"link\", \"href\")):\n            out.append(obj)\n        for v in obj.values():\n\
+          \            out.extend(_walk(v))\n    elif isinstance(obj, list):\n   \
+          \     for v in obj:\n            out.extend(_walk(v))\n    return out\n\n\
+          def _first(d, keys, default=\"\"):\n    for k in keys:\n        v = d.get(k)\n\
+          \        if v is not None and str(v).strip():\n            return str(v).strip()\n\
+          \    return default\n\ndef main(body: str, item: str) -> dict:\n    data\
+          \ = _load(body)\n    raw = _walk(data)\n    results = []\n    seen = set()\n\
+          \    for it in raw:\n        url = _first(it, (\"url\", \"link\", \"href\"\
+          ))\n        if not url:\n            continue\n        key = url.split(\"\
+          #\")[0].rstrip(\"/\")\n        if key in seen:\n            continue\n \
+          \       seen.add(key)\n        title = _first(it, (\"name\", \"title\"),\
+          \ url)\n        snippet = _first(it, (\"summary\", \"snippet\", \"description\"\
+          , \"content\"))\n        site = _first(it, (\"siteName\", \"site\"))\n \
+          \       date = _first(it, (\"dateLastCrawled\", \"date\", \"publishedDate\"\
+          , \"datePublished\"))\n        results.append({\n            \"query\":\
+          \ item,\n            \"title\": title[:200],\n            \"url\": url,\n\
+          \            \"snippet\": re.sub(r\"\\s+\", \" \", snippet)[:500],\n   \
+          \         \"site\": site[:100],\n            \"date\": date[:50]\n     \
+          \   })\n        if len(results) >= 10:\n            break\n    return {\"\
+          results\": results}\n"
+        code_language: python3
+        outputs:
+          results:
+            children: null
+            type: array[object]
+        selected: false
+        title: 结果清洗
+        type: code
+        variables:
+        - value_selector:
+          - '17894583912440'
+          - body
+          value_type: string
+          variable: body
+        - value_selector:
+          - '1789458375948'
+          - item
+          value_type: string
+          variable: item
+      height: 51
+      id: '17894583912441'
+      parentId: '1789458375948'
+      position:
+        x: 420
+        y: 65
+      positionAbsolute:
+        x: 533.6603536705852
+        y: 282.5621467159988
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 1001
+    - data:
+        code: "import re\n\ndef _flat(x):\n    if isinstance(x, dict):\n        if\
+          \ \"url\" in x:\n            return [x]\n        out = []\n        for v\
+          \ in x.values():\n            out += _flat(v)\n        return out\n    if\
+          \ isinstance(x, list):\n        out = []\n        for v in x:\n        \
+          \    out += _flat(v)\n        return out\n    return []\n\ndef _norm(url):\n\
+          \    return url.split(\"#\")[0].rstrip(\"/\").lower()\n\ndef main(topic:\
+          \ str, search_results) -> dict:\n    rows = _flat(search_results)\n    seen\
+          \ = set()\n    sources = []\n    for r in rows:\n        url = str(r.get(\"\
+          url\") or \"\").strip()\n        if not url:\n            continue\n   \
+          \     k = _norm(url)\n        if k in seen:\n            continue\n    \
+          \    seen.add(k)\n        sources.append({\n            \"title\": str(r.get(\"\
+          title\") or url)[:200],\n            \"url\": url,\n            \"snippet\"\
+          : re.sub(r\"\\s+\", \" \", str(r.get(\"snippet\") or \"\"))[:800],\n   \
+          \         \"site\": str(r.get(\"site\") or \"\")[:100],\n            \"\
+          date\": str(r.get(\"date\") or \"\")[:50]\n        })\n    sources = sources[:20]\n\
+          \n    lines = []\n    for i, s in enumerate(sources, 1):\n        lines.append(\n\
+          \            f\"[{i}] {s['title']}\\n\"\n            f\"URL: {s['url']}\\\
+          n\"\n            f\"来源: {s['site']} {s['date']}\\n\"\n            f\"摘要:\
+          \ {s['snippet']}\"\n        )\n    evidence_text = \"\\n\\n\".join(lines)\n\
+          \    source_list = \"\\n\".join([f\"- [{s['title']}]({s['url']})\" for s\
+          \ in sources])\n    bundle = (\n        f\"研究主题：{topic}\\n\\n\"\n      \
+          \  f\"===证据材料===\\n{evidence_text}\\n\\n\"\n        f\"===参考来源===\\n{source_list}\"\
+          \n    )\n    return {\n        \"evidence_text\": evidence_text,\n     \
+          \   \"source_list\": source_list,\n        \"research_bundle\": bundle,\n\
+          \        \"sources\": sources,\n        \"source_count\": len(sources)\n\
+          \    }\n"
+        code_language: python3
+        outputs:
+          evidence_text:
+            children: null
+            type: string
+          research_bundle:
+            children: null
+            type: string
+          source_count:
+            children: null
+            type: number
+          source_list:
+            children: null
+            type: string
+          sources:
+            children: null
+            type: array[object]
+        selected: false
+        title: 第一轮证据聚合
+        type: code
+        variables:
+        - value_selector:
+          - '1789439614825'
+          - topic
+          value_type: string
+          variable: topic
+        - value_selector:
+          - '1789458375948'
+          - output
+          value_type: array[object]
+          variable: search_results
+      height: 51
+      id: '17894583912442'
+      position:
+        x: 809.9390298144303
+        y: 217.56214671599878
+      positionAbsolute:
+        x: 809.9390298144303
+        y: 217.56214671599878
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_tokens: 1500
+            temperature: 0.2
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 7c1a3d10-2b55-4a7d-9c3a-1e8a33f21111
+          role: system
+          text: "你是研究证据评估智能体。请基于已有证据判断信息是否足以支撑一份高置信度研究报告。\n\n研究主题：{{#1789439614825.topic#}}\n\
+            已检索来源数：{{#17894583912442.source_count#}}\n\n证据材料：\n{{#17894583912442.evidence_text#}}\n\
+            \n只输出一个 JSON 对象，不要 Markdown，不要解释，不要 <think>。\n\n格式：\n{\n  \"sufficient\"\
+            : true 或 false,\n  \"confidence\": 0-100 的整数,\n  \"gaps\": [\"缺口1\", \"\
+            缺口2\"],\n  \"extra_queries\": [\"补充或验证查询1\", \"补充或验证查询2\", \"...\"]\n\
+            }\n\n评估维度：\n1. 覆盖度：是否覆盖主题的核心子问题、关键数据、典型案例、主要争议。\n2. 时效性：是否有近期信息。\n3. 来源多样性：是否来自多个独立来源。\n\
+            4. 一致性：不同来源是否互相印证，是否存在明显矛盾。\n\n要求：\n1. 若 sufficient=true 且 confidence>=80，extra_queries\
+            \ 仍需给出 3-5 条\"验证性查询\"，用于交叉验证关键结论。\n2. 若 sufficient=false，extra_queries\
+            \ 必须给出 8-15 条\"补搜查询\"，针对具体缺口。\n3. 每条查询 10-40 字符，具体、可直接检索，不得编造。\n4. 只输出\
+            \ JSON。\n"
+        selected: false
+        structured_output_enabled: false
+        title: 证据评估 LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '17894583912443'
+      position:
+        x: 1076.8807713649885
+        y: 217.56214671599878
+      positionAbsolute:
+        x: 1076.8807713649885
+        y: 217.56214671599878
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\ndef _extract_json(text):\n    if isinstance(text,\
+          \ dict):\n        return text\n    if not isinstance(text, str):\n     \
+          \   return {}\n    s = text.strip()\n    s = re.sub(r'<think>[\\s\\S]*?</think>',\
+          \ '', s, flags=re.I)\n    s = s.replace('```json', '').replace('```', '').strip()\n\
+          \    try:\n        return json.loads(s)\n    except Exception:\n       \
+          \ pass\n    for l, r in (('{', '}'), ('[', ']')):\n        st = s.find(l)\n\
+          \        en = s.rfind(r)\n        if st != -1 and en > st:\n           \
+          \ try:\n                return json.loads(s[st:en + 1])\n            except\
+          \ Exception:\n                continue\n    return {}\n\ndef main(agent_output:\
+          \ str, topic: str) -> dict:\n    data = _extract_json(agent_output)\n  \
+          \  sufficient = bool(data.get(\"sufficient\", False))\n    try:\n      \
+          \  confidence = int(data.get(\"confidence\", 0))\n    except Exception:\n\
+          \        confidence = 0\n    gaps = data.get(\"gaps\") or []\n    if not\
+          \ isinstance(gaps, list):\n        gaps = [str(gaps)]\n\n    queries = data.get(\"\
+          extra_queries\") or data.get(\"queries\") or []\n    if not isinstance(queries,\
+          \ list):\n        queries = []\n\n    cleaned = []\n    seen = set()\n \
+          \   for q in queries:\n        q = str(q).strip()\n        if q and q not\
+          \ in seen:\n            seen.add(q)\n            cleaned.append(q)\n\n \
+          \   if len(cleaned) < 3:\n        base = (topic or \"该主题\").strip()\n  \
+          \      for q in [f\"{base} 最新进展\", f\"{base} 典型案例\", f\"{base} 风险与争议\"]:\n\
+          \            if q not in seen:\n                seen.add(q)\n          \
+          \      cleaned.append(q)\n\n    cleaned = cleaned[:15]\n    need_round2\
+          \ = not (sufficient and confidence >= 75)\n\n    return {\n        \"extra_queries\"\
+          : cleaned,\n        \"sufficient\": sufficient,\n        \"confidence\"\
+          : confidence,\n        \"gaps\": gaps,\n        \"need_round2\": \"yes\"\
+          \ if need_round2 else \"no\"\n    }\n"
+        code_language: python3
+        outputs:
+          confidence:
+            children: null
+            type: number
+          extra_queries:
+            children: null
+            type: array[string]
+          gaps:
+            children: null
+            type: array[string]
+          need_round2:
+            children: null
+            type: string
+          sufficient:
+            children: null
+            type: boolean
+        selected: false
+        title: 评估结果解析
+        type: code
+        variables:
+        - value_selector:
+          - '17894583912443'
+          - text
+          value_type: string
+          variable: agent_output
+        - value_selector:
+          - '1789439614825'
+          - topic
+          value_type: string
+          variable: topic
+      height: 51
+      id: '17894583912444'
+      position:
+        x: 1379.7327236515116
+        y: 217.56214671599878
+      positionAbsolute:
+        x: 1379.7327236515116
+        y: 217.56214671599878
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        error_handle_mode: terminated
+        flatten_output: true
+        height: 223
+        is_parallel: false
+        iterator_input_type: array[string]
+        iterator_selector:
+        - '17894583912444'
+        - extra_queries
+        output_selector:
+        - '17894583912452'
+        - results
+        output_type: array[object]
+        parallel_nums: 3
+        selected: false
+        start_node_id: 17894583912450start
+        title: 第二轮 · 补搜/验证
+        type: iteration
+        width: 677
+      height: 223
+      id: '17894583912450'
+      position:
+        x: 113.66035367058521
+        y: 485.27743199903784
+      positionAbsolute:
+        x: 113.66035367058521
+        y: 485.27743199903784
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 677
+      zIndex: 0
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 17894583912450start
+      parentId: '17894583912450'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 137.6603536705852
+        y: 553.2774319990378
+      selectable: false
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.BOCHA_API_KEY#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: key-value-254
+            key: ''
+            type: text
+            value: '{"query":"{{#17894583912450.item#}}","summary":true,"count":10}'
+          type: json
+        desc: ''
+        headers: Content-Type:application/json
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '17894583912450'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1500
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 30
+          max_read_timeout: 60
+          max_write_timeout: 60
+        title: 博查搜索
+        type: http-request
+        url: https://api.bocha.cn/v1/web-search
+        variables: []
+      height: 136
+      id: '17894583912451'
+      parentId: '17894583912450'
+      position:
+        x: 139.83
+        y: 65
+      positionAbsolute:
+        x: 253.49035367058522
+        y: 550.2774319990378
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 1001
+    - data:
+        code: "import json\nimport re\n\ndef _load(x):\n    if isinstance(x, (dict,\
+          \ list)):\n        return x\n    if isinstance(x, str):\n        s = x.strip()\n\
+          \        s = re.sub(r'<think>[\\s\\S]*?</think>', '', s, flags=re.I)\n \
+          \       s = s.replace('```json', '').replace('```', '').strip()\n      \
+          \  try:\n            return json.loads(s)\n        except Exception:\n \
+          \           return {}\n    return {}\n\ndef _walk(obj):\n    out = []\n\
+          \    if isinstance(obj, dict):\n        if any(k in obj for k in (\"url\"\
+          , \"link\", \"href\")):\n            out.append(obj)\n        for v in obj.values():\n\
+          \            out.extend(_walk(v))\n    elif isinstance(obj, list):\n   \
+          \     for v in obj:\n            out.extend(_walk(v))\n    return out\n\n\
+          def _first(d, keys, default=\"\"):\n    for k in keys:\n        v = d.get(k)\n\
+          \        if v is not None and str(v).strip():\n            return str(v).strip()\n\
+          \    return default\n\ndef main(body: str, item: str) -> dict:\n    data\
+          \ = _load(body)\n    raw = _walk(data)\n    results = []\n    seen = set()\n\
+          \    for it in raw:\n        url = _first(it, (\"url\", \"link\", \"href\"\
+          ))\n        if not url:\n            continue\n        key = url.split(\"\
+          #\")[0].rstrip(\"/\")\n        if key in seen:\n            continue\n \
+          \       seen.add(key)\n        title = _first(it, (\"name\", \"title\"),\
+          \ url)\n        snippet = _first(it, (\"summary\", \"snippet\", \"description\"\
+          , \"content\"))\n        site = _first(it, (\"siteName\", \"site\"))\n \
+          \       date = _first(it, (\"dateLastCrawled\", \"date\", \"publishedDate\"\
+          , \"datePublished\"))\n        results.append({\n            \"query\":\
+          \ item,\n            \"title\": title[:200],\n            \"url\": url,\n\
+          \            \"snippet\": re.sub(r\"\\s+\", \" \", snippet)[:500],\n   \
+          \         \"site\": site[:100],\n            \"date\": date[:50]\n     \
+          \   })\n        if len(results) >= 10:\n            break\n    return {\"\
+          results\": results}\n"
+        code_language: python3
+        outputs:
+          results:
+            children: null
+            type: array[object]
+        selected: false
+        title: 结果清洗
+        type: code
+        variables:
+        - value_selector:
+          - '17894583912451'
+          - body
+          value_type: string
+          variable: body
+        - value_selector:
+          - '17894583912450'
+          - item
+          value_type: string
+          variable: item
+      height: 51
+      id: '17894583912452'
+      parentId: '17894583912450'
+      position:
+        x: 420
+        y: 65
+      positionAbsolute:
+        x: 533.6603536705852
+        y: 550.2774319990378
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 1001
+    - data:
+        code: "import re\n\ndef _flat(x):\n    if isinstance(x, dict):\n        if\
+          \ \"url\" in x:\n            return [x]\n        out = []\n        for v\
+          \ in x.values():\n            out += _flat(v)\n        return out\n    if\
+          \ isinstance(x, list):\n        out = []\n        for v in x:\n        \
+          \    out += _flat(v)\n        return out\n    return []\n\ndef _norm(url):\n\
+          \    return url.split(\"#\")[0].rstrip(\"/\").lower()\n\ndef main(topic:\
+          \ str, sources_1, results_2) -> dict:\n    all_rows = list(sources_1 or\
+          \ []) + _flat(results_2)\n    seen = set()\n    sources = []\n    for r\
+          \ in all_rows:\n        url = str(r.get(\"url\") or \"\").strip()\n    \
+          \    if not url:\n            continue\n        k = _norm(url)\n       \
+          \ if k in seen:\n            continue\n        seen.add(k)\n        sources.append({\n\
+          \            \"title\": str(r.get(\"title\") or url)[:200],\n          \
+          \  \"url\": url,\n            \"snippet\": re.sub(r\"\\s+\", \" \", str(r.get(\"\
+          snippet\") or \"\"))[:800],\n            \"site\": str(r.get(\"site\") or\
+          \ \"\")[:100],\n            \"date\": str(r.get(\"date\") or \"\")[:50]\n\
+          \        })\n\n    sources = sources[:20]\n\n    lines = []\n    for i,\
+          \ s in enumerate(sources, 1):\n        lines.append(\n            f\"[{i}]\
+          \ {s['title']}\\n\"\n            f\"URL: {s['url']}\\n\"\n            f\"\
+          来源: {s['site']} {s['date']}\\n\"\n            f\"摘要: {s['snippet']}\"\n\
+          \        )\n    evidence_text = \"\\n\\n\".join(lines)\n    source_list\
+          \ = \"\\n\".join([f\"- [{s['title']}]({s['url']})\" for s in sources])\n\
+          \    bundle = (\n        f\"研究主题：{topic}\\n\\n\"\n        f\"===证据材料===\\\
+          n{evidence_text}\\n\\n\"\n        f\"===参考来源===\\n{source_list}\"\n    )\n\
+          \    return {\n        \"evidence_text\": evidence_text,\n        \"source_list\"\
+          : source_list,\n        \"research_bundle\": bundle,\n        \"sources\"\
+          : sources,\n        \"source_count\": len(sources)\n    }\n"
+        code_language: python3
+        outputs:
+          evidence_text:
+            children: null
+            type: string
+          research_bundle:
+            children: null
+            type: string
+          source_count:
+            children: null
+            type: number
+          source_list:
+            children: null
+            type: string
+          sources:
+            children: null
+            type: array[object]
+        selected: false
+        title: 两轮证据合并
+        type: code
+        variables:
+        - value_selector:
+          - '1789439614825'
+          - topic
+          value_type: string
+          variable: topic
+        - value_selector:
+          - '17894583912442'
+          - sources
+          value_type: array[object]
+          variable: sources_1
+        - value_selector:
+          - '17894583912450'
+          - output
+          value_type: array[object]
+          variable: results_2
+      height: 51
+      id: '17894583912447'
+      position:
+        x: 809.9390298144303
+        y: 478.6798924451734
+      positionAbsolute:
+        x: 809.9390298144303
+        y: 478.6798924451734
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_tokens: 10000
+            temperature: 0.3
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 63b0d843-40e4-439c-aff9-28dbe7530f31
+          role: system
+          text: '# 角色
+
+            你是资深深度研究报告撰写专家，擅长基于证据写出结构化、可溯源的研究报告。
+
+
+            # 输入
+
+            研究主题：{{#1789439614825.topic#}}
+
+
+            证据与来源：
+
+            {{#17894583912447.research_bundle#}}
+
+
+            # 硬性规则
+
+            1. 只能基于"证据与来源"写作，不得编造事实、数据、人物观点、链接。
+
+            2. 每个关键事实、数据、观点后必须标注引用编号，例如 [1]、[2]。
+
+            3. 如果证据不足、矛盾或缺失，必须明确写"现有证据不足"或"不同来源存在分歧"。
+
+            4. 不要输出证据之外的参考来源。
+
+            5. 不要输出 <think>、解释过程、Markdown 代码块。
+
+            6. 直接输出 Markdown 报告正文。
+
+
+            # 报告结构
+
+            # 标题
+
+            根据主题生成简洁准确的标题。
+
+
+            ## 摘要
+
+            200-400 字，概括核心发现、主要结论与置信度评估。
+
+
+            ## 引言与背景
+
+            说明主题背景、研究目的、信息来源范围。
+
+
+            ## 研究方法与来源说明
+
+            简述检索方式、检索轮次、来源数量、主要来源类型、局限性。
+
+
+            ## 主要发现
+
+            列出 4-8 条关键发现，每条必须带引用，例如 [1][3]。
+
+
+            ## 详细分析
+
+            按子主题分段，整合多个来源，指出共识、分歧、证据强弱。
+
+
+            ## 风险、争议与局限
+
+            说明不确定性、利益冲突、数据缺口、时效性问题。
+
+
+            ## 结论与建议
+
+            总结核心结论，给出可执行建议或未来研究方向。
+
+
+            ## 参考来源
+
+            直接使用证据中"参考来源"列表，不要改写链接。
+
+
+            # 长度
+
+            2000-5000 字，信息密度优先。
+
+
+            # 输出
+
+            直接输出 Markdown 格式的报告正文。
+
+            '
+        selected: false
+        structured_output_enabled: false
+        title: 报告生成 LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1789440475948'
+      position:
+        x: 1076.8807713649885
+        y: 478.6798924451734
+      positionAbsolute:
+        x: 1076.8807713649885
+        y: 478.6798924451734
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    - data:
+        outputs:
+        - value_selector:
+          - '1789440475948'
+          - text
+          value_type: string
+          variable: text
+        selected: false
+        title: 输出 2
+        type: end
+      height: 87
+      id: '1789461079906'
+      position:
+        x: 1363.2388747668506
+        y: 478.6798924451734
+      positionAbsolute:
+        x: 1363.2388747668506
+        y: 478.6798924451734
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+      zIndex: 0
+    viewport:
+      x: 137.92896285615416
+      y: 109.40931452889282
+      zoom: 0.6062866266041599
+  rag_pipeline_variables: []
