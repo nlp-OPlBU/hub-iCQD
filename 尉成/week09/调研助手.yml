@@ -1,0 +1,848 @@
+app:
+  description: ''
+  icon: scream
+  icon_background: '#FBE8FF'
+  icon_type: emoji
+  mode: advanced-chat
+  name: 调研助手
+  use_icon_as_answer_icon: true
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.24@9e12eef09973667f0eaf4f082af883167e1de88740b22e71e71488d020c3778a
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        knowledge_file_size_limit: 15
+        single_chunk_attachment_limit: 10
+        skill_file_size_limit: 50
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: start
+        targetType: llm
+      id: 1776412735500-source-1789659452329-target
+      selected: false
+      source: '1776412735500'
+      sourceHandle: source
+      target: '1789659452329'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: llm
+        targetType: code
+      id: 1789659452329-source-1789738132161-target
+      source: '1789659452329'
+      sourceHandle: source
+      target: '1789738132161'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: iteration
+        targetType: llm
+      id: 1789660363827-source-1789741697775-target
+      source: '1789660363827'
+      sourceHandle: source
+      target: '1789741697775'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789660363827'
+        loop_id: null
+        sourceType: iteration-start
+        targetType: http-request
+      id: 1789660363827start-source-1789660554709-target
+      source: 1789660363827start
+      sourceHandle: source
+      target: '1789660554709'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789660363827'
+        loop_id: null
+        sourceType: http-request
+        targetType: llm
+      id: 1789660554709-source-1789740846131-target
+      source: '1789660554709'
+      sourceHandle: source
+      target: '1789740846131'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: iteration
+      id: 1789738132161-source-1789660363827-target
+      source: '1789738132161'
+      sourceHandle: source
+      target: '1789660363827'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: llm
+        targetType: llm
+      id: 1789741697775-source-1789742336197-target
+      source: '1789741697775'
+      sourceHandle: source
+      target: '1789742336197'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: null
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: llm
+        targetType: tool
+      id: 1789741697775-source-1789743019306-target
+      source: '1789741697775'
+      sourceHandle: source
+      target: '1789743019306'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: llm
+        targetType: answer
+      id: 1789742336197-source-1789660786996-target
+      source: '1789742336197'
+      sourceHandle: source
+      target: '1789660786996'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: null
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: tool
+        targetType: llm
+      id: 1789743019306-source-1789742336197-target
+      source: '1789743019306'
+      sourceHandle: source
+      target: '1789742336197'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables: []
+      height: 73
+      id: '1776412735500'
+      position:
+        x: -200.99999035415317
+        y: 11.000011465019725
+      positionAbsolute:
+        x: -200.99999035415317
+        y: 11.000011465019725
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 60730440-93ee-4199-958a-b1173ef0cb68
+          role: system
+          text: '你是一名资深研究助理，负责为深度研究主题规划搜索关键词。
+
+            针对{{#sys.query#}}，设计 3~5 个高区分度的搜索关键词，用于逐一检索网页资料。
+
+            要求：
+
+            1. 关键词要覆盖主题的不同侧面（定义与现状、关键玩家、趋势、争议点等），彼此尽量不重复。
+
+            2. 关键词要具体、可直接用于搜索引擎，不要过于宽泛或过于狭窄。
+
+            3. 只输出一个 JSON 对象，用 ```json 代码块包裹，格式如下：
+
+            ```json
+
+            {"keywords": ["关键词1", "关键词2", "关键词3"]}
+
+            ```
+
+            4. 请只输出纯 JSON 对象，不要包含任何解释性文字，不要使用 Markdown 代码块。'
+        selected: false
+        structured_output:
+          schema:
+            additionalProperties: false
+            properties: {}
+            required: []
+            type: object
+        structured_output_enabled: false
+        title: LLM 2
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1789659452329'
+      position:
+        x: 57.9999986885033
+        y: 39.69774698203909
+      positionAbsolute:
+        x: 57.9999986885033
+        y: 39.69774698203909
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        error_handle_mode: terminated
+        flatten_output: true
+        height: 230
+        is_parallel: false
+        iterator_input_type: array[string]
+        iterator_selector:
+        - '1789738132161'
+        - result
+        output_selector:
+        - '1789740846131'
+        - text
+        output_type: array[string]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1789660363827start
+        title: 迭代
+        type: iteration
+        width: 906.0000015230285
+      height: 230
+      id: '1789660363827'
+      position:
+        x: -200.99999035415317
+        y: 182.44176830456732
+      positionAbsolute:
+        x: -200.99999035415317
+        y: 182.44176830456732
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 906
+      zIndex: 0
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1789660363827start
+      parentId: '1789660363827'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: -176.99999035415317
+        y: 250.44176830456732
+      selectable: false
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: sk-3d2293ad83aa4823a7c7ce8dd5ff8c72
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: key-value-257
+            key: ''
+            type: text
+            value: "{\n  \"query\": \"{{#1789660363827.item#}}\",\n  \"summary\":\
+              \ true,\n  \"count\": 2\n}"
+          type: json
+        headers: Content-Type:application/json
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789660363827'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+        title: HTTP 请求
+        type: http-request
+        url: https://api.bocha.cn/v1/web-search
+        variables: []
+      height: 138
+      id: '1789660554709'
+      parentId: '1789660363827'
+      position:
+        x: 126.00000008461268
+        y: 66.00000008461274
+      positionAbsolute:
+        x: -74.99999026954049
+        y: 248.44176838918006
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        answer: '{{#1789742336197.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 102
+      id: '1789660786996'
+      position:
+        x: 1233.1903294226138
+        y: 197.441767669972
+      positionAbsolute:
+        x: 1233.1903294226138
+        y: 197.441767669972
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\nimport re\n\ndef main(arg1: str) -> dict:\n    try:\n\
+          \        # 用正则直接从文本里找 JSON 结构，不管外面包了什么废话\n        match = re.search(r'\\\
+          {.*\\}', arg1, re.DOTALL)\n        if match:\n            json_str = match.group(0)\n\
+          \            data = json.loads(json_str)\n            return {\"result\"\
+          : data.get(\"keywords\", [])}\n        return {\"result\": []}\n    except\
+          \ Exception:\n        return {\"result\": []}"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: array[string]
+        selected: false
+        title: 代码执行 2
+        type: code
+        variables:
+        - value_selector:
+          - '1789659452329'
+          - text
+          value_type: string
+          variable: arg1
+      height: 52
+      id: '1789738132161'
+      position:
+        x: 320.00000038075706
+        y: 80.69774524747892
+      positionAbsolute:
+        x: 320.00000038075706
+        y: 80.69774524747892
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789660363827'
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-flash
+          provider: langgenius/deepseek/deepseek
+        model_selector: null
+        prompt_template:
+        - edition_type: basic
+          id: 8e8c58df-c5d8-44b9-878f-3abea3319eed
+          role: system
+          text: '你是一名资深行业分析师，正在为一个深度研究主题撰写报告正文。
+
+
+            ## 研究主题
+
+            {{#sys.query#}}
+
+
+            ## 当前检索关键词
+
+            {{#1789660363827.item#}}/
+
+
+
+            ## 任务
+
+            根据 {{#1789660554709.body#}}，写 1~3 段正文（500~900 字），作为研究报告 {{#sys.query#}}一节的内容。
+
+
+            要求：
+
+            1. 报告语体：客观、信息密度高，先结论后展开。
+
+            2. 只基于搜索结果中的事实，不得编造；搜索结果不足时，如实说明信息有限。
+
+            3. 要跟上来源的出处要有链接信息。
+
+            4. 直接输出正文文字，不要输出 JSON、不要用代码块、不要加任何前后缀说明。你是一名资深行业分析师，正在为一个深度研究主题撰写报告正文。'
+        selected: false
+        title: LLM 2
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1789740846131'
+      parentId: '1789660363827'
+      position:
+        x: 433.5777314205054
+        y: 71.99999970385556
+      positionAbsolute:
+        x: 232.57774106635225
+        y: 254.44176800842288
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-flash
+          provider: langgenius/deepseek/deepseek
+        model_selector: null
+        prompt_template:
+        - id: 1e5ef4e3-86a5-4efe-805f-2b5af2494f74
+          role: system
+          text: "你是一名资深行业分析师，正在为一份深度研究报告撰写标题、摘要和结论。\n\n## 研究主题\n{{#sys.query#}}\n\n\
+            \n\n## 任务\n根据下面的报告草稿 {{#1789660363827.output#}}（每个关键词一段正文）、来源列表和置信度说明，输出报告元信息：\n\
+            1. title：报告标题（简洁、准确）\n2. summary：摘要，200~400 字，概括报告核心内容\n3. key_conclusions：4~6\
+            \ 条关键结论。每条结论的 sources 只能引用来源列表中真实存在的 url/title；\n   没有来源支撑的结论，is_model_inference\
+            \ 必须为 true，且 text 以「（模型推断）」开头。\n4. open_questions：0~5 条遗留问题 / 信息缺口。\n\
+            5.输出必须是合法 JSON（可被 json.loads 直接解析）。字符串内部严禁使用英文半角\n双引号 \"，引用一律用中文引号「」或“”，否则会破坏\
+            \ JSON 语法导致整个研究失败。\n\n只输出一个 JSON 对象，用 ```json 代码块包裹，格式如下：\n\n```json\n\
+            {\n  \"title\": \"报告标题\",\n  \"summary\": \"摘要文字\",\n  \"key_conclusions\"\
+            : [\n    {\"text\": \"结论1\", \"sources\": [{\"url\": \"真实存在的URL\", \"\
+            title\": \"对应标题\"}], \"is_model_inference\": false},\n    {\"text\": \"\
+            （模型推断）结论2\", \"sources\": [], \"is_model_inference\": true}\n  ],\n  \"\
+            open_questions\": [\"遗留问题1\"]\n}\n```"
+        selected: false
+        title: LLM 3
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1789741697775'
+      position:
+        x: 739.1903503219484
+        y: 216.4417668661516
+      positionAbsolute:
+        x: 739.1903503219484
+        y: 216.4417668661516
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-flash
+          provider: langgenius/deepseek/deepseek
+        model_selector: null
+        prompt_template:
+        - id: 386c022e-2a75-43b1-92f9-85e786161f52
+          role: system
+          text: '你是一名前端工程师，负责把结构化研究报告渲染成 MARKDOWN页面。
+
+
+            ## 研究主题
+
+            {{#sys.query#}}
+
+
+            ## 今天的日期
+
+            {{#1789743019306.text#}}
+
+
+            ## 任务
+
+            把 {{#1789741697775.text#}}渲染成MARKDOWN格式的报告。
+
+
+            要求：
+
+            1. 排版专业简洁（适合阅读与打印）。
+
+            2. 页面结构顺序：标题 → 摘要 → 分节正文 → 关键结论 → 遗留问题 → 来源列表。
+
+            3. 来源列表给每条 URL 编号，编号与结论中引用的来源对应，链接可点击。
+
+            4. 无来源的结论要视觉上标注「模型推断」。
+
+            5. 页面末尾显示「报告生成时间」。
+
+            6. 只输出MARKDOWN原文，不要包 JSON、不要用代码块、不要任何前后缀说明。
+
+            '
+        selected: false
+        title: LLM 4
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1789742336197'
+      position:
+        x: 1001.1903392376864
+        y: 347.4417672046022
+      positionAbsolute:
+        x: 1001.1903392376864
+        y: 347.4417672046022
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        is_team_authorization: true
+        meta: null
+        paramSchemas:
+        - auto_generate: null
+          default: '%Y-%m-%d %H:%M:%S'
+          form: form
+          human_description:
+            en_US: Time format in strftime standard.
+            ja_JP: Time format in strftime standard.
+            pt_BR: Time format in strftime standard.
+            zh_Hans: strftime 标准的时间格式。
+          input_schema: null
+          label:
+            en_US: Format
+            ja_JP: Format
+            pt_BR: Format
+            zh_Hans: 格式
+          llm_description: null
+          max: null
+          min: null
+          multiple: false
+          name: format
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: UTC
+          form: form
+          human_description:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          input_schema: null
+          label:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          llm_description: null
+          max: null
+          min: null
+          multiple: false
+          name: timezone
+          options:
+          - icon: null
+            label:
+              en_US: UTC
+              ja_JP: UTC
+              pt_BR: UTC
+              zh_Hans: UTC
+            value: UTC
+          - icon: null
+            label:
+              en_US: America/New_York
+              ja_JP: America/New_York
+              pt_BR: America/New_York
+              zh_Hans: 美洲/纽约
+            value: America/New_York
+          - icon: null
+            label:
+              en_US: America/Los_Angeles
+              ja_JP: America/Los_Angeles
+              pt_BR: America/Los_Angeles
+              zh_Hans: 美洲/洛杉矶
+            value: America/Los_Angeles
+          - icon: null
+            label:
+              en_US: America/Chicago
+              ja_JP: America/Chicago
+              pt_BR: America/Chicago
+              zh_Hans: 美洲/芝加哥
+            value: America/Chicago
+          - icon: null
+            label:
+              en_US: America/Sao_Paulo
+              ja_JP: America/Sao_Paulo
+              pt_BR: América/São Paulo
+              zh_Hans: 美洲/圣保罗
+            value: America/Sao_Paulo
+          - icon: null
+            label:
+              en_US: Asia/Shanghai
+              ja_JP: Asia/Shanghai
+              pt_BR: Asia/Shanghai
+              zh_Hans: 亚洲/上海
+            value: Asia/Shanghai
+          - icon: null
+            label:
+              en_US: Asia/Ho_Chi_Minh
+              ja_JP: Asia/Ho_Chi_Minh
+              pt_BR: Ásia/Ho Chi Minh
+              zh_Hans: 亚洲/胡志明市
+            value: Asia/Ho_Chi_Minh
+          - icon: null
+            label:
+              en_US: Asia/Tokyo
+              ja_JP: Asia/Tokyo
+              pt_BR: Asia/Tokyo
+              zh_Hans: 亚洲/东京
+            value: Asia/Tokyo
+          - icon: null
+            label:
+              en_US: Asia/Dubai
+              ja_JP: Asia/Dubai
+              pt_BR: Asia/Dubai
+              zh_Hans: 亚洲/迪拜
+            value: Asia/Dubai
+          - icon: null
+            label:
+              en_US: Asia/Kolkata
+              ja_JP: Asia/Kolkata
+              pt_BR: Asia/Kolkata
+              zh_Hans: 亚洲/加尔各答
+            value: Asia/Kolkata
+          - icon: null
+            label:
+              en_US: Asia/Seoul
+              ja_JP: Asia/Seoul
+              pt_BR: Asia/Seoul
+              zh_Hans: 亚洲/首尔
+            value: Asia/Seoul
+          - icon: null
+            label:
+              en_US: Asia/Singapore
+              ja_JP: Asia/Singapore
+              pt_BR: Asia/Singapore
+              zh_Hans: 亚洲/新加坡
+            value: Asia/Singapore
+          - icon: null
+            label:
+              en_US: Europe/London
+              ja_JP: Europe/London
+              pt_BR: Europe/London
+              zh_Hans: 欧洲/伦敦
+            value: Europe/London
+          - icon: null
+            label:
+              en_US: Europe/Berlin
+              ja_JP: Europe/Berlin
+              pt_BR: Europe/Berlin
+              zh_Hans: 欧洲/柏林
+            value: Europe/Berlin
+          - icon: null
+            label:
+              en_US: Europe/Moscow
+              ja_JP: Europe/Moscow
+              pt_BR: Europe/Moscow
+              zh_Hans: 欧洲/莫斯科
+            value: Europe/Moscow
+          - icon: null
+            label:
+              en_US: Australia/Sydney
+              ja_JP: Australia/Sydney
+              pt_BR: Australia/Sydney
+              zh_Hans: 澳大利亚/悉尼
+            value: Australia/Sydney
+          - icon: null
+            label:
+              en_US: Pacific/Auckland
+              ja_JP: Pacific/Auckland
+              pt_BR: Pacific/Auckland
+              zh_Hans: 太平洋/奥克兰
+            value: Pacific/Auckland
+          - icon: null
+            label:
+              en_US: Africa/Cairo
+              ja_JP: Africa/Cairo
+              pt_BR: Africa/Cairo
+              zh_Hans: 非洲/开罗
+            value: Africa/Cairo
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        params:
+          format: ''
+          timezone: ''
+        plugin_id: null
+        plugin_unique_identifier: ''
+        provider_icon: /console/api/workspaces/current/tool-provider/builtin/time/icon
+        provider_icon_dark: null
+        provider_id: time
+        provider_name: time
+        provider_show_name: 时间
+        provider_type: builtin
+        selected: false
+        title: 获取当前时间
+        tool_configurations:
+          format:
+            type: mixed
+            value: '%Y-%m-%d %H:%M:%S'
+          timezone:
+            type: constant
+            value: Asia/Shanghai
+        tool_description: 一个用于获取当前时间的工具。
+        tool_label: 获取当前时间
+        tool_name: current_time
+        tool_node_version: '2'
+        tool_parameters: {}
+        type: tool
+      height: 114
+      id: '1789743019306'
+      position:
+        x: 728.9999703009453
+        y: 347.4417672046022
+      positionAbsolute:
+        x: 728.9999703009453
+        y: 347.4417672046022
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -129.5237302193201
+      y: 171.05822186167052
+      zoom: 1.0000000423063475
+  rag_pipeline_variables: []
