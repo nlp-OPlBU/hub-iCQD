@@ -1,0 +1,919 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: workflow
+  name: lzz-deepresearch-bocha
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: seekerliu/bocha:0.0.1@7d2dbad3f9d2652300d73bb8d91337e925f3c0daf9e0a9e285e060fb9dd7aadb
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.24@9e12eef09973667f0eaf4f082af883167e1de88740b22e71e71488d020c3778a
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1789719460494-source-1789719648505-target
+      selected: false
+      source: '1789719460494'
+      sourceHandle: source
+      target: '1789719648505'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: iteration
+      id: 1789719648505-source-1789719723635-target
+      selected: false
+      source: '1789719648505'
+      sourceHandle: source
+      target: '1789719723635'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789719723635'
+        sourceType: iteration-start
+        targetType: tool
+      id: 1789719723635start-source-1789719748323-target
+      selected: false
+      source: 1789719723635start
+      sourceHandle: source
+      target: '1789719748323'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789719723635'
+        sourceType: tool
+        targetType: code
+      id: 1789719748323-source-1789723532047-target
+      selected: false
+      source: '1789719748323'
+      sourceHandle: source
+      target: '1789723532047'
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: iteration
+        targetType: code
+      id: 1789719723635-source-1789727781161-target
+      source: '1789719723635'
+      sourceHandle: source
+      target: '1789727781161'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1789727781161-source-1789727908758-target
+      source: '1789727781161'
+      sourceHandle: source
+      target: '1789727908758'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1789727908758-source-1789720663688-target
+      source: '1789727908758'
+      sourceHandle: source
+      target: '1789720663688'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: llm
+      id: 1789730177090-source-1789719460494-target
+      source: '1789730177090'
+      sourceHandle: source
+      target: '1789719460494'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1789719349544-source-1789730177090-target
+      source: '1789719349544'
+      sourceHandle: source
+      target: '1789730177090'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 研究主题
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: topic
+        - default: 中文
+          hint: ''
+          label: 输出语言
+          options:
+          - 中文
+          - 英文
+          placeholder: ''
+          required: true
+          type: select
+          variable: language
+      height: 135
+      id: '1789719349544'
+      position:
+        x: -98.00473946291703
+        y: 274.95207859782437
+      positionAbsolute:
+        x: -98.00473946291703
+        y: 274.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 把一个复杂主题拆解成若干可以在网络上检索的具体问题。
+        model:
+          completion_params:
+            response_format: json_object
+            temperature: 0.7
+            thinking: false
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: 8f5d5668-8ce9-4aea-a02f-0252dec47fb9
+          role: system
+          text: '你是一名资深研究规划专家（Research Planner），擅长把一个复杂主题拆解成若干可以在网络上检索的具体问题。
+
+            当前用户的研究主题是：{{#1789719349544.topic#}}。
+
+            研究输出语言为：{{#1789719349544.language#}}。
+
+            当前时间：{{#1789730177090.text#}}
+
+            请你完成以下任务：
+
+            深入理解用户的主题，从不同角度（背景、现状、技术方案、应用场景、风险与挑战等）拆解出至少 4–6 个子问题。
+
+            每个子问题都必须是可以直接送入搜索引擎的查询句子（search query），尽量避免过于笼统或含糊。
+
+            子问题之间要尽量互相独立，覆盖主题的不同方面，避免明显重复。
+
+            输出格式必须是一个 JSON 数组，例如：
+
+            { "queries": [ "子问题1", "子问题2", "子问题3" ] } 不要输出除此 JSON 以外的任何解释、前缀或 Markdown
+            标记。'
+        selected: false
+        structured_output:
+          schema:
+            additionalProperties: false
+            properties:
+              queries:
+                items:
+                  type: string
+                type: array
+            required:
+            - queries
+            type: object
+        structured_output_enabled: true
+        title: 研究规划
+        type: llm
+        vision:
+          enabled: false
+      height: 132
+      id: '1789719460494'
+      position:
+        x: 421.3614178032411
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 421.3614178032411
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\n\ndef main(llm_output: str) -> dict:\n    try:\n     \
+          \   # 1. 将输入的 JSON 字符串解析为 Python 字典\n        data = json.loads(llm_output)\n\
+          \        \n        # 2. 获取 queries 对应的列表，如果键不存在则返回空列表\n        queries_list\
+          \ = data.get(\"queries\", [])\n        \n        return {\n            \"\
+          result\": queries_list\n        }\n    except Exception as e:\n        #\
+          \ 异常兜底保护\n        return {\n            \"result\": [],\n            \"\
+          error\": str(e)\n        }"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: array[string]
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        title: 代码执行
+        type: code
+        variables:
+        - value_selector:
+          - '1789719460494'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 82
+      id: '1789719648505'
+      position:
+        x: 684.0562698135445
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 684.0562698135445
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        error_handle_mode: remove-abnormal-output
+        flatten_output: false
+        height: 320
+        is_parallel: true
+        iterator_input_type: array[string]
+        iterator_selector:
+        - '1789719648505'
+        - result
+        output_selector:
+        - '1789723532047'
+        - item
+        output_type: array[object]
+        parallel_nums: 10
+        selected: false
+        start_node_id: 1789719723635start
+        title: 迭代
+        type: iteration
+        width: 688
+      height: 320
+      id: '1789719723635'
+      position:
+        x: 950.629281375233
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 950.629281375233
+        y: 295.95207859782437
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 688
+      zIndex: 0
+    - data:
+        desc: ''
+        isInIteration: true
+        selected: false
+        title: ''
+        type: iteration-start
+      draggable: false
+      height: 48
+      id: 1789719723635start
+      parentId: '1789719723635'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 974.629281375233
+        y: 363.95207859782437
+      selectable: false
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-iteration-start
+      width: 44
+      zIndex: 1001
+    - data:
+        isInIteration: true
+        isInLoop: false
+        is_team_authorization: true
+        iteration_id: '1789719723635'
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: The keywords or phrases to search
+            ja_JP: 検索キーワードまたはフレーズ
+            pt_BR: As palavras-chave ou frases para pesquisar
+            zh_Hans: 搜索关键词或语句
+          input_schema: null
+          label:
+            en_US: query
+            ja_JP: query
+            pt_BR: query
+            zh_Hans: query
+          llm_description: 搜索关键词或语句
+          max: null
+          min: null
+          multiple: false
+          name: query
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: noLimit
+          form: llm
+          human_description:
+            en_US: The time range for the search results. Available options noLimit,
+              oneYear, oneMonth, oneWeek, oneDay. Default is noLimit
+            ja_JP: 検索結果の時間範囲。利用可能なオプションは noLimit, oneYear, oneMonth, oneWeek, oneDay
+              です。デフォルトは noLimit です
+            pt_BR: O intervalo de tempo para os resultados da pesquisa. Opções disponíveis
+              noLimit, oneYear, oneMonth, oneWeek, oneDay. O padrão é noLimit
+            zh_Hans: 搜索的时间范围，可选值为 noLimit, oneYear, oneMonth, oneWeek, oneDay。默认为
+              noLimit
+          input_schema: null
+          label:
+            en_US: freshness
+            ja_JP: freshness
+            pt_BR: freshness
+            zh_Hans: freshness
+          llm_description: 搜索的时间范围，可选值为 noLimit, oneYear, oneMonth, oneWeek, oneDay。默认为
+            noLimit
+          max: null
+          min: null
+          multiple: false
+          name: freshness
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: 10
+          form: llm
+          human_description:
+            en_US: Number of search results to retrieve (1-10), default is 10
+            ja_JP: 検索結果の数(1-10)、デフォルトは10
+            pt_BR: Número de resultados de pesquisa para recuperar (1-10), padrão
+              é 10
+            zh_Hans: 搜索结果的数量(1-10)，默认为10
+          input_schema: null
+          label:
+            en_US: count
+            ja_JP: count
+            pt_BR: count
+            zh_Hans: count
+          llm_description: 搜索结果的数量(1-10)，默认为10
+          max: 10
+          min: 1
+          multiple: false
+          name: count
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        params:
+          count: ''
+          freshness: ''
+          query: ''
+        plugin_id: seekerliu/bocha
+        plugin_unique_identifier: seekerliu/bocha:0.0.1@7d2dbad3f9d2652300d73bb8d91337e925f3c0daf9e0a9e285e060fb9dd7aadb
+        provider_icon: https://cloud.dify.ai/console/api/workspaces/current/plugin/icon?tenant_id=85465b47-4104-4404-8121-f91837d56491&filename=6fc9b088775e6989b928672f2d8aeb764bdfd017127d04ed71fea55089c5aa74.svg
+        provider_id: seekerliu/bocha/bocha
+        provider_name: seekerliu/bocha/bocha
+        provider_show_name: 博查
+        provider_type: builtin
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        title: Bocha Web Search
+        tool_configurations: {}
+        tool_description: 从博查搜索全网信息和网页链接，返回结果包括网页标题、网页URL、网页摘要、网站名称、网站图标、发布时间、图片链接等
+        tool_label: Bocha Web Search
+        tool_name: BochaWebSearch
+        tool_node_version: '2'
+        tool_parameters:
+          count:
+            type: constant
+            value: 10
+          freshness:
+            type: mixed
+            value: noLimit
+          query:
+            type: mixed
+            value: '{{#1789719723635.item#}}'
+        type: tool
+      height: 82
+      id: '1789719748323'
+      parentId: '1789719723635'
+      position:
+        x: 126.46623026182874
+        y: 104.87801319245267
+      positionAbsolute:
+        x: 1077.0955116370617
+        y: 400.83009179027704
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        outputs:
+        - value_selector:
+          - '1789727908758'
+          - text
+          value_type: string
+          variable: output
+        selected: false
+        title: 输出
+        type: end
+      height: 88
+      id: '1789720663688'
+      position:
+        x: 2265.4200851680234
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 2265.4200851680234
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\n\ndef main(query: str, result: str) -> dict:\n    try:\n\
+          \        data = json.loads(result) if isinstance(result, str) else result\n\
+          \    except Exception:\n        data = []\n\n    # 兼容 Bocha 搜索返回的各种层级结构\n\
+          \    webpages = []\n    if isinstance(data, list) and len(data) > 0 and\
+          \ \"webpage\" in data[0]:\n        webpages = data[0][\"webpage\"]\n   \
+          \ elif isinstance(data, dict) and \"webpage\" in data:\n        webpages\
+          \ = data[\"webpage\"]\n\n    page_snippets = []\n\n    # 截取前 5 条高相关性结果\n\
+          \    for idx, page in enumerate(webpages[:5], start=1):\n        title =\
+          \ page.get(\"name\", \"无标题\").strip()\n        url = page.get(\"url\", \"\
+          \").strip()\n        pub_date = page.get(\"datePublished\", \"\")[:10]\n\
+          \        content = page.get(\"summary\") or page.get(\"snippet\", \"\")\n\
+          \        content = content.strip().replace(\"\\n\", \" \")\n\n        #\
+          \ 核心改动：把 url 紧密贴合在资料头部，方便模型直接提取生成 Markdown 链接\n        page_snippets.append(\n\
+          \            f\"- 资料{idx}: 《{title}》\\n\"\n            f\"  发布时间: {pub_date}\\\
+          n\"\n            f\"  来源链接: {url}\\n\"\n            f\"  核心内容: {content}\"\
+          \n        )\n\n    sub_context = \"\\n\".join(page_snippets) if page_snippets\
+          \ else \"未检索到相关内容\"\n\n    # 打包为单变量 item 输出给迭代节点\n    return {\n       \
+          \ \"item\": {\n            \"query\": query,\n            \"sub_context\"\
+          : sub_context\n        }\n    }"
+        code_language: python3
+        isInIteration: true
+        isInLoop: false
+        iteration_id: '1789719723635'
+        outputs:
+          item:
+            children: null
+            type: object
+        selected: false
+        title: 数据组织
+        type: code
+        variables:
+        - value_selector:
+          - '1789719748323'
+          - json
+          value_type: array[object]
+          variable: result
+        - value_selector:
+          - '1789719723635'
+          - item
+          value_type: string
+          variable: query
+      height: 52
+      id: '1789723532047'
+      parentId: '1789719723635'
+      position:
+        x: 406.87763442122923
+        y: 103.34424345428141
+      positionAbsolute:
+        x: 1357.5069157964622
+        y: 399.2963220521058
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "from typing import List, Dict, Any\n\ndef main(iteration_results: List[Dict[str,\
+          \ Any]]) -> dict:\n    if not iteration_results:\n        return {\n   \
+          \         \"total_context\": \"未获取到任何检索数据\"\n        }\n\n    merged_sections\
+          \ = []\n    global_index = 1\n\n    # 遍历每个子问题的检索结果\n    for q_idx, item\
+          \ in enumerate(iteration_results, start=1):\n        query = item.get(\"\
+          query\", f\"问题 {q_idx}\")\n        \n        # 建立当前子问题的全局参考序号映射\n      \
+          \  section_lines = [f\"### 子任务 {q_idx}：{query}\"]\n        \n        # 附带当前子问题检索到的摘要正文\n\
+          \        sub_content = item.get(\"sub_context\", \"\")\n        section_lines.append(f\"\
+          检索摘要:\\n{sub_content}\")\n        \n        merged_sections.append(\"\\\
+          n\".join(section_lines))\n\n    # 产出最终全量 Prompt 文本与去重/扁平化的参考资料列表\n    return\
+          \ {\n        \"total_context\": \"\\n\\n---\\n\\n\".join(merged_sections)\n\
+          \    }"
+        code_language: python3
+        outputs:
+          total_context:
+            children: null
+            type: string
+        selected: false
+        title: 全局数据汇总
+        type: code
+        variables:
+        - value_selector:
+          - '1789719723635'
+          - output
+          value_type: array[object]
+          variable: iteration_results
+      height: 52
+      id: '1789727781161'
+      position:
+        x: 1722.2269590989326
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 1722.2269590989326
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.3
+            thinking: true
+          mode: chat
+          name: deepseek-v4-flash
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: f6111979-aa03-48f3-9c73-42685d6c22a1
+          role: system
+          text: "# Role\n你是一名顶尖的行业战略分析师与深度研究专家（Lead Research Analyst）。你的专长是将离散、多维度的检索碎片与子领域研究成果，合成逻辑严密、洞察深刻、具备出版级水准的专业深度研究报告（Deep\
+            \ Research Report）。\n\n# Background & Objective\n用户提出了一个核心研究议题，系统已将其拆解为多个子课题并分别完成网络检索与要点总结。你需要站在全局视角，对这些碎片化的资料进行交叉比对、提炼与重组，回答用户的初始问题，形成一份系统化的深度报告。\n\
+            \n# Input Context\n- **用户初始研究问题**：{{#1789719349544.topic#}}\n- **各子课题研究检索汇总结果（含来源信息与对应链接）**：{{#1789727781161.total_context#}}\n\
+            - 当前时间：{{#1789730177090.text#}}\n# Core Principles (执行原则)\n1. **严格事实锚定\
+            \ (Grounding)**：\n   报告中所有的核心论点、行业事实、趋势预测，尤其是关键量化指标（如增长率、时间节点、算力规模等），必须完全基于上方提供的参考资料。严禁脱离上下文捏造未验证的事实或数据。\n\
+            2. **综合重构而非机械拼接 (Synthesis over Concatenation)**：\n   不得简单按照“子课题 1、子课题\
+            \ 2、子课题 3”进行模块流水账堆砌。必须按照问题内在的商业与技术逻辑重新编排篇章（例如：从底层驱动力到场景落地，再到行业瓶颈与未来推演）。\n\
+            3. **辨析与交叉验证 (Conflict Resolution)**：\n   若不同资料之间出现观点分歧或数据差异，应客观呈现多方视角的论据与侧重点。\n\
+            4. **正文即时超链接引用 (In-text Markdown Links)**：\n   - **无需在报告末尾单设“参考资料”或“参考文献”章节**。\n\
+            \   - 凡是在正文中引用了参考资料的数据、案例、预测或关键观点，**必须直接使用标准 Markdown 链接语法**将对应来源的 URL\
+            \ 嵌入到当前句子或关键词中。\n   - 引用样式示例：\n     - 直接内嵌名称：`根据 [中研普华行业报告](https://...)\
+            \ 的预测，2025年智能体将全面接管企业流程。`\n     - 或数字角标链接：`预计国内智能算力规模将突破 1000 EFLOPS [[1]](https://...)。`\n\
+            \   - **链接必须严格使用输入资料中真实提供的原始 URL**，绝对禁止捏造不存在或空泛的网址。\n\n# Report Structure\
+            \ (报告架构要求)\n报告采用层级清晰的 Markdown 格式输出：\n\n## 1. 核心摘要 (Executive Summary)\n\
+            用 1~2 段精炼语言提炼整个调研议题的核心发现、关键结论与未来驱动力，重点事实直接附带出处链接。\n\n## 2. 深度分析与关键发现 (Key\
+            \ Findings & Deep Dive)\n根据议题实际内容，自主组织 2~4 个具备业务深度的逻辑模块（使用二级/三级标题展开）：\n\
+            - 深度拆解核心技术突破与业务落地路径；\n- 结合资料中的具体实践与数据指标展开，重要数据处必须保留超链接引用；\n- 善用对比表格梳理关键技术、产品范式或商业模式的异同。\n\
+            \n## 3. 发展挑战与未来展望 (Challenges & Outlook)\n- 提炼行业面临的核心瓶颈与落地阻据（如算力能耗、商业变现、合规伦理等）；\n\
+            - 梳理未来 1~3 年的演进路径与趋势预测，关键预测附带原资料链接。\n\n## 4. 结论与行动建议 (Conclusions & Actionable\
+            \ Advice)\n为关注该议题的从业者、研发人员或决策层提供 2~3 条具有实操价值的策略建议。\n\n# Output Style\n\
+            - 语言专业、中立、客观，避免主观臆断与空洞套话。\n- 重点突出，行文紧凑，段落清晰，善用加粗、无序列表和 Markdown 表格增强可读性。"
+        reasoning_format: separated
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        structured_output_enabled: true
+        title: 终点汇总
+        type: llm
+        vision:
+          enabled: false
+      height: 118
+      id: '1789727908758'
+      position:
+        x: 1993.4489670466437
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 1993.4489670466437
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        is_team_authorization: true
+        paramSchemas:
+        - auto_generate: null
+          default: '%Y-%m-%d %H:%M:%S'
+          form: form
+          human_description:
+            en_US: Time format in strftime standard.
+            ja_JP: Time format in strftime standard.
+            pt_BR: Time format in strftime standard.
+            zh_Hans: strftime 标准的时间格式。
+          input_schema: null
+          label:
+            en_US: Format
+            ja_JP: Format
+            pt_BR: Format
+            zh_Hans: 格式
+          llm_description: null
+          max: null
+          min: null
+          multiple: false
+          name: format
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: UTC
+          form: form
+          human_description:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          input_schema: null
+          label:
+            en_US: Timezone
+            ja_JP: Timezone
+            pt_BR: Timezone
+            zh_Hans: 时区
+          llm_description: null
+          max: null
+          min: null
+          multiple: false
+          name: timezone
+          options:
+          - icon: null
+            label:
+              en_US: UTC
+              ja_JP: UTC
+              pt_BR: UTC
+              zh_Hans: UTC
+            value: UTC
+          - icon: null
+            label:
+              en_US: America/New_York
+              ja_JP: America/New_York
+              pt_BR: America/New_York
+              zh_Hans: 美洲/纽约
+            value: America/New_York
+          - icon: null
+            label:
+              en_US: America/Los_Angeles
+              ja_JP: America/Los_Angeles
+              pt_BR: America/Los_Angeles
+              zh_Hans: 美洲/洛杉矶
+            value: America/Los_Angeles
+          - icon: null
+            label:
+              en_US: America/Chicago
+              ja_JP: America/Chicago
+              pt_BR: America/Chicago
+              zh_Hans: 美洲/芝加哥
+            value: America/Chicago
+          - icon: null
+            label:
+              en_US: America/Sao_Paulo
+              ja_JP: America/Sao_Paulo
+              pt_BR: América/São Paulo
+              zh_Hans: 美洲/圣保罗
+            value: America/Sao_Paulo
+          - icon: null
+            label:
+              en_US: Asia/Shanghai
+              ja_JP: Asia/Shanghai
+              pt_BR: Asia/Shanghai
+              zh_Hans: 亚洲/上海
+            value: Asia/Shanghai
+          - icon: null
+            label:
+              en_US: Asia/Ho_Chi_Minh
+              ja_JP: Asia/Ho_Chi_Minh
+              pt_BR: Ásia/Ho Chi Minh
+              zh_Hans: 亚洲/胡志明市
+            value: Asia/Ho_Chi_Minh
+          - icon: null
+            label:
+              en_US: Asia/Tokyo
+              ja_JP: Asia/Tokyo
+              pt_BR: Asia/Tokyo
+              zh_Hans: 亚洲/东京
+            value: Asia/Tokyo
+          - icon: null
+            label:
+              en_US: Asia/Dubai
+              ja_JP: Asia/Dubai
+              pt_BR: Asia/Dubai
+              zh_Hans: 亚洲/迪拜
+            value: Asia/Dubai
+          - icon: null
+            label:
+              en_US: Asia/Kolkata
+              ja_JP: Asia/Kolkata
+              pt_BR: Asia/Kolkata
+              zh_Hans: 亚洲/加尔各答
+            value: Asia/Kolkata
+          - icon: null
+            label:
+              en_US: Asia/Seoul
+              ja_JP: Asia/Seoul
+              pt_BR: Asia/Seoul
+              zh_Hans: 亚洲/首尔
+            value: Asia/Seoul
+          - icon: null
+            label:
+              en_US: Asia/Singapore
+              ja_JP: Asia/Singapore
+              pt_BR: Asia/Singapore
+              zh_Hans: 亚洲/新加坡
+            value: Asia/Singapore
+          - icon: null
+            label:
+              en_US: Europe/London
+              ja_JP: Europe/London
+              pt_BR: Europe/London
+              zh_Hans: 欧洲/伦敦
+            value: Europe/London
+          - icon: null
+            label:
+              en_US: Europe/Berlin
+              ja_JP: Europe/Berlin
+              pt_BR: Europe/Berlin
+              zh_Hans: 欧洲/柏林
+            value: Europe/Berlin
+          - icon: null
+            label:
+              en_US: Europe/Moscow
+              ja_JP: Europe/Moscow
+              pt_BR: Europe/Moscow
+              zh_Hans: 欧洲/莫斯科
+            value: Europe/Moscow
+          - icon: null
+            label:
+              en_US: Australia/Sydney
+              ja_JP: Australia/Sydney
+              pt_BR: Australia/Sydney
+              zh_Hans: 澳大利亚/悉尼
+            value: Australia/Sydney
+          - icon: null
+            label:
+              en_US: Pacific/Auckland
+              ja_JP: Pacific/Auckland
+              pt_BR: Pacific/Auckland
+              zh_Hans: 太平洋/奥克兰
+            value: Pacific/Auckland
+          - icon: null
+            label:
+              en_US: Africa/Cairo
+              ja_JP: Africa/Cairo
+              pt_BR: Africa/Cairo
+              zh_Hans: 非洲/开罗
+            value: Africa/Cairo
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: select
+        params:
+          format: ''
+          timezone: ''
+        plugin_id: null
+        plugin_unique_identifier: ''
+        provider_icon: https://cloud.dify.ai/console/api/workspaces/current/tool-provider/builtin/time/icon
+        provider_id: time
+        provider_name: time
+        provider_show_name: 时间
+        provider_type: builtin
+        selected: false
+        title: 获取当前时间
+        tool_configurations:
+          format:
+            type: mixed
+            value: '%Y-%m-%d %H:%M:%S'
+          timezone:
+            type: constant
+            value: UTC
+        tool_description: 一个用于获取当前时间的工具。
+        tool_label: 获取当前时间
+        tool_name: current_time
+        tool_node_version: '2'
+        tool_parameters: {}
+        type: tool
+      height: 114
+      id: '1789730177090'
+      position:
+        x: 159.9975693265477
+        y: 295.95207859782437
+      positionAbsolute:
+        x: 159.9975693265477
+        y: 295.95207859782437
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -563.395821022601
+      y: 62.842808473527384
+      zoom: 0.6358460651808351
+  rag_pipeline_variables: []

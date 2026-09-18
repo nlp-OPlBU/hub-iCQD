@@ -1,0 +1,325 @@
+app:
+  description: 根据用户输入，分析用户情感，如果是正向情感，输出-希望你明天也很开心，如果是负面情感，则结合 AI 给出建议。
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  icon_type: emoji
+  mode: advanced-chat
+  name: lzz-情感分析助手
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.2.21@d467c6df6876dc5e70ad0b10c14631656ebbc904347eadf48e95b4fca7eda001
+    version: null
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 1789696900584-1-1789697449862-target
+      selected: false
+      source: '1789696900584'
+      sourceHandle: '1'
+      target: '1789697449862'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: llm
+      id: 1789696900584-2-1789697542468-target
+      selected: false
+      source: '1789696900584'
+      sourceHandle: '2'
+      target: '1789697542468'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 1789696900584-1789697320215-answer-target
+      selected: false
+      source: '1789696900584'
+      sourceHandle: '1789697320215'
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1789697542468-source-1789697945990-target
+      selected: false
+      source: '1789697542468'
+      sourceHandle: source
+      target: '1789697945990'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: question-classifier
+      id: 1789696845584-source-1789696900584-target
+      source: '1789696845584'
+      sourceHandle: source
+      target: '1789696900584'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 用户输入
+        type: start
+        variables: []
+      height: 73
+      id: '1789696845584'
+      position:
+        x: 54.24032700842554
+        y: 256.24032700842577
+      positionAbsolute:
+        x: 54.24032700842554
+        y: 256.24032700842577
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: 无法从已知信息中判断情感
+        selected: false
+        title: 中性情感回复
+        type: answer
+        variables: []
+      height: 100
+      id: answer
+      position:
+        x: 757
+        y: 604.0356989244357
+      positionAbsolute:
+        x: 757
+        y: 604.0356989244357
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        classes:
+        - id: '1'
+          label: Positive
+          name: '用户表达开心、喜悦、成就感、感恩、期待、赞美等正面情绪。
+
+            示例："今天代码终于跑通了，太棒了！"、"拿到了满意的 Offer，心情极好！"'
+        - id: '2'
+          label: Negative
+          name: '用户表达沮丧、焦虑、疲惫、愤怒、迷茫、无助、自责、受挫等负面情绪。
+
+            示例："天天加班改 Bug，心态崩了。"、"面试又被挂了，感觉自己好失败。"'
+        - id: '1789697320215'
+          label: Neutral
+          name: '用户仅进行客观事实陈述、技术咨询、工具询问或无明显情绪波动。
+
+            示例："Dify 支持哪些向量数据库？"、"明天周五。"'
+        desc: 你是一个敏锐的情感分析与意图识别专家（Sentiment Classifier）。你的任务是根据用户的输入，精准判定其情感倾向。
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v4.1-flash
+          provider: langgenius/tongyi/tongyi
+        query_variable_selector:
+        - sys
+        - query
+        selected: false
+        title: 情感分类器
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 296
+      id: '1789696900584'
+      position:
+        x: 424.32889998452913
+        y: 303
+      positionAbsolute:
+        x: 424.32889998452913
+        y: 303
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: 希望你明天也很开心。
+        selected: false
+        title: 正向情感回复
+        type: answer
+        variables: []
+      height: 100
+      id: '1789697449862'
+      position:
+        x: 757
+        y: 303
+      positionAbsolute:
+        x: 757
+        y: 303
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        default_value:
+        - key: text
+          type: string
+          value: 404 Error
+        error_strategy: default-value
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: true
+            size: 50
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v4.1-flash
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: f7a98be9-0dc0-4965-8790-65f5fd11241e
+          role: system
+          text: '# 角色
+
+            你是一位善解人意的成长顾问与倾听者。
+
+            # 任务
+
+            用户在此轮对话中表达了负面情绪与困扰。请仔细阅读用户提出的问题与情绪点，完成以下任务：
+
+            1. **同理与接纳**：简短认可对方的情绪，表达理解，不要直接讲大道理。
+
+            2. **困扰拆解**：针对用户描述的具体事件进行客观分析，帮其减轻自责感。
+
+            3. **行动建议**：给出 2~3 条可落地的缓释或解决措施。
+
+            # 约/束
+
+            - 紧密围绕用户当轮提到的具体事件展开，避免泛泛而谈。
+
+            - 保持语气温和、真诚，篇幅适中。'
+        reasoning_format: separated
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 1000
+        selected: false
+        structured_output_enabled: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 153
+      id: '1789697542468'
+      position:
+        x: 757
+        y: 420
+      positionAbsolute:
+        x: 757
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1789697542468.text#}}'
+        selected: false
+        title: 负面情感回复
+        type: answer
+        variables: []
+      height: 103
+      id: '1789697945990'
+      position:
+        x: 1064.784120716817
+        y: 420
+      positionAbsolute:
+        x: 1064.784120716817
+        y: 420
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -4.539369384091515
+      y: -12.196457162617264
+      zoom: 0.5969542254359199
+  rag_pipeline_variables: []
