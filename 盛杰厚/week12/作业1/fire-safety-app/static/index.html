@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1a237e" />
+<title>楼道消防安全风险识别</title>
+<style>
+  :root {
+    --primary: #1a237e;
+    --primary-light: #3949ab;
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --text: #212121;
+    --muted: #757575;
+    --border: #e3e7f0;
+    --radius: 16px;
+    --shadow: 0 8px 24px rgba(26, 35, 126, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI",
+      "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #fff;
+    padding: 22px 20px 20px;
+    padding-top: calc(22px + env(safe-area-inset-top));
+    text-align: center;
+  }
+  .header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+  .header p { margin: 6px 0 0; font-size: 13px; opacity: 0.85; }
+
+  .container {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 18px 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .action-btn:active { transform: scale(0.97); }
+  .action-btn .icon { font-size: 30px; line-height: 1; }
+  .action-btn.primary { color: var(--primary); }
+  .action-btn.ghost { color: var(--muted); }
+
+  .preview-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .preview-card h2 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .preview-frame {
+    width: 100%;
+    min-height: 180px;
+    border-radius: 12px;
+    border: 2px dashed var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #fafbff;
+    color: var(--muted);
+    font-size: 14px;
+    position: relative;
+  }
+  .preview-frame img {
+    width: 100%;
+    max-height: 380px;
+    object-fit: contain;
+    display: block;
+  }
+  .preview-frame .placeholder { padding: 24px; text-align: center; line-height: 1.6; }
+
+  .analyze-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #e53935 0%, #f44336 100%);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(229, 57, 53, 0.3);
+    transition: transform 0.1s ease, opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .analyze-btn:active { transform: scale(0.98); }
+  .analyze-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .analyze-btn .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.5);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -2px;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-top: 16px;
+    display: none;
+    border-left: 6px solid var(--muted);
+  }
+  .result-card.show { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .risk-badge {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 999px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .risk-desc { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+  .risk-reason {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    background: #fafbff;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .risk-reason b { color: var(--primary); }
+
+  .error-card {
+    background: #fff3f2;
+    border: 1px solid #ffcdc9;
+    color: #b71c1c;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    display: none;
+  }
+  .error-card.show { display: block; }
+
+  .hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 18px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>楼道消防安全风险识别</h1>
+    <p>拍照或上传图片，AI 实时判断消防隐患等级</p>
+  </div>
+
+  <div class="container">
+    <div class="actions">
+      <button class="action-btn primary" id="btn-capture">
+        <span class="icon">📷</span>
+        <span>拍照</span>
+      </button>
+      <button class="action-btn ghost" id="btn-upload">
+        <span class="icon">🖼️</span>
+        <span>从相册选择</span>
+      </button>
+    </div>
+
+    <!-- 拍照：capture="environment" 让手机直接打开后置摄像头 -->
+    <input type="file" id="input-capture" accept="image/*" capture="environment" hidden />
+    <input type="file" id="input-upload" accept="image/*" hidden />
+
+    <div class="preview-card">
+      <h2>待识别图片</h2>
+      <div class="preview-frame" id="preview-frame">
+        <div class="placeholder" id="placeholder">尚未选择图片<br />点击上方「拍照」或「从相册选择」</div>
+        <img id="preview-img" alt="预览" hidden />
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="btn-analyze" disabled>
+      <span id="btn-analyze-text">开始识别</span>
+    </button>
+
+    <div class="result-card" id="result-card">
+      <span class="risk-badge" id="risk-badge">—</span>
+      <p class="risk-desc" id="risk-desc"></p>
+      <div class="risk-reason" id="risk-reason"></div>
+    </div>
+
+    <div class="error-card" id="error-card"></div>
+
+    <p class="hint">提示：请在手机浏览器中打开，通过局域网访问本机 IP（如 http://192.168.x.x:8000），<br />点击「拍照」即可调用手机后置摄像头。</p>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // 与后端保持一致的风险配色
+  var RISK_COLORS = {
+    "高风险": "#d32f2f",
+    "中风险": "#f57c00",
+    "低风险": "#fbc02d",
+    "无风险": "#388e3c",
+    "非楼道": "#78909c",
+  };
+
+  var btnCapture = document.getElementById("btn-capture");
+  var btnUpload = document.getElementById("btn-upload");
+  var inputCapture = document.getElementById("input-capture");
+  var inputUpload = document.getElementById("input-upload");
+  var btnAnalyze = document.getElementById("btn-analyze");
+  var btnAnalyzeText = document.getElementById("btn-analyze-text");
+  var previewFrame = document.getElementById("preview-frame");
+  var placeholder = document.getElementById("placeholder");
+  var previewImg = document.getElementById("preview-img");
+  var resultCard = document.getElementById("result-card");
+  var riskBadge = document.getElementById("risk-badge");
+  var riskDesc = document.getElementById("risk-desc");
+  var riskReason = document.getElementById("risk-reason");
+  var errorCard = document.getElementById("error-card");
+
+  var currentFile = null;
+
+  btnCapture.addEventListener("click", function () { inputCapture.click(); });
+  btnUpload.addEventListener("click", function () { inputUpload.click(); });
+
+  inputCapture.addEventListener("change", function () { handleFile(this.files[0]); });
+  inputUpload.addEventListener("change", function () { handleFile(this.files[0]); });
+
+  btnAnalyze.addEventListener("click", analyze);
+
+  function handleFile(file) {
+    if (!file) return;
+    // 简单校验图片类型
+    if (!file.type || file.type.indexOf("image/") !== 0) {
+      showError("请选择图片文件（jpg/png/webp 等）。");
+      return;
+    }
+    currentFile = file;
+    var url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.hidden = false;
+    placeholder.hidden = true;
+    btnAnalyze.disabled = false;
+    hideResult();
+    hideError();
+    // 释放之前的 object URL
+    previewImg.onload = function () {};
+  }
+
+  function analyze() {
+    if (!currentFile) return;
+
+    setLoading(true);
+    hideResult();
+    hideError();
+
+    var form = new FormData();
+    form.append("file", currentFile, currentFile.name || "photo.jpg");
+
+    fetch("/api/analyze", { method: "POST", body: form })
+      .then(function (resp) {
+        return resp.json().then(function (data) {
+          if (!resp.ok) {
+            var detail = (data && data.detail) ? data.detail : ("请求失败（" + resp.status + "）");
+            throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+          }
+          return data;
+        });
+      })
+      .then(function (data) {
+        showResult(data);
+      })
+      .catch(function (err) {
+        showError(err.message || "识别失败，请稍后重试。");
+      })
+      .finally(function () {
+        setLoading(false);
+      });
+  }
+
+  function showResult(data) {
+    var risk = data.risk || "非楼道";
+    var color = RISK_COLORS[risk] || "#78909c";
+    riskBadge.textContent = risk;
+    riskBadge.style.background = color;
+    resultCard.style.borderLeftColor = color;
+
+    var level = data.level || {};
+    riskDesc.textContent = level.desc || "";
+    riskReason.innerHTML = "<b>判断依据：</b>" + escapeHtml(data.reason || "无");
+    resultCard.classList.add("show");
+  }
+
+  function hideResult() { resultCard.classList.remove("show"); }
+
+  function showError(msg) {
+    errorCard.textContent = msg;
+    errorCard.classList.add("show");
+  }
+  function hideError() { errorCard.classList.remove("show"); }
+
+  function setLoading(loading) {
+    btnAnalyze.disabled = loading || !currentFile;
+    if (loading) {
+      btnAnalyzeText.innerHTML = '<span class="spinner"></span>识别中…';
+    } else {
+      btnAnalyzeText.textContent = "开始识别";
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+})();
+</script>
+</body>
+</html>
