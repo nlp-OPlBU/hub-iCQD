@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163f35">
+  <meta name="description" content="拍摄或上传楼道照片，识别可见消防隐患及风险等级。">
+  <title>楼道消防巡检 · 第12周作业</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到巡检区域</a>
+<header class="topbar">
+  <a class="brand" href="/" aria-label="楼道消防巡检首页"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 4-5 7-8 9-3-2-8-5-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg></span><span>楼道消防巡检<small>CORRIDOR SAFETY</small></span></a>
+  <span class="course-tag">王鑫炜 / 第12周作业</span>
+</header>
+<main id="main">
+  <div class="intro"><p class="eyebrow">MULTIMODAL INSPECTION / 01</p><h1>拍一张，检查楼道里的隐患。</h1><p>关注通道堆物、可燃物与充电风险。拍摄全景，让通行区域和堆放物完整入镜。</p></div>
+  <div class="workspace">
+    <section class="panel capture-panel" aria-labelledby="capture-title">
+      <div class="panel-heading"><h2 id="capture-title"><span class="step">01</span> 采集现场照片</h2><span class="muted">JPEG · PNG · WebP</span></div>
+      <div class="viewfinder" id="viewfinder">
+        <div class="empty" id="empty"><svg class="camera-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M10 20h12l5-7h10l5 7h12v32H10Z"/><circle cx="32" cy="35" r="10"/></svg><strong>从一张清晰的现场照片开始</strong><span>可使用手机后置摄像头，或上传已有照片</span></div>
+        <video id="video" autoplay muted playsinline hidden aria-label="摄像头实时预览"></video>
+        <img id="preview" hidden alt="待识别的楼道照片">
+        <span id="preview-tag" class="preview-tag" hidden>待识别照片</span>
+      </div>
+      <div class="capture-actions">
+        <button id="open-camera" class="secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h5l2-3h4l2 3h5v13H3Z"/><circle cx="12" cy="13" r="4"/></svg>打开摄像头</button>
+        <button id="take-photo" class="secondary" type="button" hidden>拍摄这一张</button>
+        <button id="stop-camera" class="quiet" type="button" hidden>关闭摄像头</button>
+        <button id="phone-camera" class="secondary" type="button">手机拍照</button>
+        <button id="upload" class="quiet" type="button">上传图片</button>
+        <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        <input id="capture-input" type="file" accept="image/*" capture="environment" hidden>
+      </div>
+      <p class="file-meta" id="file-meta">单张不超过 10 MB · 图片仅用于本次识别</p>
+      <p class="inline-message" id="camera-message" hidden></p>
+      <button class="primary" id="analyze" type="button" disabled><span id="analyze-text">开始风险识别</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+      <p id="error" class="error" role="alert" hidden></p>
+      <p id="connection" class="connection" role="status">正在读取模型配置…</p>
+    </section>
+    <section class="panel result-panel" aria-labelledby="result-title" aria-busy="false">
+      <div class="panel-heading"><h2 id="result-title"><span class="step">02</span> 查看识别结果</h2><span class="live-label"><i aria-hidden="true"></i>按照片判断</span></div>
+      <div id="result-empty" class="result-empty"><span class="outline-shield" aria-hidden="true">✓</span><h3>等待现场照片</h3><p>结果将展示风险等级、可见证据和处理建议。</p></div>
+      <div id="result" hidden>
+        <div id="risk-card" class="risk-card"><p class="eyebrow" id="risk-caption">本次识别</p><h3 id="risk-label"></h3><p id="reason"></p></div>
+        <div class="result-section"><h3>可见证据</h3><ul id="evidence"></ul></div>
+        <div class="result-section" id="uncertainties-section" hidden><h3>需要核实</h3><ul id="uncertainties"></ul></div>
+        <div class="result-section"><h3>处理建议</h3><ol id="actions"></ol></div>
+        <p id="result-meta" class="muted"></p>
+      </div>
+      <p class="scope-note">识别结果仅覆盖照片可见范围。无法判断的情况会提示补拍或人工复核。</p>
+      <span id="status-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></span>
+    </section>
+  </div>
+  <section class="guide" aria-labelledby="guide-title"><div><p class="eyebrow">ASSESSMENT RULES</p><h2 id="guide-title">五类结果，一套判断标准。</h2></div><div class="levels">
+    <div class="level high"><span>01 / 高风险</span><p>电动车、电瓶、飞线充电等起火元素</p></div>
+    <div class="level medium"><span>02 / 中风险</span><p>严重堵塞通道，或堆放大量可燃物</p></div>
+    <div class="level low"><span>03 / 低风险</span><p>少量堆物，尚未严重影响通行</p></div>
+    <div class="level none"><span>04 / 无风险</span><p>可见范围内楼道干净，无堆放物</p></div>
+    <div class="level non_corridor"><span>05 / 非楼道</span><p>图片内容与楼道无关</p></div>
+  </div></section>
+</main>
+<footer><span>第12周作业 · 多模态内容理解</span><span>FastAPI + Qwen-VL</span></footer>
+</body>
+</html>

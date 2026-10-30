@@ -1,0 +1,10 @@
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+python-multipart>=0.0.20,<1
+Pillow>=11,<13
+openai>=1.75,<3
+langchain>=1.0,<2
+langchain-openai>=1.0,<2
+python-dotenv>=1.0,<2
+pytest>=8,<10
+httpx>=0.28,<1
