@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sql-agent-lc"
+version = "0.1.0"
+description = "Read-only Chinook SQL question-answering agent (LangChain)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "langchain==1.4.7",
+    "langgraph==1.2.17",
+    "langchain-openai==1.7.2",
+    "langsmith>=0.14.14",
+    "pydantic==2.13.4",
+    "python-dotenv==1.2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.1",
+]
+
+[project.scripts]
+sql-agent-lc = "langchain_sql_agent.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: tests that call a real model provider",
+]

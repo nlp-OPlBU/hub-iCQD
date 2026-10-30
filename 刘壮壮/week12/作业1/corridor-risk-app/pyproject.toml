@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "corridor-risk-app"
+version = "1.0.0"
+description = "基于 Streamlit 和 DeepSeek V4.1 Flash 的楼道消防风险辅助识别 Demo"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit>=1.54,<2.0",
+    "openai>=1.68,<3.0",
+    "Pillow>=11.1,<13.0",
+    "pydantic>=2.10,<3.0",
+    "python-dotenv>=1.0,<2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<10.0",
+]
+
+[tool.setuptools]
+packages = ["backend"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
