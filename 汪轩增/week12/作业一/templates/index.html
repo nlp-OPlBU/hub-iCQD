@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>楼道消防安全隐患识别</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>楼道消防安全隐患识别</h1>
+      <p class="subtitle">拍照或上传图片，实时判断楼道内是否存在消防安全隐患</p>
+    </header>
+
+    <!-- 摄像头区域 -->
+    <section class="panel">
+      <div class="camera-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas" hidden></canvas>
+        <img id="preview" class="hidden" alt="预览图" />
+        <div id="placeholder" class="placeholder">
+          <span>点击下方「打开摄像头」开始实时取景</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="btn-open" class="btn">打开摄像头</button>
+        <button id="btn-capture" class="btn primary" disabled>拍照</button>
+        <label class="btn" for="file-input">上传图片</label>
+        <input id="file-input" type="file" accept="image/*" hidden />
+        <button id="btn-reset" class="btn ghost" disabled>清空</button>
+      </div>
+    </section>
+
+    <!-- 识别结果 -->
+    <section class="panel">
+      <button id="btn-analyze" class="btn primary block" disabled>开始识别</button>
+      <div id="result" class="result hidden"></div>
+    </section>
+
+    <footer class="footer">
+      结果仅供参考，请以专业消防检查意见为准。
+    </footer>
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
