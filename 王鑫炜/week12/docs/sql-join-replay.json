@@ -1,0 +1,84 @@
+{
+  "question": "购买曲目数量最多的前五个音乐流派是什么？",
+  "mode": "offline_replay",
+  "status": "ok",
+  "answer": "已按发票明细的 Quantity 汇总销量，并通过 tracks 关联流派。具体前五名及数量见 queries 中的真实结果。",
+  "selected_tables": [
+    "genres",
+    "invoice_items",
+    "tracks"
+  ],
+  "queries": [
+    {
+      "sql": "SELECT g.Name AS genre, SUM(ii.Quantity) AS quantity FROM genres AS g JOIN tracks AS t ON t.GenreId = g.GenreId JOIN invoice_items AS ii ON ii.TrackId = t.TrackId GROUP BY g.GenreId, g.Name ORDER BY quantity DESC, g.GenreId ASC LIMIT 5",
+      "result": {
+        "columns": [
+          "genre",
+          "quantity"
+        ],
+        "rows": [
+          [
+            "Rock",
+            835
+          ],
+          [
+            "Latin",
+            386
+          ],
+          [
+            "Metal",
+            264
+          ],
+          [
+            "Alternative & Punk",
+            244
+          ],
+          [
+            "Jazz",
+            80
+          ]
+        ],
+        "returned_rows": 5,
+        "truncated": false,
+        "row_limit": 50
+      }
+    }
+  ],
+  "trace": [
+    {
+      "stage": "database_parse",
+      "tables": 11
+    },
+    {
+      "stage": "list_tables",
+      "ok": true
+    },
+    {
+      "stage": "table_select",
+      "ok": true,
+      "tables": [
+        "genres",
+        "invoice_items",
+        "tracks"
+      ]
+    },
+    {
+      "stage": "sql_validate",
+      "ok": true,
+      "sql": "SELECT g.Name AS genre, SUM(ii.Quantity) AS quantity FROM genres AS g JOIN tracks AS t ON t.GenreId = g.GenreId JOIN invoice_items AS ii ON ii.TrackId = t.TrackId GROUP BY g.GenreId, g.Name ORDER BY quantity DESC, g.GenreId ASC LIMIT 5"
+    },
+    {
+      "stage": "sql_execute",
+      "ok": true,
+      "sql": "SELECT g.Name AS genre, SUM(ii.Quantity) AS quantity FROM genres AS g JOIN tracks AS t ON t.GenreId = g.GenreId JOIN invoice_items AS ii ON ii.TrackId = t.TrackId GROUP BY g.GenreId, g.Name ORDER BY quantity DESC, g.GenreId ASC LIMIT 5",
+      "returned_rows": 5,
+      "truncated": false
+    },
+    {
+      "stage": "result_summary",
+      "ok": true
+    }
+  ],
+  "tool_errors": 0,
+  "elapsed_ms": 8.54
+}

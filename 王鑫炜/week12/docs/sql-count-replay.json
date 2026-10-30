@@ -1,0 +1,62 @@
+{
+  "question": "有专辑的艺术家共有多少位？",
+  "mode": "offline_replay",
+  "status": "ok",
+  "answer": "有专辑的艺术家共有 204 位，按 albums.ArtistId 去重统计。",
+  "selected_tables": [
+    "albums"
+  ],
+  "queries": [
+    {
+      "sql": "SELECT COUNT(DISTINCT ArtistId) AS artist_count FROM albums",
+      "result": {
+        "columns": [
+          "artist_count"
+        ],
+        "rows": [
+          [
+            204
+          ]
+        ],
+        "returned_rows": 1,
+        "truncated": false,
+        "row_limit": 50
+      }
+    }
+  ],
+  "trace": [
+    {
+      "stage": "database_parse",
+      "tables": 11
+    },
+    {
+      "stage": "list_tables",
+      "ok": true
+    },
+    {
+      "stage": "table_select",
+      "ok": true,
+      "tables": [
+        "albums"
+      ]
+    },
+    {
+      "stage": "sql_validate",
+      "ok": true,
+      "sql": "SELECT COUNT(DISTINCT ArtistId) AS artist_count FROM albums"
+    },
+    {
+      "stage": "sql_execute",
+      "ok": true,
+      "sql": "SELECT COUNT(DISTINCT ArtistId) AS artist_count FROM albums",
+      "returned_rows": 1,
+      "truncated": false
+    },
+    {
+      "stage": "result_summary",
+      "ok": true
+    }
+  ],
+  "tool_errors": 0,
+  "elapsed_ms": 8.33
+}

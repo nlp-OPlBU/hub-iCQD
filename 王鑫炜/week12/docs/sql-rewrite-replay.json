@@ -1,0 +1,68 @@
+{
+  "question": "商店历史发票总销售额是多少？",
+  "mode": "offline_replay",
+  "status": "ok",
+  "answer": "历史发票总销售额为 2328.60；按 invoices.Total 汇总，数据库未注明币种。",
+  "selected_tables": [
+    "invoices"
+  ],
+  "queries": [
+    {
+      "sql": "SELECT ROUND(SUM(Total), 2) AS revenue FROM invoices",
+      "result": {
+        "columns": [
+          "revenue"
+        ],
+        "rows": [
+          [
+            2328.6
+          ]
+        ],
+        "returned_rows": 1,
+        "truncated": false,
+        "row_limit": 50
+      }
+    }
+  ],
+  "trace": [
+    {
+      "stage": "database_parse",
+      "tables": 11
+    },
+    {
+      "stage": "list_tables",
+      "ok": true
+    },
+    {
+      "stage": "table_select",
+      "ok": true,
+      "tables": [
+        "invoices"
+      ]
+    },
+    {
+      "stage": "sql_validate",
+      "ok": false,
+      "error": "no such column: Amount",
+      "blocked": false
+    },
+    {
+      "stage": "sql_validate",
+      "ok": true,
+      "sql": "SELECT ROUND(SUM(Total), 2) AS revenue FROM invoices"
+    },
+    {
+      "stage": "sql_execute",
+      "ok": true,
+      "sql": "SELECT ROUND(SUM(Total), 2) AS revenue FROM invoices",
+      "returned_rows": 1,
+      "truncated": false
+    },
+    {
+      "stage": "result_summary",
+      "ok": true
+    }
+  ],
+  "tool_errors": 1,
+  "elapsed_ms": 8.27
+}
