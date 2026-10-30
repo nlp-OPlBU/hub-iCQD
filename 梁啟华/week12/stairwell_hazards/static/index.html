@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>楼道消防隐患识别</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 2.5c3.4 3.2 5.6 5.9 5.6 9.2a5.6 5.6 0 0 1-11.2 0c0-1.5.6-2.9 1.7-4.4.5 1.2 1.2 2 2.1 2.4-.2-2.5.5-4.9 1.8-7.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M12 21.5v-4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div class="brand-text">
+          <h1>楼道消防隐患识别</h1>
+          <p>AI 多模态 · 楼道堆物与充电风险实时分级</p>
+        </div>
+      </div>
+      <div class="status" id="status" data-state="loading">
+        <span class="status-dot"></span>
+        <span id="status-text">正在连接服务…</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel panel-input">
+        <div class="panel-head">
+          <h2><span class="step">1</span>上传现场照片</h2>
+          <span class="panel-hint" id="upload-hint">支持 JPG / PNG / WEBP</span>
+        </div>
+
+        <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="点击、拖拽或粘贴上传楼道照片">
+          <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
+          <div class="drop-empty" id="drop-empty">
+            <span class="drop-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none">
+                <rect x="6" y="9" width="36" height="30" rx="4" stroke="currentColor" stroke-width="2"/>
+                <path d="M6 33l9.5-9.5 7.5 7.5 6-6L38 33" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <circle cx="31" cy="18" r="3" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </span>
+            <p class="drop-title">拖拽照片到这里</p>
+            <p class="drop-sub">或 <strong>点击选择文件</strong>，也支持 Ctrl&nbsp;+&nbsp;V 粘贴</p>
+          </div>
+          <figure class="preview" id="preview" hidden>
+            <img id="preview-img" alt="待识别照片预览">
+            <span class="preview-badge" id="preview-badge">待识别</span>
+          </figure>
+        </div>
+
+        <div class="file-row">
+          <span class="file-meta" id="file-meta">尚未选择照片</span>
+          <button class="ghost" id="reset-btn" type="button" hidden>清除</button>
+        </div>
+
+        <div class="model-row">
+          <label for="model-select">识别模型</label>
+          <select id="model-select" aria-label="选择识别模型"></select>
+        </div>
+
+        <button class="primary" id="analyze-btn" type="button" disabled>
+          <span class="btn-spinner" aria-hidden="true"></span>
+          <span id="analyze-text">开始识别</span>
+        </button>
+        <p class="notice" id="config-notice" hidden></p>
+
+        <div class="legend">
+          <h3>分级标准</h3>
+          <ul>
+            <li><span class="tag high">高风险</span>电动车、电瓶、飞线充电等可能起火的元素</li>
+            <li><span class="tag medium">中风险</span>大量堆积物严重影响通行，或成堆纸箱、木质家具等可燃堵塞物</li>
+            <li><span class="tag low">低风险</span>存在楼道堆物现象，但不严重</li>
+            <li><span class="tag none">无风险</span>楼道干净，无堆放物品</li>
+            <li><span class="tag other">非楼道</span>与楼道无关的图片</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel panel-result">
+        <div class="panel-head">
+          <h2><span class="step">2</span>识别结果</h2>
+          <span class="panel-hint" id="result-meta"></span>
+        </div>
+
+        <div class="empty-state" id="empty-state">
+          <span class="empty-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" fill="none">
+              <path d="M32 7l22 9v14c0 13.2-9.3 23.6-22 27-12.7-3.4-22-13.8-22-27V16L32 7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M23.5 36.5l5.5 5.5 11-12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <p class="empty-title">上传照片后开始识别</p>
+          <p class="empty-sub">系统会判断画面是否属于楼道，并给出隐患类型与危险程度</p>
+        </div>
+
+        <div class="loading" id="loading" hidden>
+          <p class="loading-title">正在调用视觉模型分析…</p>
+          <p class="loading-sub">识别楼道场景 → 检测堆积物与充电行为 → 评估风险等级</p>
+          <div class="skeleton"></div>
+          <div class="skeleton short"></div>
+          <div class="skeleton"></div>
+          <p class="loading-time" id="loading-time">已用时 0.0s</p>
+        </div>
+
+        <div class="error-box" id="error-box" hidden>
+          <h3>识别失败</h3>
+          <p id="error-text"></p>
+        </div>
+
+        <div class="result" id="result" hidden aria-live="polite">
+          <div class="result-hero" id="result-hero" data-level="other">
+            <div class="risk-badge" id="risk-badge">待确认</div>
+            <div class="risk-text">
+              <p class="risk-caption">风险等级</p>
+              <p class="risk-desc" id="risk-desc"></p>
+            </div>
+            <div class="risk-score">
+              <p class="score-value" id="score-value">0</p>
+              <p class="score-label">危险度</p>
+            </div>
+          </div>
+          <div class="meter"><span id="meter-fill"></span></div>
+
+          <div class="block">
+            <h3>识别到的隐患</h3>
+            <div class="chips" id="hazard-chips"></div>
+          </div>
+          <div class="block" id="evidence-block">
+            <h3>判断依据</h3>
+            <ul class="evidence" id="evidence-list"></ul>
+          </div>
+          <div class="block advice" id="advice-block">
+            <h3>处置建议</h3>
+            <p id="advice-text"></p>
+          </div>
+          <details class="raw">
+            <summary>查看模型原始输出</summary>
+            <pre id="raw-text"></pre>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <section class="history" id="history-section" hidden>
+      <div class="history-head">
+        <h2>本次识别记录</h2>
+        <span class="panel-hint">点击记录可回看结果</span>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </section>
+
+    <footer class="footer">识别结果由视觉大模型生成，仅作为隐患排查辅助参考，最终处置请以现场核查为准。</footer>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>
