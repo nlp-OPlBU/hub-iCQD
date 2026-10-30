@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>楼道消防隐患识别</title>
+<style>
+  :root {
+    --bg: #0f1420; --card: #1a2132; --border: #2a3450;
+    --text: #e8ecf5; --muted: #8b96b0; --accent: #4f7cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+  }
+  .container { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { text-align: center; padding: 20px 0 24px; }
+  header h1 { font-size: 22px; font-weight: 600; }
+  header p { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  .camera-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .viewport { position: relative; background: #000; aspect-ratio: 4/3; display: flex; align-items: center; justify-content: center; }
+  video, #snapshot { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #snapshot { position: absolute; inset: 0; display: none; }
+  .viewport .placeholder { color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
+
+  .controls { display: flex; gap: 10px; padding: 14px; flex-wrap: wrap; }
+  button {
+    flex: 1; min-width: 120px; padding: 12px 16px; border: none; border-radius: 10px;
+    font-size: 15px; cursor: pointer; transition: opacity .15s, transform .1s;
+  }
+  button:active { transform: scale(.97); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; font-weight: 600; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn-warn { background: #e05d5d; color: #fff; }
+
+  .result-card {
+    margin-top: 16px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; display: none;
+  }
+  .result-card.show { display: block; }
+  .level-badge {
+    display: inline-block; padding: 6px 16px; border-radius: 999px;
+    font-size: 17px; font-weight: 700; letter-spacing: 2px;
+  }
+  .level-high   { background: rgba(224, 74, 74, .18); color: #ff6b6b; border: 1px solid #ff6b6b; }
+  .level-medium { background: rgba(240, 156, 45, .16); color: #f0a13c; border: 1px solid #f0a13c; }
+  .level-low    { background: rgba(240, 210, 45, .14); color: #e8d24a; border: 1px solid #e8d24a; }
+  .level-none   { background: rgba(60, 190, 110, .15); color: #4cd787; border: 1px solid #4cd787; }
+  .level-na     { background: rgba(139, 150, 176, .15); color: #8b96b0; border: 1px solid #8b96b0; }
+  .reason { margin-top: 12px; font-size: 14px; line-height: 1.7; color: var(--text); }
+  .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .error-box { margin-top: 16px; background: rgba(224,74,74,.12); border: 1px solid #ff6b6b; color: #ff9c9c;
+    border-radius: 10px; padding: 12px 14px; font-size: 14px; display: none; }
+
+  .legend { margin-top: 22px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .legend h2 { font-size: 15px; margin-bottom: 10px; }
+  .legend li { list-style: none; font-size: 13px; color: var(--muted); padding: 4px 0; line-height: 1.6; }
+  .legend b { color: var(--text); }
+
+  .history { margin-top: 22px; }
+  .history h2 { font-size: 15px; margin-bottom: 10px; }
+  .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .history-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .history-item img { width: 100%; height: 90px; object-fit: cover; display: block; }
+  .history-item .h-body { padding: 8px 10px; font-size: 12px; }
+  .history-item .h-cat { font-weight: 700; margin-bottom: 2px; }
+  .spinner {
+    display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -3px; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>楼道消防隐患识别</h1>
+    <p>拍摄楼道照片，AI 实时评估消防安全风险等级</p>
+  </header>
+
+  <div class="camera-card">
+    <div class="viewport">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="snapshot" alt="拍摄快照">
+      <div class="placeholder" id="placeholder">正在启动摄像头…<br><small>若无法使用摄像头，可点击下方"上传照片"</small></div>
+    </div>
+    <div class="controls">
+      <button class="btn-primary" id="btnCapture">拍照识别</button>
+      <button class="btn-ghost" id="btnRetake" style="display:none">重新拍摄</button>
+      <button class="btn-ghost" id="btnUpload">上传照片</button>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="result-card" id="resultCard">
+    <span class="level-badge" id="levelBadge"></span>
+    <div class="reason" id="reasonText"></div>
+    <div class="meta" id="metaText"></div>
+  </div>
+
+  <div class="legend">
+    <h2>风险分级标准</h2>
+    <ul>
+      <li><b style="color:#ff6b6b">高风险</b>：楼道中出现电动车、电瓶、飞线充电等可能起火的元素</li>
+      <li><b style="color:#f0a13c">中风险</b>：大量堆积物严重影响通行，或大量纸箱、木质家具等可燃堵塞物</li>
+      <li><b style="color:#e8d24a">低风险</b>：存在楼道堆物现象但不严重</li>
+      <li><b style="color:#4cd787">无风险</b>：楼道干净，无堆放物品</li>
+      <li><b style="color:#8b96b0">非楼道</b>：照片并非楼道场景</li>
+    </ul>
+  </div>
+
+  <div class="history" id="historySection" style="display:none">
+    <h2>识别记录</h2>
+    <div class="history-grid" id="historyGrid"></div>
+  </div>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const snapshot = document.getElementById('snapshot');
+const placeholder = document.getElementById('placeholder');
+const btnCapture = document.getElementById('btnCapture');
+const btnRetake = document.getElementById('btnRetake');
+const btnUpload = document.getElementById('btnUpload');
+const fileInput = document.getElementById('fileInput');
+const resultCard = document.getElementById('resultCard');
+const levelBadge = document.getElementById('levelBadge');
+const reasonText = document.getElementById('reasonText');
+const metaText = document.getElementById('metaText');
+const errorBox = document.getElementById('errorBox');
+const historySection = document.getElementById('historySection');
+const historyGrid = document.getElementById('historyGrid');
+
+const LEVEL_CLASS = { '高风险': 'level-high', '中风险': 'level-medium', '低风险': 'level-low', '无风险': 'level-none', '非楼道': 'level-na' };
+const LEVEL_COLOR = { '高风险': '#ff6b6b', '中风险': '#f0a13c', '低风险': '#e8d24a', '无风险': '#4cd787', '非楼道': '#8b96b0' };
+
+let stream = null;
+let currentImage = null; // dataURL
+
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } }, audio: false
+    });
+    video.srcObject = stream;
+    placeholder.style.display = 'none';
+  } catch (e) {
+    placeholder.innerHTML = '摄像头不可用（需 HTTPS 或 localhost 环境）<br><small>请使用"上传照片"功能</small>';
+  }
+}
+
+function captureFrame() {
+  const canvas = document.createElement('canvas');
+  const w = video.videoWidth || 1280, h = video.videoHeight || 960;
+  const scale = Math.min(1, 1280 / w);
+  canvas.width = w * scale; canvas.height = h * scale;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
+function showSnapshot(dataUrl) {
+  currentImage = dataUrl;
+  snapshot.src = dataUrl;
+  snapshot.style.display = 'block';
+  video.style.display = 'none';
+  btnRetake.style.display = 'inline-block';
+}
+
+function retake() {
+  currentImage = null;
+  snapshot.style.display = 'none';
+  video.style.display = 'block';
+  btnRetake.style.display = 'none';
+  resultCard.classList.remove('show');
+  errorBox.style.display = 'none';
+}
+
+function showError(msg) {
+  errorBox.textContent = msg;
+  errorBox.style.display = 'block';
+}
+
+async function analyze(dataUrl) {
+  btnCapture.disabled = true;
+  btnCapture.innerHTML = '<span class="spinner"></span>识别中…';
+  errorBox.style.display = 'none';
+  const t0 = Date.now();
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: dataUrl })
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || '识别失败');
+    renderResult(data, Date.now() - t0);
+    addHistory(dataUrl, data);
+  } catch (e) {
+    showError('识别失败：' + e.message);
+  } finally {
+    btnCapture.disabled = false;
+    btnCapture.textContent = '拍照识别';
+  }
+}
+
+function renderResult(data, elapsed) {
+  const cls = LEVEL_CLASS[data.category] || 'level-na';
+  levelBadge.className = 'level-badge ' + cls;
+  levelBadge.textContent = data.category;
+  reasonText.textContent = data.reason || '';
+  metaText.textContent = `模型：${data.provider}/${data.model} · 耗时 ${(elapsed/1000).toFixed(1)}s`;
+  resultCard.classList.add('show');
+}
+
+function addHistory(img, data) {
+  historySection.style.display = 'block';
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  const color = LEVEL_COLOR[data.category] || '#8b96b0';
+  item.innerHTML = `<img src="${img}"><div class="h-body"><div class="h-cat" style="color:${color}">${data.category}</div><div style="color:var(--muted)">${new Date().toLocaleTimeString()}</div></div>`;
+  historyGrid.prepend(item);
+}
+
+btnCapture.addEventListener('click', () => {
+  if (currentImage) { analyze(currentImage); return; }
+  if (!stream) { showError('摄像头不可用，请上传照片'); return; }
+  const dataUrl = captureFrame();
+  showSnapshot(dataUrl);
+  analyze(dataUrl);
+});
+btnRetake.addEventListener('click', retake);
+btnUpload.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      // 压缩至最长边 1280，减小请求体积
+      const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale; canvas.height = img.height * scale;
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      showSnapshot(dataUrl);
+      analyze(dataUrl);
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+  fileInput.value = '';
+});
+
+startCamera();
+</script>
+</body>
+</html>
