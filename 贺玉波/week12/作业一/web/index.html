@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>楼道消防隐患识别</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>楼道消防隐患识别</h1>
+    <p class="subtitle">拍照或上传楼道照片，自动判断消防隐患及危险程度</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="stage" id="stage">
+        <video id="video" playsinline autoplay muted></video>
+        <img id="preview" alt="待识别的照片" />
+        <div class="placeholder" id="placeholder">
+          <span class="placeholder-box">暂无照片</span>
+          <span class="placeholder-tip">点击下方按钮拍摄或从相册选择</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <label class="btn btn-primary" for="fileInput">
+          拍摄 / 选择照片
+          <input id="fileInput" type="file" accept="image/*" capture="environment" hidden />
+        </label>
+        <button id="liveBtn" class="btn" type="button">开启实时取景</button>
+        <button id="shotBtn" class="btn btn-primary" type="button" hidden>拍下并识别</button>
+      </div>
+
+      <p class="hint" id="hint">提示：http 访问时用“拍摄 / 选择照片”会直接唤起手机相机；实时取景需要 https 或 localhost。</p>
+    </section>
+
+    <section class="status" id="status" hidden>
+      <span class="spinner"></span>
+      <span id="statusText">正在识别…</span>
+    </section>
+
+    <section class="card result" id="result" hidden>
+      <div class="result-head">
+        <span class="badge" id="riskBadge">待识别</span>
+        <span class="scene" id="riskScene"></span>
+      </div>
+      <p class="scene-desc" id="sceneDesc"></p>
+
+      <div class="block" id="hazardBlock">
+        <h2>隐患元素</h2>
+        <ul class="hazard-list" id="hazardList"></ul>
+      </div>
+
+      <div class="block" id="reasonBlock">
+        <h2>判定理由</h2>
+        <ul class="bullet-list" id="reasonList"></ul>
+      </div>
+
+      <div class="block" id="suggestionBlock">
+        <h2>整改建议</h2>
+        <ul class="bullet-list" id="suggestionList"></ul>
+      </div>
+
+      <div class="block" id="uncertainBlock" hidden>
+        <h2>不确定项</h2>
+        <ul class="bullet-list" id="uncertainList"></ul>
+      </div>
+
+      <div class="meta" id="meta"></div>
+    </section>
+
+    <section class="card history" id="historyWrap" hidden>
+      <h2>最近识别</h2>
+      <ul id="historyList"></ul>
+    </section>
+  </main>
+
+  <footer class="footer">Week12 作业一 · 多模态消防隐患识别 · DeepSeek deepseek-flash</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
