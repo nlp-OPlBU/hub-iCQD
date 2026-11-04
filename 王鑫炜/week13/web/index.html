@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f5">
+  <title>Chinook Query · 数据对话工作台</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 18 0Z"/><path d="M7 9h8M7 13h5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 5v15"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-10M15 5h6v6"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-3-5"/></symbol>
+    <symbol id="i-rank" viewBox="0 0 24 24"><path d="M4 21V11h5v10M9 21V4h6v17M15 21v-7h5v7M2 21h20"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 2 8 3v6c0 5-8 11-8 11S4 16 4 11V5Z"/><path d="m8 11 3 3 5-6"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 7-5 5 5 5m8-10 5 5-5 5M14 4l-4 16"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/></symbol>
+  </svg>
+  <a class="skip" href="#question">跳转到问题输入框</a>
+  <div class="mobile-scrim" id="scrim" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="对话导航">
+    <a class="brand" href="/" aria-label="Chinook Query 首页"><span class="brand-mark"><svg><use href="#i-db"/></svg></span><span>chinook<span class="brand-sub">QUERY WORKSPACE</span></span></a>
+    <button class="new-chat" id="new-chat"><svg><use href="#i-plus"/></svg> 开始新对话 <kbd>新建</kbd></button>
+    <div class="nav-section-label">工作空间</div>
+    <div class="nav-current"><svg><use href="#i-chat"/></svg> 数据对话 <span class="active-dot"></span></div>
+    <button class="nav-button schema-trigger"><svg><use href="#i-db"/></svg> 浏览数据表 <span class="table-number">—</span></button>
+    <div class="nav-section-label recent-label">最近对话</div>
+    <nav id="chat-history" aria-label="最近对话"></nav>
+    <div class="sidebar-bottom"><div class="source-title"><span class="status-dot"></span> Chinook 数据库</div><span>音乐商店示例数据 · 只读访问</span><div class="profile"><span class="avatar">王</span><div>王鑫炜<span>第 13 周 · SQL Agent</span></div><span class="profile-badge">本地</span></div></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <button class="icon-button menu-toggle" id="menu-toggle" aria-label="打开对话导航" aria-controls="sidebar" aria-expanded="false"><svg><use href="#i-menu"/></svg></button>
+      <div class="breadcrumb">数据工作台 <span>/</span> <strong id="chat-title">新对话</strong></div>
+      <div class="top-actions"><span class="connection" id="connection"><span class="status-dot"></span><span>连接中</span></span><span class="mode-badge" id="mode-badge">正在连接</span><button class="icon-button schema-trigger" aria-label="查看数据库表结构"><svg><use href="#i-db"/></svg></button></div>
+    </header>
+    <div class="content-layout">
+      <main class="chat-main" id="main">
+        <div class="conversation-scroll" id="conversation-scroll">
+          <section class="welcome" id="welcome">
+            <div class="intro-mark"><svg><use href="#i-spark"/></svg></div>
+            <div class="eyebrow">YOUR DATA, A CONVERSATION AWAY</div>
+            <h1>让数据，回答你的问题<span>。</span></h1>
+            <p>从一句提问开始，了解销售、客户与音乐。<br>每个回答都有实际查询结果，可查看 SQL、核对数据。</p>
+            <div class="example-heading"><span>试着从这里开始</span><span>CHINOOK / 01</span></div>
+            <div class="example-grid" id="examples"></div>
+            <div class="welcome-foot"><svg><use href="#i-shield"/></svg> 数据库只读访问，查询结果可追溯</div>
+          </section>
+          <div class="messages" id="messages" aria-label="对话记录"></div>
+        </div>
+        <div class="composer-area">
+          <form class="composer" id="chat-form">
+            <div class="composer-label"><label for="question">向数据库提问</label><span>Enter 发送 · Shift + Enter 换行</span></div>
+            <textarea id="question" name="question" rows="2" maxlength="2000" placeholder="例如：消费金额最高的前 3 位客户是谁？" required></textarea>
+            <div class="composer-tools"><span class="source-pill"><svg><use href="#i-db"/></svg> chinook.db</span><label class="repair-option" id="repair-option"><input id="repair-demo" type="checkbox"> 演示自动修复</label><button class="send-button" id="send" type="submit" aria-label="发送问题" disabled><svg><use href="#i-arrow"/></svg></button></div>
+          </form>
+          <p class="composer-note" id="mode-note">正在连接本地查询服务…</p>
+          <div class="sr-only" id="announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+        </div>
+      </main>
+      <aside class="inspector" aria-label="数据库概览与查询详情">
+        <div class="inspector-heading"><span>数据来源</span><span class="small-label">CONNECTED</span></div>
+        <div class="database-card"><div class="db-icon"><svg><use href="#i-db"/></svg></div><strong>Chinook</strong><p>音乐商店数据库</p><div class="db-card-footer"><span class="status-dot"></span> SQLite <span>只读连接</span></div></div>
+        <div class="table-heading">数据表 <span class="table-number">—</span></div>
+        <div id="table-list" class="table-list"></div>
+        <button class="browse-all schema-trigger">浏览全部表结构 <span>↗</span></button>
+        <div class="inspector-divider"></div>
+        <div class="inspector-heading"><span>本次查询</span><span id="run-state" class="small-label">尚未开始</span></div>
+        <ol class="run-steps" id="run-steps"><li class="run-placeholder">发送问题后，在这里查看实际执行进度。</li></ol>
+        <div class="trust-note"><svg><use href="#i-shield"/></svg><div><strong>用结果说话</strong><p>生成的 SQL 会先校验再执行。你可以查看实际 SQL 和返回的数据。</p></div></div>
+      </aside>
+    </div>
+  </div>
+  <dialog id="schema-dialog" aria-labelledby="schema-title"><div class="dialog-heading"><div><span class="eyebrow">DATABASE EXPLORER</span><h2 id="schema-title">Chinook 数据表</h2></div><button class="icon-button" id="close-schema" aria-label="关闭数据表"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">展开表名，查看字段、数据类型和主键。</p><div id="schema-content"></div></dialog>
+</body>
+</html>

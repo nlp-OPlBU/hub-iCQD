@@ -1,0 +1,30 @@
+{
+  "verified_date": "2026-11-04",
+  "provider": "DeepSeek",
+  "model": "deepseek-flash",
+  "real_model_api": true,
+  "passed": true,
+  "turns": [
+    {
+      "turn": 1,
+      "kind": "free_question",
+      "passed": true,
+      "returned_rows": 3,
+      "elapsed": "3845 ms"
+    },
+    {
+      "turn": 2,
+      "kind": "follow_up",
+      "passed": true,
+      "returned_rows": 5,
+      "elapsed": "4232 ms"
+    },
+    {
+      "turn": 3,
+      "kind": "follow_up",
+      "passed": true,
+      "returned_rows": 5,
+      "elapsed": "4186 ms"
+    }
+  ]
+}
