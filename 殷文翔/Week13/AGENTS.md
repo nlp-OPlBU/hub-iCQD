@@ -8,22 +8,22 @@
 
 ## 项目定位与结构
 
-项目将自然语言问题转换为 SQLite 查询，并返回包含 SQL、答案和证据的 JSON。当前运行实现使用 LangChain `create_agent`、`ChatOpenAI`、`ToolStrategy` 和 Pydantic，流程由 Python 显式编排。
+项目将自然语言问题转换为 SQLite 查询，并返回包含 SQL、答案和证据的 JSON。当前运行实现使用 LangChain `create_agent`、`ChatOpenAI`、`ToolStrategy` 和 Pydantic，流程由 LangGraph `StateGraph` 的节点和条件边编排。
 
 | 路径 | 职责 |
 | --- | --- |
 | `src/sql_agent/cli.py`、`__main__.py` | 命令行输入、日志初始化、JSON 输出与退出码 |
 | `src/sql_agent/config.py` | 环境变量、默认值和数据库路径解析 |
 | `src/sql_agent/models.py` | Agent 结构化输出、内部状态和最终输出的数据契约 |
-| `src/sql_agent/workflow.py` | 选表、生成、校验、执行、有限修复、汇总及降级 |
+| `src/sql_agent/workflow.py` | LangGraph 状态图：选表、生成、校验、执行、有限修复、汇总及降级 |
 | `src/sql_agent/agents/` | 四个 Agent 的模块级定义和提示词 |
 | `src/sql_agent/db/catalog.py` | 数据库目录、列统计、样例、外键关系和进程级缓存 |
 | `src/sql_agent/db/validator.py` | SQL 规范化、安全检查及 `EXPLAIN` 编译校验 |
 | `src/sql_agent/db/executor.py` | 只读执行、超时、结果行数与单元格长度限制 |
 | `ref/` | Chinook 数据库及教学参考代码 |
-| `tests/` | 预留测试目录，目前没有测试文件 |
+| `tests/` | 使用异步 Agent 替身和临时 SQLite 库的工作流回归测试 |
 
-`ref/agent-demo.py` 使用的是另一套 SDK，仅供理解显式编排方式。不要把参考文件的依赖、占位密钥、模型调用方式直接复制到主程序。当前 `table_selector.py` 虽导入了 LangGraph 符号，但业务流程未使用 `StateGraph` 编排。
+`ref/agent-demo.py` 使用的是另一套 SDK，仅供理解显式编排方式。不要把参考文件的依赖、占位密钥、模型调用方式直接复制到主程序。业务流程在 `workflow.py` 中使用 `StateGraph(QueryState)` 编排，节点通过局部更新传递状态，选表及 SQL 修复重试由条件边控制。
 
 ## 修改原则
 
@@ -65,7 +65,7 @@ python -m compileall -q src/sql_agent
 - 数据库层变更：用临时 SQLite 库验证查询、非法 SQL、引号与注释、多语句、未知字段、截断和超时中与改动相关的行为，不改示例库。
 - 工作流变更：模拟 Agent 的异步返回，覆盖相关成功、澄清、修复耗尽、`cannot_fix`、空结果或汇总降级分支；不要让单元测试依赖真实 API。
 - CLI 或输出契约变更：检查标准输出为可解析 JSON、日志走标准错误，以及错误退出码。
-- 新增 pytest 测试后，在相同环境运行 `python -m pytest tests -q`。当前空测试目录并不代表测试通过，pytest 的“未收集到测试”也不是通过结果。
+- 修改工作流或新增 pytest 测试后，在相同环境运行 `python -m pytest tests -q`。pytest 的“未收集到测试”不是通过结果。
 
 无需为纯说明或其他低影响可逆变更新增测试。没有依赖、网络或密钥时，应明确说明未验证的部分，不得将语法检查等同于端到端运行成功。
 
