@@ -1,0 +1,40 @@
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	parse_database(parse_database)
+	resolve_question(resolve_question)
+	select_tables(select_tables)
+	generate_sql(generate_sql)
+	validate_sql(validate_sql)
+	execute_sql(execute_sql)
+	repair_sql(repair_sql)
+	summarize(summarize)
+	handle_failure(handle_failure)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> parse_database;
+	execute_sql -.-> handle_failure;
+	execute_sql -.-> repair_sql;
+	execute_sql -.-> summarize;
+	generate_sql -. &nbsp;fail&nbsp; .-> handle_failure;
+	generate_sql -. &nbsp;ok&nbsp; .-> validate_sql;
+	parse_database -.-> handle_failure;
+	parse_database -.-> resolve_question;
+	parse_database -.-> select_tables;
+	repair_sql -. &nbsp;fail&nbsp; .-> handle_failure;
+	repair_sql -. &nbsp;ok&nbsp; .-> validate_sql;
+	resolve_question -. &nbsp;fail&nbsp; .-> handle_failure;
+	resolve_question -. &nbsp;ok&nbsp; .-> select_tables;
+	select_tables -. &nbsp;ok&nbsp; .-> generate_sql;
+	select_tables -. &nbsp;fail&nbsp; .-> handle_failure;
+	validate_sql -.-> execute_sql;
+	validate_sql -.-> handle_failure;
+	validate_sql -.-> repair_sql;
+	handle_failure --> __end__;
+	summarize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc

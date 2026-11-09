@@ -1,0 +1,41 @@
+{
+  "question": "所有发票的总金额是多少？",
+  "catalog": {
+    "albums": "CREATE TABLE \"albums\"\r\n(\r\n    [AlbumId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Title] NVARCHAR(160)  NOT NULL,\r\n    [ArtistId] INTEGER  NOT NULL,\r\n    FOREIGN KEY ([ArtistId]) REFERENCES \"artists\" ([ArtistId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "artists": "CREATE TABLE \"artists\"\r\n(\r\n    [ArtistId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Name] NVARCHAR(120)\r\n)",
+    "customers": "CREATE TABLE \"customers\"\r\n(\r\n    [CustomerId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [FirstName] NVARCHAR(40)  NOT NULL,\r\n    [LastName] NVARCHAR(20)  NOT NULL,\r\n    [Company] NVARCHAR(80),\r\n    [Address] NVARCHAR(70),\r\n    [City] NVARCHAR(40),\r\n    [State] NVARCHAR(40),\r\n    [Country] NVARCHAR(40),\r\n    [PostalCode] NVARCHAR(10),\r\n    [Phone] NVARCHAR(24),\r\n    [Fax] NVARCHAR(24),\r\n    [Email] NVARCHAR(60)  NOT NULL,\r\n    [SupportRepId] INTEGER,\r\n    FOREIGN KEY ([SupportRepId]) REFERENCES \"employees\" ([EmployeeId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "employees": "CREATE TABLE \"employees\"\r\n(\r\n    [EmployeeId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [LastName] NVARCHAR(20)  NOT NULL,\r\n    [FirstName] NVARCHAR(20)  NOT NULL,\r\n    [Title] NVARCHAR(30),\r\n    [ReportsTo] INTEGER,\r\n    [BirthDate] DATETIME,\r\n    [HireDate] DATETIME,\r\n    [Address] NVARCHAR(70),\r\n    [City] NVARCHAR(40),\r\n    [State] NVARCHAR(40),\r\n    [Country] NVARCHAR(40),\r\n    [PostalCode] NVARCHAR(10),\r\n    [Phone] NVARCHAR(24),\r\n    [Fax] NVARCHAR(24),\r\n    [Email] NVARCHAR(60),\r\n    FOREIGN KEY ([ReportsTo]) REFERENCES \"employees\" ([EmployeeId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "genres": "CREATE TABLE \"genres\"\r\n(\r\n    [GenreId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Name] NVARCHAR(120)\r\n)",
+    "invoice_items": "CREATE TABLE \"invoice_items\"\r\n(\r\n    [InvoiceLineId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [InvoiceId] INTEGER  NOT NULL,\r\n    [TrackId] INTEGER  NOT NULL,\r\n    [UnitPrice] NUMERIC(10,2)  NOT NULL,\r\n    [Quantity] INTEGER  NOT NULL,\r\n    FOREIGN KEY ([InvoiceId]) REFERENCES \"invoices\" ([InvoiceId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION,\r\n    FOREIGN KEY ([TrackId]) REFERENCES \"tracks\" ([TrackId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "invoices": "CREATE TABLE \"invoices\"\r\n(\r\n    [InvoiceId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [CustomerId] INTEGER  NOT NULL,\r\n    [InvoiceDate] DATETIME  NOT NULL,\r\n    [BillingAddress] NVARCHAR(70),\r\n    [BillingCity] NVARCHAR(40),\r\n    [BillingState] NVARCHAR(40),\r\n    [BillingCountry] NVARCHAR(40),\r\n    [BillingPostalCode] NVARCHAR(10),\r\n    [Total] NUMERIC(10,2)  NOT NULL,\r\n    FOREIGN KEY ([CustomerId]) REFERENCES \"customers\" ([CustomerId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "media_types": "CREATE TABLE \"media_types\"\r\n(\r\n    [MediaTypeId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Name] NVARCHAR(120)\r\n)",
+    "playlist_track": "CREATE TABLE \"playlist_track\"\r\n(\r\n    [PlaylistId] INTEGER  NOT NULL,\r\n    [TrackId] INTEGER  NOT NULL,\r\n    CONSTRAINT [PK_PlaylistTrack] PRIMARY KEY  ([PlaylistId], [TrackId]),\r\n    FOREIGN KEY ([PlaylistId]) REFERENCES \"playlists\" ([PlaylistId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION,\r\n    FOREIGN KEY ([TrackId]) REFERENCES \"tracks\" ([TrackId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+    "playlists": "CREATE TABLE \"playlists\"\r\n(\r\n    [PlaylistId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Name] NVARCHAR(120)\r\n)",
+    "tracks": "CREATE TABLE \"tracks\"\r\n(\r\n    [TrackId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [Name] NVARCHAR(200)  NOT NULL,\r\n    [AlbumId] INTEGER,\r\n    [MediaTypeId] INTEGER  NOT NULL,\r\n    [GenreId] INTEGER,\r\n    [Composer] NVARCHAR(220),\r\n    [Milliseconds] INTEGER  NOT NULL,\r\n    [Bytes] INTEGER,\r\n    [UnitPrice] NUMERIC(10,2)  NOT NULL,\r\n    FOREIGN KEY ([AlbumId]) REFERENCES \"albums\" ([AlbumId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION,\r\n    FOREIGN KEY ([GenreId]) REFERENCES \"genres\" ([GenreId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION,\r\n    FOREIGN KEY ([MediaTypeId]) REFERENCES \"media_types\" ([MediaTypeId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)"
+  },
+  "selected_tables": [
+    "invoices"
+  ],
+  "schema": "CREATE TABLE \"invoices\"\r\n(\r\n    [InvoiceId] INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\r\n    [CustomerId] INTEGER  NOT NULL,\r\n    [InvoiceDate] DATETIME  NOT NULL,\r\n    [BillingAddress] NVARCHAR(70),\r\n    [BillingCity] NVARCHAR(40),\r\n    [BillingState] NVARCHAR(40),\r\n    [BillingCountry] NVARCHAR(40),\r\n    [BillingPostalCode] NVARCHAR(10),\r\n    [Total] NUMERIC(10,2)  NOT NULL,\r\n    FOREIGN KEY ([CustomerId]) REFERENCES \"customers\" ([CustomerId]) \r\n\t\tON DELETE NO ACTION ON UPDATE NO ACTION\r\n)",
+  "sql": "SELECT ROUND(SUM(Total), 2) AS total_amount FROM invoices;",
+  "results": [
+    {
+      "total_amount": 2328.6
+    }
+  ],
+  "summary": "所有发票的总金额为 2328.60（数据库未注明币种）。",
+  "fails": [],
+  "error": null,
+  "error_kind": null,
+  "retry_count": 0,
+  "truncated": false,
+  "trace": [
+    "parse_database",
+    "select_tables",
+    "generate_sql",
+    "validate_sql",
+    "execute_sql",
+    "summarize"
+  ],
+  "status": "success"
+}

@@ -1,0 +1,12 @@
+{
+  "verified_date": "2026-11-04",
+  "python": "3.12.14",
+  "langgraph": "1.2.19",
+  "model_verification": "离线替身及 SDK mock 已测试；未调用真实模型 API",
+  "cli_cases_passed": 6,
+  "database_sha256": "d6c11e2ccda2a36883af57f031f76fbd55e247f3be1710c4c8aaa72ec06a18cb",
+  "course_database_unchanged": true,
+  "unittest_cases_passed": 24,
+  "unittest_command": "python -m unittest discover -s tests -v",
+  "dependency_check": "43 packages compatible"
+}
