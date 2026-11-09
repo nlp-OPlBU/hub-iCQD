@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+langgraph
+langchain-core
+langchain-openai
+sqlalchemy>=2.0
+pandas
+websockets>=13   # langgraph-sdk 依赖 websockets.asyncio（13 及以上才有），旧版本会导入失败
