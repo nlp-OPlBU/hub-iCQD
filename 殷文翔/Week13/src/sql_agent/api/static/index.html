@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="description" content="用自然语言查询数据库，查看 SQL Agent 返回的答案、SQL 与证据。">
+    <title>SQL Agent · 查询台</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script type="module" src="/static/main.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <h1>SQL Agent</h1>
+        </div>
+        <div class="service-controls">
+          <span id="service-status" class="service-status" data-state="checking" role="status">检查中</span>
+          <button id="check-service" class="text-button" type="button">重新检查</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <div class="conversation-toolbar">
+          <span class="section-label">查询记录 <span id="record-count">00</span></span>
+          <button id="clear-history" class="text-button" type="button" disabled>清空记录</button>
+        </div>
+        <div id="conversation" class="conversation" tabindex="0" aria-label="查询对话记录">
+          <div id="messages" class="messages"></div>
+        </div>
+        <button id="new-reply" class="new-reply" type="button" hidden>有新回复 ↓</button>
+        <form id="query-form" class="composer" novalidate>
+          <label for="question" class="sr-only">输入完整的查询问题</label>
+          <textarea id="question" name="question" rows="2" placeholder="输入查询问题" aria-describedby="query-hint input-error character-count"></textarea>
+          <div class="composer-bottom">
+            <span id="query-hint">独立查询，请写明完整条件。</span>
+            <div class="composer-actions">
+              <span id="character-count" class="character-count">0 / 2000</span>
+              <button id="send-query" class="primary-button" type="submit" disabled>发送 <span aria-hidden="true">↑</span></button>
+            </div>
+          </div>
+          <p id="input-error" class="input-error" role="alert" hidden></p>
+        </form>
+        <footer class="workspace-footer"><span>Enter 发送 · Shift+Enter 换行</span><span>记录仅保留在当前页面</span></footer>
+        <section id="welcome" class="welcome" aria-label="Chinook 示例问题">
+          <div class="example-heading">Chinook 示例</div>
+          <div class="examples">
+            <button class="example-card" type="button" data-question="数据库中一共有多少首歌曲？">数据库中一共有多少首歌曲？</button>
+            <button class="example-card" type="button" data-question="列出销售额最高的 5 个国家。">列出销售额最高的 5 个国家。</button>
+            <button class="example-card" type="button" data-question="列出歌曲数量最多的 5 位艺术家。">列出歌曲数量最多的 5 位艺术家。</button>
+          </div>
+        </section>
+      </main>
+    </div>
+    <noscript><p class="noscript">请启用 JavaScript 后使用网页查询，或访问 <a href="/docs">接口文档</a>。</p></noscript>
+    <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+  </body>
+</html>
