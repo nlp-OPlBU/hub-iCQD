@@ -1,0 +1,3 @@
+PRODUCED topic= wxw14.message.demo partition= 0 offset= 1
+CONSUMED {"id": "4e04ee7972424f939ade0459f56429df", "text": "Hello Kafka, 第十四周作业！"}
+COMMITTED next_offset= 2 (message offset + 1)

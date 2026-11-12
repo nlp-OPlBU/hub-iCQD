@@ -1,0 +1,25 @@
+2026-11-12 21:26:43.499 +08:00 | INFO     | mineru.backend.pipeline.model_init:__init__:192 - DocAnalysis init, this may take some times......
+2026-11-12 21:26:44,132 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 53.11file/s]
+2026-11-12 21:26:44,845 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 101.97file/s]
+2026-11-12 21:26:45,472 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 49.88file/s]
+2026-11-12 21:26:45.773 +08:00 | INFO     | mineru.backend.pipeline.model_init:__init__:248 - DocAnalysis init done!
+2026-11-12 21:26:45.773 +08:00 | INFO     | mineru.backend.pipeline.pipeline_analyze:custom_model_init:65 - model init cost: 2.273441791534424
+Layout Predict: 100%|██████████| 1/1 [00:01<00:00,  1.09s/it]
+Layout Predict: 100%|██████████| 1/1 [00:01<00:00,  1.09s/it]
+OCR-det Predict:   0%|          | 0/1 [00:00<?, ?it/s]2026-11-12 21:26:47,475 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 170.47file/s]
+2026-11-12 21:26:48,100 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 55.66file/s]
+OCR-det Predict: 100%|██████████| 1/1 [00:02<00:00,  2.37s/it]
+OCR-det Predict: 100%|██████████| 1/1 [00:02<00:00,  2.37s/it]
+Processing pages:   0%|          | 0/1 [00:00<?, ?it/s]2026-11-12 21:26:50,948 | INFO    | modelscope_hub.download | Downloading 2 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 2/2 [00:00<00:00,  6.69file/s][A
+Downloading: 100%|██████████| 2/2 [00:00<00:00,  6.69file/s]
+Processing pages: 100%|██████████| 1/1 [00:02<00:00,  2.19s/it]
+Processing pages: 100%|██████████| 1/1 [00:02<00:00,  2.19s/it]
+OCR-rec Predict: 100%|██████████| 1/1 [00:00<00:00,  9.19it/s]
+OCR-rec Predict: 100%|██████████| 1/1 [00:00<00:00,  9.18it/s]
+2026-11-12 21:26:51.617 +08:00 | INFO     | mineru.cli.common:_process_output:155 - local output dir is /Users/wxw/Desktop/学习资源/week14-work/runtime/parsed/5c07301e266e49dca4a366974891f3b0/5c07301e266e49dca4a366974891f3b0/auto

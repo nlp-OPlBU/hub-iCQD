@@ -1,0 +1,25 @@
+2026-11-12 21:25:12.808 +08:00 | INFO     | mineru.backend.pipeline.pipeline_analyze:doc_analyze:125 - Batch 1/1: 1 pages/1 pages
+2026-11-12 21:25:12.808 +08:00 | INFO     | mineru.backend.pipeline.model_init:__init__:192 - DocAnalysis init, this may take some times......
+2026-11-12 21:25:13,453 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 58.99file/s]
+2026-11-12 21:25:14,141 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 101.56file/s]
+2026-11-12 21:25:14,754 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 50.39file/s]
+2026-11-12 21:25:15.031 +08:00 | INFO     | mineru.backend.pipeline.model_init:__init__:248 - DocAnalysis init done!
+2026-11-12 21:25:15.031 +08:00 | INFO     | mineru.backend.pipeline.pipeline_analyze:custom_model_init:65 - model init cost: 2.222524881362915
+Layout Predict: 100%|██████████| 1/1 [00:01<00:00,  1.13s/it]
+Layout Predict: 100%|██████████| 1/1 [00:01<00:00,  1.13s/it]
+OCR-det Predict:   0%|          | 0/1 [00:00<?, ?it/s]2026-11-12 21:25:16,782 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 119.65file/s]
+2026-11-12 21:25:17,435 | INFO    | modelscope_hub.download | Downloading 1 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading: 100%|██████████| 1/1 [00:00<00:00, 55.90file/s]
+OCR-det Predict: 100%|██████████| 1/1 [00:02<00:00,  2.24s/it]
+OCR-det Predict: 100%|██████████| 1/1 [00:02<00:00,  2.24s/it]
+Processing pages:   0%|          | 0/1 [00:00<?, ?it/s]2026-11-12 21:25:19,924 | INFO    | modelscope_hub.download | Downloading 2 files from OpenDataLab/PDF-Extract-Kit-1.0@master
+Downloading:   0%|          | 0/2 [00:00<?, ?file/s][A2026-11-12 21:26:22,087 | INFO    | modelscope_hub.download | Still waiting to acquire lock on /Users/wxw/.cache/modelscope/.lock/file_00e5fc2dd781cbfd7e8bdf8b496942664a44de080402393807e6d7a20b2f4185.lock
+Downloading: 100%|██████████| 2/2 [01:07<00:00, 33.70s/file][A
+Downloading: 100%|██████████| 2/2 [01:07<00:00, 33.70s/file]
+Processing pages: 100%|██████████| 1/1 [01:09<00:00, 69.14s/it]
+Processing pages: 100%|██████████| 1/1 [01:09<00:00, 69.14s/it]
+2026-11-12 21:26:27.634 +08:00 | INFO     | mineru.cli.common:_process_output:155 - local output dir is /Users/wxw/Desktop/学习资源/week14-work/runtime/parsed/4c156b4686b746aca610e7b920c28db4/4c156b4686b746aca610e7b920c28db4/auto

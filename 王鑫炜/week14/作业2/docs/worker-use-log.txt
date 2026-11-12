@@ -1,0 +1,19 @@
+2026-11-12 21:14:59,136 INFO Worker ready topic=wxw14.pdf.parse group=wxw14-mineru
+2026-11-12 21:14:59,308 INFO PROCESSING document=5c07301e266e49dca4a366974891f3b0 attempt=1
+2026-11-12 21:25:10,050 ERROR FAILED document=5c07301e266e49dca4a366974891f3b0
+Traceback (most recent call last):
+  File "/Users/wxw/Desktop/学习资源/week14-work/app/worker.py", line 32, in process_job
+    chunks, parser_name = parser(doc_id)
+                          ^^^^^^^^^^^^^^
+  File "/Users/wxw/Desktop/学习资源/week14-work/app/parser.py", line 43, in parse_pdf
+    raise RuntimeError('MinerU 未生成 content_list.json，不能标记解析完成')
+RuntimeError: MinerU 未生成 content_list.json，不能标记解析完成
+2026-11-12 21:25:10,062 INFO COMMITTED offset=0 state=failed
+2026-11-12 21:25:10,066 INFO PROCESSING document=4c156b4686b746aca610e7b920c28db4 attempt=1
+2026-11-12 21:26:28,089 INFO COMPLETED document=4c156b4686b746aca610e7b920c28db4 chunks=12 images=0
+2026-11-12 21:26:28,100 INFO COMMITTED offset=1 state=completed
+2026-11-12 21:26:28,115 INFO COMMITTED offset=2 state=duplicate
+2026-11-12 21:26:28,127 INFO COMMITTED offset=3 state=duplicate
+2026-11-12 21:26:40,650 INFO PROCESSING document=5c07301e266e49dca4a366974891f3b0 attempt=2
+2026-11-12 21:26:52,127 INFO COMPLETED document=5c07301e266e49dca4a366974891f3b0 chunks=11 images=1
+2026-11-12 21:26:52,137 INFO COMMITTED offset=4 state=completed
