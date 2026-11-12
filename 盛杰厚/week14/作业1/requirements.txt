@@ -1,0 +1,4 @@
+# week14 作业1 依赖
+# 安装： conda activate py312 && pip install -r requirements.txt
+redis>=5.0            # Redis 客户端（List / Hash / ZSet / pipeline）
+kafka-python>=2.0.2   # KafkaProducer / KafkaConsumer / KafkaAdminClient

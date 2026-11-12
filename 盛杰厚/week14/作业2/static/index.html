@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>多模态 RAG 知识库 · Kafka + MinerU</title>
+<style>
+  /* ── 设计令牌：颜色只在 :root 定义，明暗双主题各一套 ───────────────── */
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface-2: #eef2f8;
+    --border: #dfe4ee;
+    --text: #1c2430;
+    --text-muted: #56637a;
+    --text-faint: #8b97a8;
+    --brand: #2f5fb3;
+    --brand-soft: #e5edfb;
+    --ok: #1c7a4d;
+    --ok-soft: #e0f3ea;
+    --warn: #8a5a10;
+    --warn-soft: #faefd8;
+    --err: #a3272b;
+    --err-soft: #fbe8e8;
+    --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 8px 24px rgba(20, 30, 50, .06);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161d; --surface: #191f28; --surface-2: #212a37; --border: #2c3543;
+      --text: #e7ecf3; --text-muted: #adb9ca; --text-faint: #7c8898;
+      --brand: #79a6ee; --brand-soft: #1d2c42; --ok: #56c48c; --ok-soft: #15302a;
+      --warn: #e0b062; --warn-soft: #2f2718; --err: #ef8b8f; --err-soft: #342124;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.32);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12161d; --surface: #191f28; --surface-2: #212a37; --border: #2c3543;
+    --text: #e7ecf3; --text-muted: #adb9ca; --text-faint: #7c8898;
+    --brand: #79a6ee; --brand-soft: #1d2c42; --ok: #56c48c; --ok-soft: #15302a;
+    --warn: #e0b062; --warn-soft: #2f2718; --err: #ef8b8f; --err-soft: #342124;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.32);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre { font-family: var(--mono); }
+
+  /* ── 顶栏 ─────────────────────────────────────────────────────── */
+  header {
+    position: sticky; top: 0; z-index: 30; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .hd { max-width: 1460px; margin: 0 auto; padding: 11px 16px;
+        display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+  .brand h1 { font-size: 16.5px; margin: 0; white-space: nowrap; letter-spacing: .2px; }
+  .brand .sub { color: var(--text-faint); font-size: 12.5px; }
+  .spacer { flex: 1 1 auto; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px;
+          border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--surface-2);
+          color: var(--text-muted); border: 1px solid var(--border); white-space: nowrap; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); border-color: transparent; }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .pill.err { background: var(--err-soft); color: var(--err); border-color: transparent; }
+  .pill.info { background: var(--brand-soft); color: var(--brand); border-color: transparent; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
+  .dot.live { animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+  /* ── 两栏布局 ─────────────────────────────────────────────────── */
+  main { max-width: 1460px; margin: 0 auto; padding: 16px;
+         display: grid; grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
+         gap: 16px; align-items: start; }
+  @media (max-width: 1024px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border);
+          border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card + .card { margin-top: 16px; }
+  .card-hd { padding: 11px 14px; border-bottom: 1px solid var(--border);
+             display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .card-hd h2 { font-size: 13.5px; margin: 0; letter-spacing: .2px; }
+  .card-hd .hint { color: var(--text-faint); font-size: 11.5px; }
+  .card-bd { padding: 13px 14px; }
+
+  /* ── 上传区 ───────────────────────────────────────────────────── */
+  .drop { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 20px 14px;
+          text-align: center; cursor: pointer; background: var(--surface-2);
+          transition: border-color .15s, background .15s; }
+  .drop:hover, .drop:focus-visible { border-color: var(--brand); outline: none; }
+  .drop.over { border-color: var(--brand); background: var(--brand-soft); }
+  .drop .big { font-size: 14.5px; font-weight: 600; }
+  .drop .small { color: var(--text-faint); font-size: 12px; margin-top: 3px; }
+  .drop svg { width: 24px; height: 24px; color: var(--brand); display: block; margin: 0 auto 6px; }
+  .btn { appearance: none; border: 1px solid var(--border); background: var(--surface);
+         color: var(--text); border-radius: var(--radius-sm); padding: 6px 11px; font-size: 12.5px;
+         font-weight: 600; cursor: pointer; transition: .15s; display: inline-flex;
+         align-items: center; gap: 6px; font-family: inherit; }
+  .btn:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.1); color: #fff; }
+  .btn.ghost { background: transparent; }
+  .btn.tiny { padding: 3px 8px; font-size: 11.5px; border-radius: 6px; }
+  .btn.danger:hover:not(:disabled) { border-color: var(--err); color: var(--err); }
+  .btn svg { width: 14px; height: 14px; }
+  select.btn { max-width: 168px; }
+  .queue { margin-top: 11px; display: grid; gap: 5px; }
+  .queue .row { display: flex; align-items: center; gap: 8px; font-size: 12px;
+                padding: 5px 9px; border-radius: var(--radius-sm); background: var(--surface-2); }
+  .queue .row .nm { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── 文档列表（功能 2） ───────────────────────────────────────── */
+  .stats { display: flex; gap: 5px; flex-wrap: wrap; }
+  .doc { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 11px; }
+  .doc + .doc { margin-top: 9px; }
+  .doc-top { display: flex; align-items: flex-start; gap: 8px; }
+  .doc-name { font-weight: 600; font-size: 13px; flex: 1 1 auto; min-width: 0; word-break: break-all; }
+  .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.pending { background: var(--surface-2); color: var(--text-muted); }
+  .badge.parsing { background: var(--warn-soft); color: var(--warn); }
+  .badge.done    { background: var(--ok-soft); color: var(--ok); }
+  .badge.failed  { background: var(--err-soft); color: var(--err); }
+  .bar { height: 5px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 8px 0 6px; }
+  .bar > i { display: block; height: 100%; background: var(--brand); border-radius: 999px;
+             transition: width .5s ease; }
+  .bar.done > i { background: var(--ok); }
+  .bar.failed > i { background: var(--err); }
+  .doc-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+              font-size: 11px; color: var(--text-faint); }
+  .doc-meta .msg { flex: 1 1 100%; color: var(--text-muted); font-size: 11.5px; word-break: break-word; }
+  .doc-acts { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 20px 8px; }
+  details.detail { margin-top: 9px; border-top: 1px dashed var(--border); padding-top: 8px; }
+  details.detail summary { cursor: pointer; font-size: 11.5px; color: var(--text-muted); }
+  .gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 7px; margin-top: 8px; }
+  .gal a { display: block; border: 1px solid var(--border); border-radius: var(--radius-sm);
+           overflow: hidden; background: var(--surface-2); }
+  .gal img { width: 100%; height: 72px; object-fit: contain; display: block; background: #fff; }
+  .gal .cap { font-size: 10px; padding: 3px 5px; color: var(--text-muted); line-height: 1.3;
+              max-height: 36px; overflow: hidden; }
+  .chunks { margin-top: 8px; display: grid; gap: 4px; }
+  .chunks .c { font-size: 11px; color: var(--text-muted); background: var(--surface-2);
+               border-radius: 6px; padding: 4px 7px; }
+  .chunks .c b { color: var(--text); font-weight: 600; }
+
+  /* ── 问答（功能 3） ───────────────────────────────────────────── */
+  .chat { display: flex; flex-direction: column; }
+  .msgs { padding: 14px; overflow-y: auto; flex: 1 1 auto; min-height: 46vh; max-height: 68vh; }
+  .msg { display: flex; gap: 9px; margin-bottom: 15px; }
+  .msg .who { flex: 0 0 auto; width: 25px; height: 25px; border-radius: 8px; display: grid;
+              place-items: center; font-size: 10.5px; font-weight: 700; }
+  .msg.user .who { background: var(--brand-soft); color: var(--brand); }
+  .msg.bot .who { background: var(--ok-soft); color: var(--ok); }
+  .msg .body { flex: 1 1 auto; min-width: 0; }
+  .msg .who-nm { font-size: 11px; color: var(--text-faint); margin-bottom: 3px; }
+  .bubble { background: var(--surface-2); border-radius: var(--radius); padding: 10px 12px;
+            border: 1px solid var(--border); word-break: break-word; }
+  .msg.user .bubble { background: var(--brand-soft); border-color: transparent; }
+  .thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+  .thumbs img { width: 90px; height: 66px; object-fit: cover; border-radius: 8px;
+                border: 1px solid var(--border); background: #fff; }
+  .md { font-size: 13.5px; line-height: 1.72; }
+  .md > :first-child { margin-top: 0; }
+  .md > :last-child { margin-bottom: 0; }
+  .md h1, .md h2, .md h3, .md h4 { margin: 14px 0 7px; line-height: 1.4; }
+  .md h1 { font-size: 15.5px; } .md h2 { font-size: 14.5px; }
+  .md h3, .md h4 { font-size: 13.8px; }
+  .md p { margin: 7px 0; }
+  .md ul, .md ol { margin: 7px 0; padding-left: 21px; }
+  .md li { margin: 2px 0; }
+  .md code { background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+             padding: 1px 4px; font-size: 12px; }
+  .md pre { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 9px 11px; overflow-x: auto; font-size: 12px; }
+  .md pre code { background: none; border: none; padding: 0; }
+  .md blockquote { margin: 9px 0; padding: 5px 11px; border-left: 3px solid var(--brand);
+                   background: var(--surface); color: var(--text-muted); border-radius: 0 8px 8px 0; }
+  .md hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .md table { border-collapse: collapse; margin: 9px 0; display: block; overflow-x: auto; max-width: 100%; }
+  .md th, .md td { border: 1px solid var(--border); padding: 4px 8px; font-size: 12.5px; text-align: left; }
+  .md th { background: var(--surface-2); }
+  .md .cite { color: var(--brand); font-weight: 700; }
+  /* 图文混排：图片独占一块，夹在文字之间 */
+  .md-figure { margin: 11px 0; }
+  .md-figure img { display: block; max-width: 100%; max-height: 330px; margin: 0 auto;
+                   border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+  .md-figure figcaption { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 4px; }
+  .cursor { display: inline-block; width: 6px; height: 14px; background: var(--brand);
+            vertical-align: -2px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { to { opacity: 0 } }
+  .refs { margin-top: 9px; border-top: 1px dashed var(--border); padding-top: 8px; }
+  .refs .t { font-size: 11px; color: var(--text-faint); margin-bottom: 5px; }
+  .ref { display: flex; gap: 6px; align-items: baseline; font-size: 11.5px; padding: 4px 7px;
+         border-radius: 6px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 4px; }
+  .ref .n { font-weight: 700; color: var(--brand); flex: 0 0 auto; }
+  .ref .txt { flex: 1 1 auto; min-width: 0; color: var(--text-muted); }
+  .ref .sc { flex: 0 0 auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-faint); }
+  .stage { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 7px; }
+  .spin { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--brand);
+          border-radius: 50%; animation: rot .8s linear infinite; flex: 0 0 auto; }
+  @keyframes rot { to { transform: rotate(360deg) } }
+
+  .composer { border-top: 1px solid var(--border); padding: 11px 14px; }
+  .composer textarea { width: 100%; min-height: 72px; max-height: 230px; resize: vertical;
+                       border: 1px solid var(--border); border-radius: var(--radius-sm);
+                       padding: 9px 11px; font: inherit; font-size: 13.5px;
+                       background: var(--surface-2); color: var(--text); }
+  .composer textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; background: var(--surface); }
+  .composer.over { outline: 2px dashed var(--brand); outline-offset: -2px; }
+  .attaches { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 8px; }
+  .att { position: relative; }
+  .att img { width: 60px; height: 46px; object-fit: cover; border-radius: 7px;
+             border: 1px solid var(--border); display: block; background: #fff; }
+  .att button { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+                border-radius: 50%; border: none; background: var(--err); color: #fff;
+                cursor: pointer; font-size: 11px; line-height: 1; display: grid;
+                place-items: center; padding: 0; }
+  .comp-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+  .comp-row .tip { font-size: 11px; color: var(--text-faint); flex: 1 1 auto; }
+  .chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; }
+  .chip { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; cursor: pointer;
+          border: 1px solid var(--border); background: var(--surface-2); color: var(--text-muted); }
+  .chip:hover { border-color: var(--brand); color: var(--brand); }
+
+  .toasts { position: fixed; right: 14px; bottom: 14px; display: grid; gap: 7px; z-index: 60; max-width: 84vw; }
+  .toast { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand);
+           border-radius: var(--radius-sm); padding: 8px 11px; font-size: 12.5px;
+           box-shadow: var(--shadow); animation: in .18s ease; }
+  .toast.err { border-left-color: var(--err); }
+  .toast.ok { border-left-color: var(--ok); }
+  @keyframes in { from { opacity: 0; transform: translateY(5px) } }
+  .banner { margin: 0 14px 11px; padding: 8px 11px; border-radius: var(--radius-sm);
+            background: var(--warn-soft); color: var(--warn); font-size: 12px;
+            display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .banner.err { background: var(--err-soft); color: var(--err); }
+  .banner.info { background: var(--brand-soft); color: var(--brand); }
+  .banner code { font-size: 11px; }
+  a { color: var(--brand); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="brand">
+      <h1>多模态 RAG 知识库</h1>
+      <span class="sub">上传 PDF → Kafka → MinerU 解析 → 图文混排问答</span>
+    </div>
+    <div class="spacer"></div>
+    <div id="env" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center"></div>
+    <button class="btn tiny ghost" id="btnHealth" title="查看后端真实状态 /api/health">环境</button>
+    <button class="btn tiny ghost" id="btnTheme" title="切换明暗主题">主题</button>
+  </div>
+</header>
+
+<main>
+  <!-- ═════════ 左栏：功能 1 上传 + 功能 2 解析状态 ═════════ -->
+  <section>
+    <div class="card">
+      <div class="card-hd">
+        <h2>① 上传 PDF（支持多个）</h2>
+        <span class="hint">上传即返回，解析走 Kafka 异步</span>
+      </div>
+      <div class="card-bd">
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="选择或拖入 PDF 文件">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 17V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
+          </svg>
+          <div class="big">拖入 PDF，或点击选择（可多选）</div>
+          <div class="small">单个上限 <span id="maxMb">80</span> MB</div>
+          <input type="file" id="fileInput" accept="application/pdf,.pdf" multiple class="sr">
+        </div>
+        <div class="queue" id="upQueue"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:11.5px;color:var(--text-muted);display:flex;gap:5px;align-items:center">
+            <input type="checkbox" id="forceAdd"> 重复内容也强制入库
+          </label>
+          <span class="spacer"></span>
+          <button class="btn tiny ghost" id="btnSample">载入示例文档</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <h2>② 解析状态</h2>
+        <span class="hint" id="sseState">连接中…</span>
+        <span class="spacer"></span>
+        <div class="stats" id="stats"></div>
+      </div>
+      <div class="card-bd" id="docList">
+        <div class="empty">还没有文档。上传后这里实时显示<strong>待解析 / 解析中 / 解析完成</strong>。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════ 右栏：功能 3 多模态问答 ═════════ -->
+  <section class="card chat">
+    <div class="card-hd">
+      <h2>③ 多模态问答</h2>
+      <span class="hint">输出图文混排；也能把图和问题一起送进模型</span>
+      <span class="spacer"></span>
+      <span id="qaMeta" class="pill">待命</span>
+    </div>
+    <div id="qaBanner"></div>
+    <div class="msgs" id="msgs"></div>
+    <div class="composer" id="composer">
+      <textarea id="q" placeholder="就知识库提问，例如：架构图里 Kafka 起什么作用？&#10;也可以粘贴/拖入一张图片，问「这张图对应文档的哪部分」"></textarea>
+      <div class="attaches" id="attaches"></div>
+      <div class="comp-row">
+        <button class="btn" id="btnImg" title="添加图片，与问题一起送模型">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 16l-4.5-4.5L7 20"/></svg>
+          加图片
+        </button>
+        <input type="file" id="imgInput" accept="image/*" multiple class="sr">
+        <select id="scope" class="btn" title="检索范围"></select>
+        <button class="btn primary" id="btnSend" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 12l16-7-6 16-3-6-7-3z"/></svg>
+          提问
+        </button>
+        <button class="btn ghost" id="btnClear">清空</button>
+        <span class="tip">Enter 发送 · Shift+Enter 换行 · 图片可粘贴/拖入</span>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+  </section>
+</main>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script>
+/* ==========================================================================
+   零依赖、零构建前端（不引 CDN，断网可用）
+     1) 上传 + 解析状态：EventSource 订阅后端转发出来的 Kafka 状态消息
+     2) 问答：POST + SSE —— fetch 读 ReadableStream，边收 delta 边渲染
+     3) markdown 渲染：先整体转义再补语法；图片只允许 /api/ 或 data:，防 XSS
+   ========================================================================== */
+'use strict';
+
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+const S = {
+  docs: new Map(),                 // doc_id -> 状态对象
+  detail: new Map(),               // doc_id -> 已拉取的详情（展开时缓存）
+  session: localStorage.getItem('mmrag.session') || ('web_' + Math.random().toString(36).slice(2, 10)),
+  attaches: [],                    // 待发送的 File 对象
+  busy: false,
+  es: null,
+  env: null,
+  theme: localStorage.getItem('mmrag.theme') || '',
+};
+localStorage.setItem('mmrag.session', S.session);
+if (S.theme) document.documentElement.setAttribute('data-theme', S.theme);
+
+/* ───────────────────────── 通用小工具 ───────────────────────── */
+function toast(text, kind) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + (kind || '');
+  el.textContent = text;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; }, 4600);
+  setTimeout(() => el.remove(), 5100);
+}
+const fmtSize = (n) => n > 1048576 ? (n / 1048576).toFixed(1) + ' MB'
+  : n > 1024 ? (n / 1024).toFixed(0) + ' KB' : (n || 0) + ' B';
+const fmtTime = (t) => t ? new Date(t * 1000).toLocaleTimeString('zh-CN', { hour12: false }) : '';
+
+/* ───────────── markdown：行内语法（输入已是原始文本） ───────────── */
+function mdInline(text) {
+  let out = esc(text);
+  out = out.replace(/`([^`]+)`/g, (m, c) => '<code>' + c + '</code>');
+  out = out.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (m, alt, url) => {
+    const safe = url.indexOf('/api/') === 0 || url.indexOf('data:image/') === 0;
+    if (!safe) return m;
+    return '<figure class="md-figure"><img src="' + esc(url) + '" alt="' + esc(alt) +
+      '" loading="lazy">' + (alt ? '<figcaption>' + esc(alt) + '</figcaption>' : '') + '</figure>';
+  });
+  out = out.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, url) =>
+    (url[0] === '/' ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + t + '</a>' : m));
+  out = out.replace(/\*\*\*([^*]+)\*\*\*/g, '<b><i>$1</i></b>');
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  out = out.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
+  out = out.replace(/__([^_]+)__/g, '<b>$1</b>');
+  out = out.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+  out = out.replace(/〔(\d+)〕/g, '<span class="cite">〔$1〕</span>');   // 引用编号高亮
+  return out;
+}
+function mdTable(rows) {
+  const cells = (r) => r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map((c) => c.trim());
+  const head = cells(rows[0]);
+  const body = rows.slice(1).map(cells);
+  return '<table><thead><tr>' + head.map((h) => '<th>' + mdInline(h) + '</th>').join('') +
+    '</tr></thead><tbody>' + body.map((r) => '<tr>' +
+      r.map((c) => '<td>' + mdInline(c) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+}
+function renderMarkdown(src) {
+  if (!src) return '';
+  const lines = String(src).replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let para = [];
+  const flush = () => {
+    if (!para.length) return;
+    out.push('<p>' + mdInline(para.join('\n')).replace(/\n/g, '<br>') + '</p>');
+    para = [];
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const ln = lines[i];
+    if (/^\s*$/.test(ln)) { flush(); continue; }
+    if (/^```/.test(ln)) {
+      flush(); const buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      out.push('<pre><code>' + esc(buf.join('\n')) + '</code></pre>');
+      continue;
+    }
+    const h = ln.match(/^(#{1,6})\s+(.*)$/);
+    if (h) { flush(); const lv = h[1].length; out.push('<h' + lv + '>' + mdInline(h[2]) + '</h' + lv + '>'); continue; }
+    if (/^\s*([-*_])\s*(\1\s*){2,}$/.test(ln)) { flush(); out.push('<hr>'); continue; }
+    if (/^\s*>/.test(ln)) {
+      flush(); const buf = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) { buf.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+      out.push('<blockquote>' + renderMarkdown(buf.join('\n')) + '</blockquote>');
+      continue;
+    }
+    if (/^\s*\|.*\|\s*$/.test(ln) && i + 1 < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1])) {
+      flush(); const rows = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+        if (!/^\s*\|[\s:|-]+\|\s*$/.test(lines[i])) rows.push(lines[i]);
+        i++;
+      }
+      out.push(mdTable(rows)); i--;
+      continue;
+    }
+    if (/^\s*[-*+•]\s+/.test(ln)) {
+      flush(); const items = [];
+      while (i < lines.length && /^\s*[-*+•]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*[-*+•]\s+/, '')); i++; }
+      out.push('<ul>' + items.map((t) => '<li>' + mdInline(t) + '</li>').join('') + '</ul>'); i--;
+      continue;
+    }
+    if (/^\s*\d+[.)]\s+/.test(ln)) {
+      flush(); const items = [];
+      while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*\d+[.)]\s+/, '')); i++; }
+      out.push('<ol>' + items.map((t) => '<li>' + mdInline(t) + '</li>').join('') + '</ol>'); i--;
+      continue;
+    }
+    if (/^!\[[^\]]*\]\([^)\s]+\)$/.test(ln.trim())) { flush(); out.push(mdInline(ln.trim())); continue; }
+    para.push(ln);
+  }
+  flush();
+  return out.join('\n');
+}
+
+/* ────────────────────── 环境信息（顶栏徽标） ────────────────────── */
+async function loadEnv(quiet) {
+  try {
+    const r = await fetch('/api/health');
+    const h = await r.json();
+    S.env = h;
+    const bus = h.bus || {}, cfg = h.config || {}, mineru = h.mineru || {}, emb = h.embedding || {}, llm = h.llm || {};
+    const kafkaOn = bus.backend === 'kafka';
+    $('#env').innerHTML = [
+      '<span class="pill ' + (kafkaOn ? 'ok' : 'warn') + '"><span class="dot"></span>' +
+        (kafkaOn ? 'Kafka ' + esc((cfg.kafka || {}).servers || '') : 'Kafka 降级为进程内队列') + '</span>',
+      '<span class="pill ' + (mineru.ok ? 'ok' : 'warn') + '" title="' + esc(mineru.detail || '') + '">' +
+        (mineru.ok ? 'MinerU 在线' : 'MinerU 未启动（内置解析器）') + '</span>',
+      '<span class="pill ' + (emb.mock ? 'warn' : 'info') + '">' + esc(emb.model || '?') +
+        (emb.dim ? ' · ' + emb.dim + '维' : '') + '</span>',
+      '<span class="pill ' + (llm.mock ? 'warn' : 'info') + '">' + esc(llm.mock ? 'mock 回答' : (llm.vision_model || '')) + '</span>',
+      '<span class="pill">' + ((h.store || {}).documents ? (h.store.documents.total || 0) + ' 文档' : '0 文档') +
+        ' · ' + ((h.store || {}).vectors || 0) + ' 向量</span>',
+    ].join('');
+    if ((h.max_upload_mb)) $('#maxMb').textContent = h.max_upload_mb;
+    if (!quiet) {
+      if (!kafkaOn) toast('Kafka 不可用，已降级为进程内队列；启动：docker compose up -d', 'err');
+      if (llm.mock) toast('未配置 DASHSCOPE_API_KEY，回答走 mock（检索结果拼装）', 'err');
+    }
+    qaBanner();
+  } catch (e) {
+    $('#env').innerHTML = '<span class="pill err"><span class="dot"></span>后端未响应</span>';
+    if (!quiet) toast('无法读取 /api/health：' + e.message, 'err');
+  }
+}
+
+function qaBanner() {
+  const h = S.env; const el = $('#qaBanner'); if (!h) { el.innerHTML = ''; return; }
+  const llm = h.llm || {}, bus = h.bus || {}, store = h.store || {};
+  const items = [];
+  if (llm.mock) items.push('<div class="banner">⚠️ 当前 <b>mock 回答</b>：未配置 <code>DASHSCOPE_API_KEY</code>，' +
+    '答案由检索片段拼装（仍能验证图文混排渲染）。配上百炼 Key 即为真实模型回答。</div>');
+  if (bus.backend !== 'kafka') items.push('<div class="banner err">⚠️ Kafka 不可用，已降级为进程内队列。' +
+    '启动 broker：<code>docker compose up -d</code> 后刷新页面。</div>');
+  if (!(store.documents && store.documents.done)) items.push('<div class="banner info">ℹ️ 知识库还没有解析完成的文档：' +
+    '先上传 PDF（或点「载入示例文档」），状态变成<b>解析完成</b>后即可提问。</div>');
+  el.innerHTML = items.join('');
+}
+
+/* ─────────────────── 功能 1：上传（多个 PDF） ─────────────────── */
+const drop = $('#drop'), fileInput = $('#fileInput');
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener('change', () => { uploadFiles(fileInput.files); fileInput.value = ''; });
+['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => {
+  e.preventDefault(); drop.classList.add('over');
+}));
+['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => {
+  e.preventDefault(); drop.classList.remove('over');
+}));
+drop.addEventListener('drop', (e) => uploadFiles(e.dataTransfer.files));
+
+function queueRow(name, state, note) {
+  const el = document.createElement('div');
+  el.className = 'row';
+  el.innerHTML = '<span class="nm">' + esc(name) + '</span><span class="st">' + esc(state) + '</span>' +
+    (note ? '<span class="nt" style="color:var(--text-faint)">' + esc(note) + '</span>' : '');
+  $('#upQueue').appendChild(el);
+  return el;
+}
+
+async function uploadFiles(list) {
+  const files = Array.from(list || []);
+  if (!files.length) return;
+  const pdfs = files.filter((f) => /\.pdf$/i.test(f.name) || f.type === 'application/pdf');
+  const other = files.filter((f) => pdfs.indexOf(f) < 0);
+  other.forEach((f) => toast('已跳过（只支持 PDF）：' + f.name, 'err'));
+  if (!pdfs.length) return;
+
+  const fd = new FormData();
+  pdfs.forEach((f) => fd.append('files', f, f.name));
+  if ($('#forceAdd').checked) fd.append('force', '1');
+  const rows = pdfs.map((f) => queueRow(f.name, '上传中…', fmtSize(f.size)));
+
+  try {
+    const r = await fetch('/api/documents', { method: 'POST', body: fd });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (data && (data.detail || data.error)) || ('HTTP ' + r.status);
+      rows.forEach((el) => $('.st', el).textContent = '失败');
+      toast('上传失败：' + msg, 'err');
+      return;
+    }
+    (data.accepted || []).forEach((a, i) => {
+      const el = rows[pdfs.findIndex((f) => f.name === a.filename)];
+      if (el) $('.st', el).textContent = '已投递 Kafka ✓';
+    });
+    (data.skipped || []).forEach((s) => {
+      const el = rows[pdfs.findIndex((f) => f.name === s.filename)];
+      if (el) $('.st', el).textContent = '重复，已跳过';
+      toast(s.filename + '：' + s.reason, '');
+    });
+    (data.failed || []).forEach((f) => {
+      const el = rows[pdfs.findIndex((x) => x.name === f.filename)];
+      if (el) $('.st', el).textContent = '失败';
+      toast(f.filename + '：' + f.error, 'err');
+    });
+    const n = (data.accepted || []).length;
+    if (n) toast('已把 ' + n + ' 个 PDF 投递到 Kafka topic「' + (data.topic || '') + '」', 'ok');
+    if (data.documents) { data.documents.forEach((d) => S.docs.set(d.doc_id, d)); renderDocs(); syncScope(); qaBanner(); }
+  } catch (e) {
+    rows.forEach((el) => $('.st', el).textContent = '失败');
+    toast('上传请求异常：' + e.message, 'err');
+  }
+  setTimeout(() => { $$('#upQueue .row').forEach((el) => { if ($('.st', el).textContent.indexOf('…') < 0) el.remove(); }); }, 9000);
+}
+
+$('#btnSample').addEventListener('click', async () => {
+  const btn = $('#btnSample'); btn.disabled = true; btn.textContent = '载入中…';
+  try {
+    const r = await fetch('/api/sample');
+    if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || ('HTTP ' + r.status)); }
+    const blob = await r.blob();
+    const name = 'demo_multimodal_rag.pdf';
+    uploadFiles([new File([blob], name, { type: 'application/pdf' })]);
+  } catch (e) {
+    toast('示例文档不可用：' + e.message + '（可自行运行 python scripts/gen_sample_pdf.py）', 'err');
+  } finally { btn.disabled = false; btn.textContent = '载入示例文档'; }
+});
+
+/* ─────────────────── 功能 2：文档状态渲染 ─────────────────── */
+const LABEL = { pending: '待解析', parsing: '解析中', done: '解析完成', failed: '解析失败' };
+
+function renderDocs() {
+  const box = $('#docList');
+  const docs = Array.from(S.docs.values()).sort((a, b) => (b.uploaded_at || 0) - (a.uploaded_at || 0));
+  const c = { pending: 0, parsing: 0, done: 0, failed: 0 };
+  docs.forEach((d) => { c[d.state] = (c[d.state] || 0) + 1; });
+  $('#stats').innerHTML = ['pending', 'parsing', 'done', 'failed']
+    .map((k) => '<span class="badge ' + k + '">' + LABEL[k] + ' ' + c[k] + '</span>').join('');
+
+  if (!docs.length) {
+    box.innerHTML = '<div class="empty">还没有文档。上传后这里实时显示<strong>待解析 / 解析中 / 解析完成</strong>。</div>';
+    return;
+  }
+  box.innerHTML = '';
+  docs.forEach((d) => box.appendChild(docRow(d)));
+}
+
+function docRow(d) {
+  const el = document.createElement('div');
+  el.className = 'doc';
+  const pct = Math.max(0, Math.min(100, d.progress || 0));
+  const kind = d.state || 'pending';
+  const parserTag = d.parser ? (d.parser === 'mineru' ? 'MinerU' : '内置解析器') : '';
+  const errTag = d.error ? '<span style="color:var(--err)" title="' + esc(d.error) + '">错误详情</span>' : '';
+  el.innerHTML =
+    '<div class="doc-top"><div class="doc-name">' + esc(d.filename || d.doc_id) + '</div>' +
+    '<span class="badge ' + kind + '">' + (LABEL[kind] || kind) + '</span></div>' +
+    '<div class="bar ' + kind + '"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="doc-meta">' +
+      '<span>' + (d.pages || 0) + ' 页</span><span>·</span><span>' + fmtSize(d.size_bytes) + '</span>' +
+      (parserTag ? '<span>·</span><span>' + parserTag + '</span>' : '') +
+      (d.n_chunks ? '<span>·</span><span>' + d.n_chunks + ' 块</span>' : '') +
+      (d.n_images ? '<span>·</span><span>' + d.n_images + ' 图</span>' : '') +
+      '<span>·</span><span>' + fmtTime(d.updated_at) + '</span>' + errTag +
+      '<div class="msg">' + esc(d.message || d.stage_label || '') + '</div>' +
+    '</div>' +
+    '<div class="doc-acts">' +
+      (kind === 'done' || kind === 'failed'
+        ? '<button class="btn tiny ghost" data-act="detail">详情 / 图片</button>' +
+          '<button class="btn tiny ghost" data-act="reparse">重新解析</button>'
+        : (kind === 'parsing' ? '<span class="pill warn" style="font-size:10.5px"><span class="dot live"></span>' +
+            esc(d.stage_label || '解析中') + '</span>' : '')) +
+      (kind === 'done' ? '<button class="btn tiny ghost" data-act="md">解析产物 md</button>' : '') +
+      '<button class="btn tiny ghost danger" data-act="del">删除</button>' +
+      '<span class="spacer"></span><span class="mono" style="font-size:10px;color:var(--text-faint)">' +
+        esc(d.doc_id) + '</span>' +
+    '</div>';
+
+  $$('[data-act]', el).forEach((b) => b.addEventListener('click', () => docAction(b.dataset.act, d, el)));
+  return el;
+}
+
+async function docAction(act, d, el) {
+  if (act === 'del') {
+    if (!confirm('删除《' + d.filename + '》及其索引？')) return;
+    await fetch('/api/documents/' + encodeURIComponent(d.doc_id), { method: 'DELETE' });
+    S.docs.delete(d.doc_id); renderDocs(); syncScope();
+    toast('已删除 ' + d.filename, 'ok'); return;
+  }
+  if (act === 'reparse') {
+    const r = await fetch('/api/documents/' + encodeURIComponent(d.doc_id) + '/reparse', { method: 'POST' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast('重新解析失败：' + (j.detail || r.status), 'err'); return; }
+    toast('已重新投递到 Kafka', 'ok'); return;
+  }
+  if (act === 'md') { window.open('/api/documents/' + encodeURIComponent(d.doc_id) + '/markdown', '_blank'); return; }
+  if (act === 'detail') {
+    let box = $('details.detail', el);
+    if (box) { box.open = !box.open; return; }
+    box = document.createElement('details');
+    box.className = 'detail'; box.open = true;
+    box.innerHTML = '<summary>加载中…</summary>';
+    el.appendChild(box);
+    try {
+      const r = await fetch('/api/documents/' + encodeURIComponent(d.doc_id));
+      const j = await r.json();
+      const imgs = j.images || [], chunks = j.chunks || [];
+      box.innerHTML = '<summary>解析详情：' + chunks.length + ' 个检索块 / ' + imgs.length +
+        ' 张配图（点击收起）</summary>' +
+        (imgs.length ? '<div class="gal">' + imgs.map((im) =>
+          '<a href="' + esc(im.url) + '" target="_blank" rel="noopener"><img src="' + esc(im.url) +
+          '" alt="' + esc(im.caption || '配图') + '" loading="lazy"><div class="cap">第' + im.page +
+          '页 · ' + esc(im.caption || '（无描述）') + '</div></a>').join('') + '</div>' : '<div class="empty" style="padding:8px">这篇没有抽到图片</div>') +
+        '<div class="chunks">' + chunks.slice(0, 8).map((c) =>
+          '<div class="c"><b>[' + c.kind + ' p' + c.page + ']</b> ' + esc(c.text.slice(0, 150)) +
+          (c.text.length > 150 ? '…' : '') + '</div>').join('') + '</div>';
+    } catch (e) { box.innerHTML = '<summary>详情加载失败：' + esc(e.message) + '</summary>'; }
+  }
+}
+
+/* ─────────────── EventSource：Kafka 状态 → 页面 ─────────────── */
+function connectEvents() {
+  if (S.es) { try { S.es.close(); } catch (e) {} }
+  const es = new EventSource('/api/events');
+  S.es = es;
+  es.onopen = () => { $('#sseState').innerHTML = '<span class="dot live" style="display:inline-block;color:var(--ok)"></span> 实时连接（Kafka 状态 topic）'; };
+  es.onerror = () => {
+    $('#sseState').innerHTML = '<span class="pill err"><span class="dot"></span>连接中断，重连中…</span>';
+  };
+  es.onmessage = (ev) => {
+    let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+    if (m.type === 'snapshot') {
+      (m.documents || []).forEach((d) => S.docs.set(d.doc_id, d));
+      renderDocs(); syncScope();
+    } else if (m.type === 'status') {
+      const prev = S.docs.get(m.doc_id) || {};
+      S.docs.set(m.doc_id, Object.assign({}, prev, {
+        doc_id: m.doc_id, filename: m.filename || prev.filename, state: m.state,
+        stage: m.stage, stage_label: m.stage_label, progress: m.progress, message: m.message,
+        parser: m.parser !== undefined && m.parser !== '' ? m.parser : prev.parser,
+        n_chunks: m.n_chunks !== undefined ? m.n_chunks : prev.n_chunks,
+        n_images: m.n_images !== undefined ? m.n_images : prev.n_images,
+        n_pages: m.n_pages !== undefined ? m.n_pages : prev.n_pages,
+        error: m.error !== undefined ? m.error : prev.error,
+        size_bytes: prev.size_bytes || 0, uploaded_at: prev.uploaded_at || m.ts,
+        updated_at: m.ts,
+      }));
+      renderDocs();
+      if (m.state === 'done') { syncScope(); toast('《' + (m.filename || m.doc_id) + '》解析完成', 'ok'); qaBanner(); }
+      if (m.state === 'failed') { toast('《' + (m.filename || m.doc_id) + '》解析失败：' + (m.message || ''), 'err'); qaBanner(); }
+    } else if (m.type === 'counters') {
+      /* 计数已由 renderDocs 自行统计，这里保留给未来扩展 */
+    }
+  };
+}
+
+/* ───────────────────── 问答（功能 3） ───────────────────── */
+const qEl = $('#q'), sendBtn = $('#btnSend');
+
+function syncScope() {
+  const sel = $('#scope');
+  const done = Array.from(S.docs.values()).filter((d) => d.state === 'done');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全库检索</option>' + done.map((d) =>
+    '<option value="' + esc(d.doc_id) + '">仅：' + esc(d.filename) + '</option>').join('');
+  if (done.some((d) => d.doc_id === cur)) sel.value = cur;
+}
+$('#scope').addEventListener('change', () => {});
+
+function renderAttaches() {
+  const box = $('#attaches');
+  box.innerHTML = '';
+  S.attaches.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'att';
+    const url = URL.createObjectURL(f);
+    div.innerHTML = '<img src="' + url + '" alt="' + esc(f.name) + '" title="' + esc(f.name) + '">' +
+      '<button type="button" title="移除">×</button>';
+    $('button', div).addEventListener('click', () => { S.attaches.splice(i, 1); renderAttaches(); });
+    box.appendChild(div);
+  });
+}
+function addImages(list) {
+  const imgs = Array.from(list || []).filter((f) => /^image\//.test(f.type));
+  if (!imgs.length) return;
+  imgs.forEach((f) => S.attaches.push(f));
+  renderAttaches();
+  toast('已加入 ' + imgs.length + ' 张图片：将与问题一起送进模型', 'ok');
+}
+$('#btnImg').addEventListener('click', () => $('#imgInput').click());
+$('#imgInput').addEventListener('change', (e) => { addImages(e.target.files); e.target.value = ''; });
+document.addEventListener('paste', (e) => {
+  const items = Array.from((e.clipboardData || {}).items || []);
+  const files = items.filter((it) => it.kind === 'file' && /^image\//.test(it.type))
+    .map((it) => it.getAsFile()).filter(Boolean);
+  if (files.length) { e.preventDefault(); addImages(files); }
+});
+const composer = $('#composer');
+['dragenter', 'dragover'].forEach((ev) => composer.addEventListener(ev, (e) => { e.preventDefault(); composer.classList.add('over'); }));
+['dragleave', 'drop'].forEach((ev) => composer.addEventListener(ev, (e) => { e.preventDefault(); composer.classList.remove('over'); }));
+composer.addEventListener('drop', (e) => addImages(e.dataTransfer.files));
+
+function bubble(role, html) {
+  const m = document.createElement('div');
+  m.className = 'msg ' + role;
+  m.innerHTML = '<div class="who">' + (role === 'user' ? '你' : 'AI') + '</div><div class="body">' +
+    '<div class="who-nm">' + (role === 'user' ? '提问' : '知识库') + '</div>' + html + '</div>';
+  $('#msgs').appendChild(m);
+  $('#msgs').scrollTop = $('#msgs').scrollHeight;
+  return m;
+}
+
+qEl.addEventListener('input', () => { sendBtn.disabled = S.busy || (!qEl.value.trim() && !S.attaches.length); });
+qEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); }
+});
+sendBtn.addEventListener('click', ask);
+$('#btnClear').addEventListener('click', () => { $('#msgs').innerHTML = ''; greet(); });
+
+async function ask() {
+  const text = qEl.value.trim();
+  if (!text) { toast('请输入问题', 'err'); return; }
+  if (S.busy) return;
+  const attached = S.attaches.slice();
+
+  bubble('user', '<div class="bubble">' + mdInline(text).replace(/\n/g, '<br>') +
+    (attached.length ? '<div class="thumbs">' + attached.map((f) =>
+      '<img src="' + URL.createObjectURL(f) + '" alt="' + esc(f.name) + '">').join('') + '</div>' : '') +
+    '</div>');
+  qEl.value = ''; renderAttaches(); sendBtn.disabled = true;
+  S.busy = true; $('#qaMeta').innerHTML = '<span class="dot live"></span> 处理中';
+
+  const bot = bubble('bot', '<div class="bubble"><div class="stage"><span class="spin"></span>' +
+    '<span class="tx">投递到 Kafka…</span></div></div>');
+  const botBody = $('.body', bot);
+
+  const fd = new FormData();
+  fd.append('question', text);
+  fd.append('session_id', S.session);
+  if ($('#scope').value) fd.append('doc_ids', $('#scope').value);
+  attached.forEach((f) => fd.append('files', f, f.name));
+
+  let finalSeen = false;
+  try {
+    const resp = await fetch('/api/qa', { method: 'POST', body: fd });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      let msg = errText; try { msg = JSON.parse(errText).detail || errText; } catch (e) {}
+      throw new Error('HTTP ' + resp.status + ' ' + String(msg).slice(0, 200));
+    }
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder('utf-8');
+    let bufTxt = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bufTxt += dec.decode(value, { stream: true });
+      const frames = bufTxt.split('\n\n');
+      bufTxt = frames.pop();
+      for (const fr of frames) {
+        const dm = fr.match(/^data:\s*([\s\S]*)$/m);
+        if (!dm) continue;
+        let m; try { m = JSON.parse(dm[1]); } catch (e) { continue; }
+        handleQAEvent(m, botBody, text);
+        if (m.type === 'answer' || m.type === 'error') finalSeen = true;
+      }
+    }
+    if (!finalSeen) {
+      const st = $('.stage', botBody);
+      if (st) $('.tx', st).textContent = '连接结束，但未收到回答（QA Worker 是否在跑？见 /api/pipeline）';
+    }
+  } catch (e) {
+    botBody.innerHTML = '<div class="bubble"><div class="banner err" style="margin:0">提问失败：' +
+      esc(e.message) + '</div></div>';
+    toast('提问失败：' + e.message, 'err');
+  } finally {
+    S.busy = false; sendBtn.disabled = !qEl.value.trim();
+    $('#qaMeta').innerHTML = '<span class="pill ok">待命</span>';
+  }
+}
+
+let liveBuf = '';
+function handleQAEvent(m, bodyEl, question) {
+  if (m.type === 'accepted') {
+    liveBuf = '';
+    bodyEl.innerHTML = '<div class="bubble"><div class="stage"><span class="spin"></span>' +
+      '<span class="tx">已投递 topic「mmrag.qa.request」（' + esc(m.backend || '') + '）…</span></div></div>';
+    return;
+  }
+  if (m.type === 'stage') {
+    let st = $('.stage', bodyEl);
+    if (!st) { bodyEl.innerHTML = '<div class="bubble"><div class="stage"><span class="spin"></span><span class="tx"></span></div></div>'; st = $('.stage', bodyEl); }
+    const tx = m.message || m.stage_label || m.stage || '';
+    $('.tx', st).textContent = tx;
+    const im = m.images_to_model;
+    if (im) $('.tx', st).textContent = tx + '（送模型图片 ' + im + ' 张）';
+    return;
+  }
+  if (m.type === 'retrieved') return;      // stage 事件里已含
+  if (m.type === 'delta') {
+    liveBuf += m.delta || '';
+    let b = $('.bubble', bodyEl);
+    if (!$('.md', b)) b.innerHTML = '<div class="md"></div><span class="cursor"></span>';
+    $('.md', b).innerHTML = renderMarkdown(liveBuf);
+    $('#msgs').scrollTop = $('#msgs').scrollHeight;
+    return;
+  }
+  if (m.type === 'answer') {
+    const st = $('.stage', bodyEl); if (st) st.remove();
+    const s = m.stats || {};
+    bodyEl.innerHTML = '<div class="bubble"><div class="md">' + renderMarkdown(m.answer || '（空回答）') +
+      '</div>' + refsHtml(m.citations || [], m.used_images || []) + metaLine(s, m) + '</div>';
+    liveBuf = '';
+    return;
+  }
+  if (m.type === 'error') {
+    bodyEl.innerHTML = '<div class="bubble"><div class="banner err" style="margin:0">回答失败：' +
+      esc(m.error || '未知错误') + '</div>' + metaLine(m.stats || {}, m) + '</div>';
+    toast('回答失败：' + (m.error || ''), 'err');
+  }
+}
+
+function refsHtml(cites, images) {
+  if (!cites.length) return '';
+  return '<div class="refs"><div class="t">引用片段（' + cites.length + ' 个' +
+    (images.length ? '，其中 ' + images.length + ' 张配图已内嵌' : '') + '）</div>' +
+    cites.slice(0, 8).map((c) => '<div class="ref"><span class="n">〔' + c.index + '〕</span>' +
+      '<span class="txt">' + esc(c.filename) + ' · 第' + c.page + '页 · ' + esc(c.kind) +
+      (c.heading ? ' · ' + esc(c.heading) : '') + '</span>' +
+      '<span class="sc">' + (c.score || 0).toFixed(3) + '</span></div>').join('') + '</div>';
+}
+function metaLine(s, m) {
+  const bits = [];
+  if (m.model) bits.push('模型 <b>' + esc(m.model) + '</b>');
+  if (m.mock) bits.push('<b style="color:var(--warn)">mock</b>');
+  if (s.retrieved !== undefined) bits.push('召回 ' + s.retrieved + ' 片段' + (s.image_hits ? '（含 ' + s.image_hits + ' 图）' : ''));
+  if (s.images_sent_to_model) bits.push('图+问一起送模型 ' + s.images_sent_to_model + ' 张');
+  if (s.retrieval_ms) bits.push('检索 ' + s.retrieval_ms + 'ms');
+  if (s.total_ms) bits.push('总 ' + s.total_ms + 'ms');
+  return bits.length ? '<div class="doc-meta" style="margin-top:7px">' + bits.join(' · ') + '</div>' : '';
+}
+
+function greet() {
+  bubble('bot', '<div class="bubble"><div class="md">' + renderMarkdown(
+    '把 PDF 传到左边，状态变成<b>解析完成</b>后就能问它问题。\n\n' +
+    '- <b>输出图文混排</b>：答案里会直接内嵌文档中的配图\n' +
+    '- <b>图问一起送</b>：点「加图片」或直接粘贴截图，图片和问题进同一条多模态消息\n' +
+    '- 想知道链路怎么走，看右下角的 <code>/api/pipeline</code> 与顶栏徽标'
+  ) + '</div></div>');
+  $('#chips').innerHTML = [
+    '架构里 Kafka 起什么作用？',
+    '系统架构图长什么样？',
+    '图片是怎么被检索到的？',
+    '表 1 里的召回率分别是多少？',
+    'MinerU 不可用会怎样？',
+  ].map((t) => '<span class="chip">' + esc(t) + '</span>').join('');
+  $$('#chips .chip').forEach((c) => c.addEventListener('click', () => {
+    qEl.value = c.textContent; sendBtn.disabled = false; qEl.focus();
+  }));
+}
+
+$('#btnTheme').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : (cur === 'light' ? 'dark'
+    : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('mmrag.theme', next);
+});
+$('#btnHealth').addEventListener('click', () => {
+  window.open('/api/health', '_blank');
+  loadEnv(true);
+});
+
+/* ───────────────────────── 启动 ───────────────────────── */
+(async function boot() {
+  greet();
+  await loadEnv(false);
+  connectEvents();
+  try {
+    const r = await fetch('/api/documents');
+    const j = await r.json();
+    (j.documents || []).forEach((d) => S.docs.set(d.doc_id, d));
+    renderDocs(); syncScope(); qaBanner();
+  } catch (e) { toast('读取文档列表失败：' + e.message, 'err'); }
+  if (!S.docs.size) {
+    $('#docList').innerHTML = '<div class="empty">还没有文档。上传 PDF 后这里实时显示<strong>待解析 / 解析中 / 解析完成</strong>。</div>';
+  }
+})();
+</script>
+</body>
+</html>
