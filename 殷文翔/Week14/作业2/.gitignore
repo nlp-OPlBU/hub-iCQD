@@ -4,6 +4,13 @@
 __pycache__/
 *.py[cod]
 .venv/
+.venv-models/
+# 服务器项目专属模型及运行目录；根路径规则不忽略 backend/app/models。
+/models/
+/model-templates/
+/mineru/
+/runtime/
+/.cache/
 venv/
 .pytest_cache/
 .coverage

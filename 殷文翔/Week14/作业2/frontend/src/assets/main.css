@@ -1,0 +1,17 @@
+:root { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; color: #20342e; background: #f4f7f5; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.workspace { max-width: 1040px; margin: 0 auto; padding: 48px 24px; }
+header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+h1 { font-size: 30px; margin: 8px 0 30px; }
+h2 { font-size: 24px; }
+.eyebrow { color: #477565; font-size: 12px; letter-spacing: .14em; font-weight: 600; }
+.badge { background: #e3ece7; border-radius: 20px; padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+nav { display: flex; gap: 28px; border-bottom: 1px solid #d7e0db; margin-bottom: 28px; }
+nav a { text-decoration: none; color: #65766e; padding: 14px 0; }
+nav a.router-link-active { color: #226348; border-bottom: 3px solid #226348; }
+.panel { background: white; border: 1px solid #dce5df; border-radius: 14px; padding: 32px; }
+.panel p { line-height: 1.8; }
+.empty-state { border: 1px dashed #b9ccc0; color: #65766e; padding: 48px 16px; text-align: center; border-radius: 8px; margin-top: 28px; }
+footer { color: #68796f; font-size: 13px; margin-top: 24px; }
+@media (max-width: 600px) { .workspace { padding: 24px 16px; } header { align-items: flex-start; } .panel { padding: 22px; } h1 { font-size: 24px; } }

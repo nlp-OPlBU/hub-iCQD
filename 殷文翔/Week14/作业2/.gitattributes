@@ -1,0 +1,2 @@
+# Keep executable shell scripts usable after Windows checkouts.
+*.sh text eol=lf

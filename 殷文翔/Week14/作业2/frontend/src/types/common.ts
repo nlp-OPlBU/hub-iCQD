@@ -1,0 +1,9 @@
+export interface ErrorDetail {
+  code: string
+  message: string
+  retryable: boolean
+  details: Record<string, unknown>
+}
+export interface ErrorResponse { error: ErrorDetail; request_id: string }
+export interface Page<T> { items: T[]; page: number; page_size: number; total: number }
+export interface HealthResponse { status: string; service: string; scope: string }

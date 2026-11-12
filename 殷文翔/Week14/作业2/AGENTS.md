@@ -3,8 +3,9 @@
 ## 适用范围与当前阶段
 
 本文件适用于当前项目根目录及全部子目录。用户的明确指令优先于本文。
+当前开发环境未必是服务器部署环境，若为windows则为用户个人开发环境。
 
-当前项目仅有目录骨架、配置示例和说明文档；Python、Vue、测试、SQL、Shell、Nginx 和 ES mapping 文件仍为空白占位。不得把占位文件当作已实现功能或已通过测试的证据。本轮结构调整不包括业务实现、服务器启动或部署。
+当前项目已实现统一配置、JSON 日志、FastAPI 入口与健康检查、SQLAlchemy 数据模型和 Alembic 首版迁移、PDF 批量上传与文档/任务查询、文件补偿工具，并已初始化可构建的 Vue/Vite 工程。解析 Worker、outbox 投递器、检索、问答、后续状态流转 repositories 与大部分业务 UI 仍待实现；API 契约见 docs/api.md，实际检查见 docs/verification.md。不得把占位文件或契约当作已实现功能；服务器部署需另行安排。
 
 开始工作时阅读 `REMADE.md` 和 `docs/environment.md`。修改结构、选型、接口或配置时同步更新对应文档。环境文档中的命令只作参考，不代表有权启动、停止或修改共享服务。
 
@@ -18,11 +19,11 @@
 
 - 前端：Vue 3、TypeScript、Vite；构建后由服务器现有 Nginx 提供静态资源。
 - 后端：FastAPI；业务 API 默认规划绑定 `127.0.0.1:8001`，避免与 vLLM 的 `8000` 冲突。
-- LLM：复用服务器 vLLM 的兼容接口，默认地址 `http://localhost:8000/v1`；文档提供的模型标识是 `models/Qwen3.5-0.8B/`，实际以 `/v1/models` 返回值为准。
-- MinerU：复用 `mineru-kit parse <pdf> --format zip -o <zip> --tier advanced`；这是 CLI 适配，不能假设服务器已经启动了 MinerU HTTP 服务。
+- LLM：全本地模型规划以 `docs/models.md` 为准，首版 Qwen3.5-4B 使用 `http://127.0.0.1:8100/v1`、别名 `rag-vlm`；Embedding 和 Reranker 分别规划 8102、8103，均待部署验证。原环境的 `8000` 和 `models/Qwen3.5-0.8B/` 仅保留为历史环境记录，不自动停止或覆盖；实际模型 ID 以 `/v1/models` 为准。
+- MinerU：复用 `mineru-kit parse <pdf> --format zip -o <zip> --tier advanced` 的 CLI 适配。新方案规划独立的本机专用 VLM 端点 `8104`，它不是 PDF 解析 HTTP API；模型由匹配的 MinerU 版本管理，未启动前不能假设服务存在。
 - Kafka：复用文档给出的 `localhost:9092`；保留为解析任务总线，Redis 和 Temporal 不替代它。
 - MySQL：保存文档、任务、会话、消息及 outbox 事件；使用项目专用数据库和账号，不复制环境原文中的管理员凭据。
-- Elasticsearch：复用文档列出的 8.15.3，保存文本分块、图片说明、来源信息和可选向量。默认规划 BM25；配置并验证独立 Embedding 模型后再启用向量或混合检索。
+- Elasticsearch：复用文档列出的 8.15.3，保存文本分块、图片说明、来源信息和可选向量。目标为 BM25 + Qwen3-VL-Embedding-2B（规划 2048 维）混合检索及 Qwen3-VL-Reranker-2B 重排；配置示例保持 BM25 和关闭重排，完成模型与索引验证后再启用。
 - Redis：用于有 TTL 的缓存和辅助协调，键使用项目命名空间；不得成为解析状态唯一数据源。
 - 不再引入 PostgreSQL、Qdrant、Docker Compose 等默认依赖。Temporal、Neo4j 暂不接入主链路；仅在新需求确实需要时扩展。
 - 所有地址、路径、模型、端口、索引名、Topic 和数据库连接信息从配置读取。`.env.example` 是示例，不是服务已可用的证明。
@@ -39,7 +40,7 @@
 - `backend/app/workers`：独立运行 PDF 消费者和 outbox 投递器。
 - `frontend/src/api`、`types`、`stores`、`components`、`views`：分别承担接口、类型、状态、组件和页面；UI 不直接访问 Kafka、MySQL、Redis、ES 或 vLLM。
 - `infra`：项目专属的配置模板和接入说明，不是共享服务配置的覆盖副本。
-- `scripts`：项目开发、环境检查和各进程启动入口；业务实现前保持占位。
+- `scripts`：项目开发、环境检查和各进程启动入口；已提供 API、数据库迁移与前端构建入口，未实现业务进程的脚本继续保持占位。
 - `data`、`logs`：运行数据；使用统一配置的项目数据根路径，API 与 Worker 共享可访问的文件存储。相对路径统一基于项目根目录解析。
 
 ## 上传与异步任务约定
@@ -82,7 +83,7 @@
 ## 验证与交付
 
 - 仅改骨架或文档时，检查目录、链接、术语和占位文件即可；不运行空白配置或为占位内容编造测试。
-- 实现后为改动执行必要检查。预期命令为 `cd backend && python -m pytest` 和 `cd frontend && npm run build`；依赖、测试、构建脚本未落地前这些不是可执行的当前验收步骤。
+- 实现后为改动执行必要检查。安装项目依赖并激活虚拟环境后执行 `cd backend && python -m pytest` 和 `cd frontend && npm run build`；真实 MySQL 临时实例测试需显式设置 `RAG_TEST_MYSQL_BINARY`，默认跳过，详情见 docs/database.md 和 docs/verification.md。
 - 后端重点验证批量上传、状态流转、outbox 补偿、重复消费、重试和失败落地、MinerU 超时与异常 ZIP、ES 索引失败及真实图片输入。
 - 前端验证多文件上传、轮询清理、状态错误提示、图片预览、图文混排与来源展示；外部服务联调使用项目专属测试资源。
 - 交付说明写清已修改内容、已运行检查、尚未实现内容和环境待确认项。不得声称未实际执行的服务启动、部署、测试或问答已成功。

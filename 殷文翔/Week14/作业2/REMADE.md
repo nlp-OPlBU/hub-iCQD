@@ -2,7 +2,11 @@
 
 ## 当前阶段
 
-已根据用户提供的服务器环境完成目录调整、配置示例与 `AGENTS.md`。本项目仍处于结构阶段：所有业务实现、测试、依赖清单、前端配置、SQL、Shell 和 Nginx 配置均为空白占位，尚不能启动或构建。本次没有连接或修改服务器。
+已完成后端基础工程，以及 PDF 批量上传的类型/大小/数量校验、内部 UUID 存储、同事务文档/pending 任务/outbox 写入、文件补偿工具、文档列表/详情与任务状态查询；Vue 3 / TypeScript / Vite 工程可构建。解析 Worker、outbox 投递、检索、问答及业务 UI 仍未实现，上传后任务保持 pending。本次没有连接或修改共享服务器；本地验收与限制见 [验证记录](docs/verification.md)。
+
+优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
+
+已补充 [全本地模型部署指南](docs/models.md)：基于用户确认的单卡 48GB 显存、CPU 20 核、90GB 内存，说明模型职责、权重保存位置、下载与启动命令、MinerU 配置及验证步骤。文档命令未执行，不代表服务器已部署。
 
 ## 环境适配后的技术规划
 
@@ -11,11 +15,11 @@
 | 前端 | Vue 3 + TypeScript + Vite，构建后交给现有 Nginx |
 | HTTP API | FastAPI，规划使用 8001，避开已有 vLLM 的 8000 |
 | 解析队列 | 现有 Kafka，独立 PDF Worker；MySQL outbox 负责可靠投递 |
-| PDF 解析 | 现有 MinerU CLI：`mineru-kit parse ... --format zip ... --tier advanced` |
+| PDF 解析 | MinerU CLI：`mineru-kit parse ... --format zip ... --tier advanced`；规划本机 8104 专用 VLM 供 CLI 使用 |
 | 业务存储 | 现有 MySQL，保存文档、状态、任务、会话、消息与 outbox |
-| 检索存储 | 现有 Elasticsearch，先规划 BM25，预留独立 Embedding 后的向量与混合检索 |
+| 检索存储 | 现有 Elasticsearch，目标 BM25 + 2048 维图文向量及多模态重排；实测前保持 BM25 |
 | 缓存 | 现有 Redis，辅助缓存与协调，MySQL 保留持久化状态 |
-| 模型 | 现有 vLLM `http://localhost:8000/v1`，模型 ID 和视觉能力待实际验证 |
+| 模型 | 全本地 Qwen3.5-4B（8100）、Qwen3-VL-Embedding-2B（8102）、Qwen3-VL-Reranker-2B（8103），均待部署验证；保留原 8000 环境记录 |
 | 文件 | API 与 Worker 共享可访问的数据目录，保存原始 PDF、解析产物和图片 |
 | 部署 | 服务器原生进程 + Nginx；不以 Docker、PostgreSQL、Qdrant 为默认依赖 |
 
@@ -23,7 +27,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 ## 完整目录结构
 
-下列目录树按实际文件生成。除说明文档、`.env.example` 和 `.gitignore` 外，文件均为空白占位；注释描述后续实现职责。
+下列为原始目录骨架与职责说明，不作为实现清单。当前已实现与待实现范围见本页“当前阶段”；新增 Alembic 配置与迁移版本、基础测试、依赖锁文件及公共 schema/types 等文件以实际目录为准。业务服务和未启用的组件仍为占位。
 
 ```text
 作业2/
@@ -37,7 +41,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   │   ├── routes/
 │   │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   │   ├── chat.py  # 图文问题、回答与来源
-│   │   │   │   ├── documents.py  # 批量上传、列表、状态与重试
+│   │   │   │   ├── documents.py  # 已实现批量上传、列表、详情及任务查询；重试待实现
 │   │   │   │   └── health.py  # 健康检查
 │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   └── router.py  # 路由注册
@@ -46,7 +50,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   │   ├── config.py  # 环境变量与路径配置
 │   │   │   └── logging.py  # 日志初始化与脱敏
 │   │   ├── db/  # MySQL 连接与迁移
-│   │   │   ├── migrations/  # 后续数据库迁移文件
+│   │   │   ├── migrations/  # Alembic env.py、模板及 versions/0001_initial.py
 │   │   │   │   └── .gitkeep  # 保留目录
 │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   ├── base.py  # ORM 基类
@@ -69,29 +73,33 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   ├── chunking.py  # 分块、页码及图片关联
 │   │   │   ├── elasticsearch_store.py  # ES 分块索引、BM25 与可选向量检索
-│   │   │   ├── embedding.py  # 独立向量模型适配，待配置
+│   │   │   ├── embedding.py  # 独立图文向量模型适配，待实现与验证
 │   │   │   ├── kafka_producer.py  # Kafka 任务生产与发送确认
-│   │   │   ├── llm_client.py  # 现有 vLLM 兼容接口与图像输入
+│   │   │   ├── llm_client.py  # 项目 vLLM 兼容接口与图像输入
 │   │   │   ├── mineru_cli.py  # MinerU CLI 子进程与 ZIP 产物适配
 │   │   │   ├── rag.py  # 图文 RAG 编排、回答与来源引用
 │   │   │   ├── redis_cache.py  # 有 TTL 的缓存和辅助协调
-│   │   │   ├── retrieval.py  # 文档过滤、检索及上下文组织
-│   │   │   └── storage.py  # 原文件、ZIP、解析产物和图片存取
+│   │   │   ├── retrieval.py  # 文档过滤、混合检索、重排及上下文组织
+│   │   │   ├── storage.py  # 已实现 PDF 校验、内部 ID 存储及补偿记录；其他产物待实现
+│   │   │   ├── upload_multipart.py  # 完整请求限流暂存、multipart 数量及完整性检查
+│   │   │   ├── uploads.py  # 逐文件事务及文件清理/提交结果确认
+│   │   │   └── upload_recovery.py  # 停止上传后核对主库并清理孤立文件
 │   │   ├── workers/  # 与 API 分开启动的进程
 │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   ├── outbox_dispatcher.py  # 将 MySQL outbox 可靠投递到 Kafka
 │   │   │   └── pdf_consumer.py  # Kafka 消费、MinerU、索引与状态更新
 │   │   ├── __init__.py  # Python 包标记
 │   │   └── main.py  # FastAPI 应用入口
-│   ├── tests/  # 测试占位，尚未编写测试
+│   ├── tests/  # 已有基础、上传及 MySQL 迁移测试；其他业务测试仍占位
 │   │   ├── __init__.py  # Python 包标记
-│   │   ├── test_documents.py  # 上传与状态查询
+│   │   ├── conftest.py  # 显式启用的临时真实 MySQL fixture
+│   │   ├── test_documents.py  # 已实现上传、查询、事务回滚及文件补偿测试
 │   │   ├── test_mineru_cli.py  # 子进程、超时与异常 ZIP
 │   │   ├── test_outbox.py  # 事务事件和投递补偿
 │   │   ├── test_pdf_consumer.py  # 幂等消费、重试与失败处理
 │   │   ├── test_rag.py  # 真实图像传递、回答与来源
 │   │   └── test_retrieval.py  # ES 检索、范围过滤与模式切换
-│   └── requirements.txt  # Python 依赖（空白）
+│   └── requirements.txt  # 运行依赖；另有 requirements-dev.txt、requirements-lock.txt
 ├── frontend/  # Vue 3 + TypeScript + Vite 前端
 │   ├── public/  # 静态资源
 │   │   └── .gitkeep  # 保留目录
@@ -124,9 +132,9 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   ├── env.d.ts  # 环境类型声明
 │   │   └── main.ts  # 前端入口
 │   ├── index.html  # HTML 入口
-│   ├── package.json  # 前端依赖和命令（空白）
-│   ├── tsconfig.json  # TypeScript 配置（空白）
-│   └── vite.config.ts  # 构建和开发代理配置（空白）
+│   ├── package.json  # 前端依赖和命令；package-lock.json 锁定安装
+│   ├── tsconfig.json  # TypeScript 严格检查
+│   └── vite.config.ts  # 构建和开发代理配置
 ├── infra/  # 复用服务器服务的项目配置与说明
 │   ├── elasticsearch/
 │   │   └── index_mapping.json  # 分块、来源与可选向量 mapping（空白）
@@ -135,13 +143,13 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   ├── mineru/
 │   │   └── README.md  # 现有 MinerU CLI 接入说明
 │   ├── mysql/
-│   │   └── init.sql  # 项目数据库与初始结构（空白）
+│   │   └── init.sql  # 指向 Alembic 的说明，表结构不在这里重复维护
 │   ├── nginx/
 │   │   └── multimodal-rag.conf  # 前端静态资源与业务 API 代理（空白）
 │   ├── redis/
 │   │   └── README.md  # 现有 Redis 接入与键命名空间
 │   └── vllm/
-│       └── README.md  # 现有模型接口与图片能力待验证项
+│       └── README.md  # 本地模型接口规划与能力待验证项
 ├── data/  # 本地文件存储，仅保留目录标记
 │   ├── images/  # PDF 提取图片与图表
 │   │   └── .gitkeep  # 保留目录
@@ -154,17 +162,18 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 ├── logs/  # 运行日志目录
 │   └── .gitkeep  # 保留目录
 ├── docs/  # 架构、环境、接口和部署文档
-│   ├── api.md  # 后续接口说明（空白）
+│   ├── api.md  # 健康接口与业务 API 契约
 │   ├── architecture.md  # 整体组件与任务数据流
 │   ├── deployment.md  # 原生部署规划与脚本职责
-│   └── environment.md  # 服务器环境适配与待确认信息
-└── scripts/  # 开发、环境检查与项目进程入口（空白）
-    ├── build_frontend.sh  # 构建前端（空白）
+│   ├── environment.md  # 服务器环境适配与待确认信息
+│   └── models.md  # 全本地模型选型、保存位置、启动命令与 MinerU 配置
+└── scripts/  # API/迁移/构建可用，其余待实现
+    ├── build_frontend.sh  # 安装锁定依赖并构建前端
     ├── check_environment.sh  # 服务器只读环境检查（空白）
     ├── dev.ps1  # Windows 开发入口（空白）
     ├── dev.sh  # Linux 开发入口（空白）
-    ├── init_mysql.sh  # 项目数据库初始化入口（空白）
-    ├── start_api.sh  # 独立启动 API（空白）
+    ├── init_mysql.sh  # 对配置中的项目数据库执行 Alembic 升级
+    ├── start_api.sh  # 独立启动 API
     ├── start_dispatcher.sh  # 独立启动 outbox 投递器（空白）
     └── start_worker.sh  # 独立启动 PDF 消费者（空白）
 ```
@@ -173,9 +182,11 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 ### 1. 批量 PDF 上传和异步解析
 
-`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。
+规划链路：`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。当前已实现 HTTP 上传到 MySQL outbox 持久化这一段，前端上传 UI 和后续队列/解析仍待实现。
 
 浏览器通过 HTTP 上传，Kafka 只传任务元数据；原始文件留在共享文件存储。队列按至少一次投递设计，消费者需要幂等、超时处理、有限重试与失败记录，不能将数据库写入和 Kafka 发送假定为一个天然原子操作。
+
+文件系统和数据库之间使用持久补偿记录：确认提交前失败就尝试清理文件；COMMIT 结果不明时保留原文件，通过新主库会话确认或停止上传后运行补偿工具。具体操作见 [上传文件补偿](docs/database.md#上传文件补偿)。上传请求不解析 PDF。
 
 ### 2. 解析状态展示
 
@@ -190,9 +201,9 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 ### 3. 多模态 RAG 问答
 
-`ChatInput.vue` 提交文字和可选图片 → `api/routes/chat.py` → `llm_client.py` 辅助理解图片并形成检索文本 → `retrieval.py` 在已完成文档内检索 → `rag.py` 组织上下文与来源 → `llm_client.py` 将问题、用户原图和相关文档图文一起送给视觉模型 → `ChatMessage.vue` 展示 Markdown 图文 → `SourceReferences.vue` 展示来源文档和页码。
+`ChatInput.vue` 提交文字和可选图片 → `api/routes/chat.py` → `llm_client.py` 按需理解图片并形成检索文本，`embedding.py` 编码图文查询 → `retrieval.py` 在已完成且当前有效的文档范围内召回、融合和重排 → `rag.py` 组织上下文与来源 → `llm_client.py` 将问题、用户原图和相关文档图文一起送给视觉模型 → `ChatMessage.vue` 展示 Markdown 图文 → `SourceReferences.vue` 展示来源文档和页码。
 
-当前环境未列出 Embedding 服务，故配置示例使用 BM25，不伪造向量；后续配置真实模型和维度后再启用向量或混合检索。当前只有 vLLM 文本请求示例，必须验证实际图片输入后才开启视觉能力。上述限制是后续联调任务，不代表多模态需求已取消或已完成。
+已完成 Embedding 与 Reranker 的选型和配置示例，但没有部署或验证服务，因此默认仍使用 BM25、关闭重排，不伪造向量或评分；后续验证真实模型、2048 维输出和 ES 索引后再启用混合检索。视觉能力也必须经真实图片输入测试后开启。上述限制是后续联调任务，不代表多模态需求已取消或已完成。
 
 ## 开发入口与约定
 
@@ -200,6 +211,10 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 - [.env.example](.env.example)：不含真实密钥的配置结构示例；已提供地址和规划默认值都需要服务器核验。
 - [docs/architecture.md](docs/architecture.md)：组件关系和异步任务链路。
 - [docs/deployment.md](docs/deployment.md)：复用现有服务器环境的部署顺序和脚本职责。
-- [docs/api.md](docs/api.md)：后续接口文档占位。
+- [docs/models.md](docs/models.md)：全本地模型职责、服务器权重位置、下载、vLLM 启动、MinerU 配置与资源预算。
+- [docs/api.md](docs/api.md)：已实现的健康/上传/查询接口，以及后续业务接口的统一契约。
+- [docs/database.md](docs/database.md)：6 张业务表、迁移原理、升级和回滚方法。
+- [docs/configuration.md](docs/configuration.md)：配置加载、限制、日志与路径约定。
+- [docs/verification.md](docs/verification.md)：实际检查结果与未验证项。
 
-业务代码尚未编写，不执行空白脚本或安装空白依赖清单，也不把目录检查当作功能测试通过。服务器材料中的原始密码没有复制进本项目。
+基础工程已可检查和构建，完整业务链路仍待实现；不执行剩余空白脚本，不把基础测试当业务联调通过。服务器材料中的原始密码没有复制进本项目。

@@ -1,0 +1,7 @@
+fastapi==0.115.12
+uvicorn==0.34.2
+pydantic-settings==2.9.1
+SQLAlchemy==2.0.40
+alembic==1.15.2
+PyMySQL[rsa]==1.1.1
+python-multipart==0.0.33
