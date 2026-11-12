@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LangGraph SQL Agent · 执行过程可视化</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">LG</div>
+        <div class="brand-text">
+          <h1>LangGraph SQL Agent</h1>
+          <p class="subtitle">Chinook · 执行过程可视化</p>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <span class="status" id="status">
+          <span class="dot" id="statusDot"></span>
+          <span id="statusText">连接中…</span>
+        </span>
+        <label class="switch" title="不调用外部模型，用确定性规则驱动 LangGraph">
+          <span class="switch-label">离线演示</span>
+          <input type="checkbox" id="mockToggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <section class="side-section">
+        <div class="side-head">
+          <h2>示例问题</h2>
+          <span class="side-tag">点击填入</span>
+        </div>
+        <div class="examples" id="examples"></div>
+      </section>
+
+      <section class="side-section">
+        <div class="side-head">
+          <h2>执行图</h2>
+          <span class="side-tag">8 nodes</span>
+        </div>
+        <ol class="node-list">
+          <li><span><i class="node-dot"></i>选择数据表</span><code>select_tables</code></li>
+          <li><span><i class="node-dot"></i>生成 SQL</span><code>generate_sql</code></li>
+          <li><span><i class="node-dot"></i>校验 SQL</span><code>validate_sql</code></li>
+          <li><span><i class="node-dot"></i>执行 SQL</span><code>execute_sql</code></li>
+          <li><span><i class="node-dot warn"></i>修复 SQL</span><code>repair_sql</code></li>
+          <li><span><i class="node-dot"></i>汇总答案</span><code>summarize</code></li>
+          <li><span><i class="node-dot warn"></i>人工澄清</span><code>clarify</code></li>
+          <li><span><i class="node-dot err"></i>失败兜底</span><code>fail</code></li>
+        </ol>
+      </section>
+
+      <div class="side-bottom">
+        <p class="hint" id="hint">正在检测后端配置…</p>
+        <button class="ghost full" id="clearBtn" type="button">清空对话</button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="workspace-head">
+        <div>
+          <h1>对话</h1>
+          <p>每次回答都附带节点轨迹与结果表</p>
+        </div>
+        <span class="workspace-meta">SQLite · chinook.db</span>
+      </header>
+
+      <main class="chat" id="chat">
+        <section class="empty" id="emptyState">
+          <div class="empty-card">
+            <span class="empty-kicker">StateGraph · 8 个节点</span>
+            <h2>问一个关于 Chinook 数据库的问题</h2>
+            <p>后端会把命中节点、选中的表、SQL、校验结果、行数和修复次数全部回传。遇到口径歧义时图会暂停，等你选择后从检查点继续。</p>
+            <div class="flow">
+              <span>选表</span><i>→</i><span>生成 SQL</span><i>→</i><span>校验</span><i>→</i>
+              <span>执行</span><i>→</i><span>修复</span><i>→</i><span>汇总</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="composer">
+        <div class="input-row">
+          <textarea id="question" rows="1" placeholder="例如：总共有多少张专辑？（Enter 发送，Shift+Enter 换行）"></textarea>
+          <button id="sendBtn" type="button">
+            <span class="send-label">发送</span>
+            <span class="send-spinner" hidden></span>
+          </button>
+        </div>
+        <p class="composer-hint">SQL 与结果表均可展开查看 · 支持连续多轮提问</p>
+      </footer>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

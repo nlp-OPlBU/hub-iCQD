@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chinook SQL Agent</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>Chinook SQL Agent</h1>
+      <span id="badge" class="badge">连接中…</span>
+    </div>
+  </header>
+
+  <main id="chat" class="chat">
+    <div class="message assistant">
+      <div class="bubble">
+        <p>你好，我是 SQL 分析助手。请用自然语言描述你想查询的数据，我会生成并执行 SQL 后给出答案。</p>
+      </div>
+    </div>
+  </main>
+
+  <div id="examples" class="examples"></div>
+
+  <footer class="composer">
+    <textarea id="input" rows="1" placeholder="例如：总共有多少张专辑？"></textarea>
+    <button id="send" type="button">发送</button>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

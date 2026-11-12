@@ -1,0 +1,4 @@
+langgraph>=1.0
+langchain>=1.0
+langchain-openai>=1.0
+sqlalchemy>=2.0

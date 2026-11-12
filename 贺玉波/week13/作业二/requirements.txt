@@ -1,0 +1,6 @@
+langgraph>=1.0
+langchain>=1.0
+langchain-openai>=1.0
+sqlalchemy>=2.0
+fastapi>=0.110
+uvicorn[standard]>=0.27

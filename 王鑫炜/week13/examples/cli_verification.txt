@@ -1,0 +1,84 @@
+$ python sql_agent.py --demo
+模式：离线固定案例（未调用模型）
+流程：parse_database -> select_tables -> generate_sql -> validate_sql -> execute_sql -> summarize
+选表：invoices
+SQL：SELECT ROUND(SUM(Total), 2) AS total_amount FROM invoices;
+修复次数：0
+回答：所有发票的总金额为 2328.60（数据库未注明币种）。
+退出码：0
+
+$ python sql_agent.py --demo --inject-bad-sql
+模式：离线固定案例（未调用模型）
+流程：parse_database -> select_tables -> generate_sql -> validate_sql -> repair_sql -> validate_sql -> execute_sql -> summarize
+选表：invoices
+SQL：SELECT ROUND(SUM(Total), 2) AS total_amount FROM invoices;
+修复次数：1
+回答：所有发票的总金额为 2328.60（数据库未注明币种）。
+退出码：0
+
+$ python sql_agent.py --demo 查询来自 Atlantis 的客户
+模式：离线固定案例（未调用模型）
+流程：parse_database -> select_tables -> generate_sql -> validate_sql -> execute_sql -> summarize
+选表：customers
+SQL：SELECT CustomerId, FirstName, LastName FROM customers WHERE Country = 'Atlantis';
+修复次数：0
+回答：未查到符合条件的数据。
+退出码：0
+
+$ python sql_agent.py --demo --inject-bad-sql --max-retries 0
+模式：离线固定案例（未调用模型）
+流程：parse_database -> select_tables -> generate_sql -> validate_sql -> handle_failure
+选表：invoices
+SQL：SELECT MissingColumn FROM "invoices";
+修复次数：0
+回答：查询未完成，已尝试修复 0 次。当前错误：no such column: MissingColumn。没有可用于回答问题的成功查询结果。
+退出码：1
+
+$ python sql_agent.py --demo --max-rows 2 消费金额最高的前 3 位客户是谁？
+模式：离线固定案例（未调用模型）
+流程：parse_database -> select_tables -> generate_sql -> validate_sql -> execute_sql -> summarize
+选表：customers, invoices
+SQL：SELECT c.CustomerId, c.FirstName || ' ' || c.LastName AS customer_name, ROUND(SUM(i.Total), 2) AS total_spent FROM customers AS c JOIN invoices AS i ON c.CustomerId = i.CustomerId GROUP BY c.CustomerId, c.FirstName, c.LastName ORDER BY total_spent DESC, c.CustomerId ASC LIMIT 3;
+修复次数：0
+回答：查询结果：[{"CustomerId": 6, "customer_name": "Helena Holý", "total_spent": 49.62}, {"CustomerId": 26, "customer_name": "Richard Cunningham", "total_spent": 47.62}]这里只展示前 2 行预览，不能据此判断全量结果。
+退出码：0
+
+$ python sql_agent.py --graph
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	parse_database(parse_database)
+	select_tables(select_tables)
+	generate_sql(generate_sql)
+	validate_sql(validate_sql)
+	execute_sql(execute_sql)
+	repair_sql(repair_sql)
+	summarize(summarize)
+	handle_failure(handle_failure)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> parse_database;
+	execute_sql -.-> handle_failure;
+	execute_sql -.-> repair_sql;
+	execute_sql -.-> summarize;
+	generate_sql -. &nbsp;fail&nbsp; .-> handle_failure;
+	generate_sql -. &nbsp;ok&nbsp; .-> validate_sql;
+	parse_database -. &nbsp;fail&nbsp; .-> handle_failure;
+	parse_database -. &nbsp;ok&nbsp; .-> select_tables;
+	repair_sql -. &nbsp;fail&nbsp; .-> handle_failure;
+	repair_sql -. &nbsp;ok&nbsp; .-> validate_sql;
+	select_tables -. &nbsp;ok&nbsp; .-> generate_sql;
+	select_tables -. &nbsp;fail&nbsp; .-> handle_failure;
+	validate_sql -.-> execute_sql;
+	validate_sql -.-> handle_failure;
+	validate_sql -.-> repair_sql;
+	handle_failure --> __end__;
+	summarize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+
+退出码：0
