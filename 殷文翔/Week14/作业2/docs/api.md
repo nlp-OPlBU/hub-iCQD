@@ -1,6 +1,6 @@
 # HTTP API 契约（v1）
 
-已实现 **健康检查、统一错误结构、请求 ID、PDF 批量上传、文档列表/详情、任务状态查询**。人工重试、图片资源、会话与问答仍为开发契约，尚未注册路由。Pydantic 定义在 `backend/app/schemas/`，前端类型在 `frontend/src/types/`。`/api/docs`、`/api/redoc`、`/api/openapi.json` 仅展示实际已实现接口；outbox 投递器和解析 Worker 尚未实现，上传后任务保持 pending。
+已实现 **健康检查、统一错误结构、请求 ID、PDF 批量上传、文档列表/详情、任务状态查询、人工重试**。图片资源、会话与问答仍为开发契约，尚未注册路由。Pydantic 定义在 `backend/app/schemas/`，前端类型在 `frontend/src/types/`。`/api/docs`、`/api/redoc`、`/api/openapi.json` 仅展示实际已实现接口；outbox 投递器、Kafka 生产/消费和可恢复解析 Worker 已实现；上传后任务会由独立进程推进，真实 MinerU/ES 联调仍待服务器验证。
 
 ## 1. 通用约定
 
@@ -112,9 +112,9 @@ SQL 外键保证指针属于同一文档的真实任务，不能单靠外键保�
 | `GET /api/documents?page=1&page_size=20&status=processing` | `Page[DocumentRead]`，status 可选、按最新任务过滤；检索可用性独立由指针决定 |
 | `GET /api/documents/{document_id}` | `DocumentRead`；不存在 404 |
 | `GET /api/tasks/{task_id}` | `TaskRead`（即 latest_task 同型）；允许查询历史任务 |
-| `POST /api/documents/{document_id}/retry`（待实现） | 202，返回新任务 `TaskRead` |
+| `POST /api/documents/{document_id}/retry`（已实现） | 202，返回新任务 `TaskRead`；必须带 UUID `Idempotency-Key` |
 
-重试必须带 `Idempotency-Key: <UUID>`，JSON `{ "expected_latest_version": 1 }`。事务锁定文档行：相同 key 和原请求返回原任务（不再次递增）；相同 key 不同原请求返回 409；不同 key 但版本过期返回 VERSION_CONFLICT；只有最新任务 failed 才可创建新版本，其他状态返回 TASK_NOT_RETRYABLE。文档 latest_version、新任务及 outbox 必须同事务提交；已终止旧版本与其错误记录保留。
+重试必须带 `Idempotency-Key: <UUID>`，JSON `{ "expected_latest_version": 1 }`。当前实现事务锁定文档行：相同 key 和原请求返回原任务（不再次递增）；相同 key 不同原请求返回 409 IDEMPOTENCY_CONFLICT；不同 key 但版本过期返回 VERSION_CONFLICT；只有最新任务 failed 才可创建新版本，其他状态返回 TASK_NOT_RETRYABLE。文档 latest_version、新任务及 outbox 同事务提交；已终止旧版本与其错误记录保留，旧 Worker 的完成/失败更新会因版本条件失败而丢弃。
 
 ## 4. outbox、自动重试与租约
 
@@ -133,9 +133,9 @@ SQL 外键保证指针属于同一文档的真实任务，不能单靠外键保�
 
 失败 Topic 仍用此元数据，错误摘要在 MySQL 查询。达到解析重试上限后，failed 状态和失败 outbox 一起提交，再确认消费 offset。Kafka 确认后才把 outbox 标记 published；发送成功但标记失败允许重发，消费者依据 task_id/version 幂等。
 
-自动重试沿用原 task_id/version，以指数退避 `min(base * 2^(attempts-1), max)`（默认 5～300 秒）调度。调度器扫描 MySQL `pending + next_attempt_at` 并重新投递已有解析 outbox，不插入第二个同类型事件；Worker 按 DB 到期时间和租约判断能否领取，提前重投不得提前执行。调度器/Worker 均待实现。outbox 耗尽 10 次重试后持久化 failed、保留可运维恢复信息，并将尚 pending 的对应任务可靠标记失败，禁止静默丢弃。
+自动重试沿用原 task_id/version，以指数退避 `min(base * 2^(attempts-1), max)`（默认 5～300 秒）调度。当前 Worker 在失败事务中把任务置回 pending、记录错误与 next_attempt_at，并重置既有解析 outbox 的可用时间，不插入第二个同类型事件；投递器等 MySQL 到期后再发送。Worker 按 DB 到期时间和租约判断能否领取，提前重投不得提前执行。投递器同时恢复过期的 processing 租约。outbox 耗尽重试后持久化 failed、保留可运维恢复信息，并将尚 pending 的对应任务标记 failed，同时写入失败 Topic 事件，禁止静默丢弃。
 
-任务租约默认 120 秒，每 30 秒续约，必须大于两倍心跳间隔；每次领取产生新的 lease_token，所有心跳、阶段及结果更新携带令牌条件。租约过期后可恢复，旧令牌不能提交。PDF 解析 1800 秒超时不等于租约时长；Kafka poll 与处理分离，并配置合理 max poll interval。offset 只在结果或后续重试安排已可靠落地后提交。
+任务租约默认 120 秒，每 30 秒续约，必须大于两倍心跳间隔；每次领取产生新的 lease_token，所有心跳、阶段及结果更新携带令牌条件和文档 latest_version 条件。租约过期后由投递器恢复，旧令牌不能提交。PDF 解析 1800 秒超时不等于租约时长；Kafka poll 与处理分离，并配置合理 max poll interval。offset 只在结果、重试安排或终态失败及失败 outbox 已提交后确认；持久化失败时不提交并回退到该记录重试。
 
 ## 5. 图片资源（待实现）
 

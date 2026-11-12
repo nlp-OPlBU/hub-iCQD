@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     kafka_failed_topic: str = "multimodal-rag.pdf.failed"
     kafka_consumer_group: str = "multimodal-rag-pdf-workers"
     kafka_max_poll_interval_ms: PositiveInt = 3600000
+    kafka_publish_timeout_seconds: PositiveInt = 10
+    kafka_consumer_poll_seconds: PositiveInt = 1
     redis_host: str = "localhost"
     redis_port: int = Field(default=6379, ge=1, le=65535)
     redis_db: int = Field(default=0, ge=0)
@@ -90,6 +92,8 @@ class Settings(BaseSettings):
     task_heartbeat_seconds: PositiveInt = 30
     outbox_max_retries: int = Field(default=10, ge=0)
     outbox_lease_seconds: PositiveInt = 60
+    outbox_poll_seconds: PositiveInt = 1
+    outbox_batch_size: PositiveInt = 20
     image_max_upload_files: PositiveInt = 4
     image_max_file_bytes: PositiveInt = 10 * 1024 * 1024
     image_max_pixels: PositiveInt = 20000000

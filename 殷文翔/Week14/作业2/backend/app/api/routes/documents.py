@@ -2,7 +2,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
@@ -11,7 +11,8 @@ from app.api.errors import ApiError
 from app.db.session import get_session
 from app.repositories.document import DocumentRepository
 from app.schemas.common import ErrorDetail, ErrorResponse, Page
-from app.schemas.document import BatchUploadResponse, DocumentRead, TaskRead, TaskStatus, UploadAccepted, UploadRejected
+from app.schemas.document import (BatchUploadResponse, DocumentRead, RetryRequest, TaskRead,
+                                  TaskStatus, UploadAccepted, UploadRejected)
 from app.services.storage import FileStorage
 from app.services.upload_multipart import staged_files
 from app.services.uploads import accept_upload, check_database
@@ -82,3 +83,18 @@ def get_task(task_id: UUID, session: DBSession):
     if result is None:
         raise ApiError(404, "TASK_NOT_FOUND", "任务不存在")
     return result
+
+
+@router.post("/documents/{document_id}/retry", response_model=TaskRead,
+             status_code=status.HTTP_202_ACCEPTED,
+             responses={404: {"model": ErrorResponse}, 409: {"model": ErrorResponse}})
+def retry_document(document_id: UUID, payload: RetryRequest, request: Request,
+                   idempotency_key: Annotated[UUID, Header(alias="Idempotency-Key")],
+                   session: DBSession):
+    try:
+        with session.begin():
+            return DocumentRepository(session).retry(
+                str(document_id), payload.expected_latest_version, str(idempotency_key),
+                request.app.state.settings)
+    except SQLAlchemyError:
+        raise ApiError(503, "DATABASE_NOT_READY", "数据库暂不可用", True) from None

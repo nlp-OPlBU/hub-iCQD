@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-已完成后端基础工程，以及 PDF 批量上传的类型/大小/数量校验、内部 UUID 存储、同事务文档/pending 任务/outbox 写入、文件补偿工具、文档列表/详情与任务状态查询；Vue 3 / TypeScript / Vite 工程可构建。解析 Worker、outbox 投递、检索、问答及业务 UI 仍未实现，上传后任务保持 pending。本次没有连接或修改共享服务器；本地验收与限制见 [验证记录](docs/verification.md)。
+已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；这些外部组件尚未在当前环境联调，真实解析/索引仍需服务器验证。Vue 3 / TypeScript / Vite 工程可构建，检索、问答及业务 UI 仍未实现。本次没有连接或修改共享服务器；本地验收与限制见 [验证记录](docs/verification.md)。
 
 优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
 
@@ -41,7 +41,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   │   ├── routes/
 │   │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   │   ├── chat.py  # 图文问题、回答与来源
-│   │   │   │   ├── documents.py  # 已实现批量上传、列表、详情及任务查询；重试待实现
+│   │   │   │   ├── documents.py  # 已实现批量上传、列表、详情、任务查询及人工重试
 │   │   │   │   └── health.py  # 健康检查
 │   │   │   ├── __init__.py  # Python 包标记
 │   │   │   └── router.py  # 路由注册
@@ -74,20 +74,21 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   │   │   ├── chunking.py  # 分块、页码及图片关联
 │   │   │   ├── elasticsearch_store.py  # ES 分块索引、BM25 与可选向量检索
 │   │   │   ├── embedding.py  # 独立图文向量模型适配，待实现与验证
-│   │   │   ├── kafka_producer.py  # Kafka 任务生产与发送确认
+│   │   │   ├── kafka_producer.py  # 已实现 Kafka 任务生产与 broker 确认
+│   │   │   ├── kafka_consumer.py  # 手动提交 offset 的 Kafka 消费者适配
 │   │   │   ├── llm_client.py  # 项目 vLLM 兼容接口与图像输入
-│   │   │   ├── mineru_cli.py  # MinerU CLI 子进程与 ZIP 产物适配
+│   │   │   ├── mineru_cli.py  # 已实现 MinerU CLI 子进程、超时与安全解压
 │   │   │   ├── rag.py  # 图文 RAG 编排、回答与来源引用
 │   │   │   ├── redis_cache.py  # 有 TTL 的缓存和辅助协调
 │   │   │   ├── retrieval.py  # 文档过滤、混合检索、重排及上下文组织
-│   │   │   ├── storage.py  # 已实现 PDF 校验、内部 ID 存储及补偿记录；其他产物待实现
+│   │   │   ├── storage.py  # 已实现 PDF 校验、内部 ID 存储及补偿记录
 │   │   │   ├── upload_multipart.py  # 完整请求限流暂存、multipart 数量及完整性检查
 │   │   │   ├── uploads.py  # 逐文件事务及文件清理/提交结果确认
 │   │   │   └── upload_recovery.py  # 停止上传后核对主库并清理孤立文件
 │   │   ├── workers/  # 与 API 分开启动的进程
 │   │   │   ├── __init__.py  # Python 包标记
-│   │   │   ├── outbox_dispatcher.py  # 将 MySQL outbox 可靠投递到 Kafka
-│   │   │   └── pdf_consumer.py  # Kafka 消费、MinerU、索引与状态更新
+│   │   │   ├── outbox_dispatcher.py  # 已实现 MySQL outbox 到 Kafka 的可靠投递
+│   │   │   └── pdf_consumer.py  # 已实现 Kafka 消费、租约恢复、MinerU、索引与状态更新
 │   │   ├── __init__.py  # Python 包标记
 │   │   └── main.py  # FastAPI 应用入口
 │   ├── tests/  # 已有基础、上传及 MySQL 迁移测试；其他业务测试仍占位
@@ -167,22 +168,22 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 │   ├── deployment.md  # 原生部署规划与脚本职责
 │   ├── environment.md  # 服务器环境适配与待确认信息
 │   └── models.md  # 全本地模型选型、保存位置、启动命令与 MinerU 配置
-└── scripts/  # API/迁移/构建可用，其余待实现
+└── scripts/  # API/迁移/构建/投递器/Worker 可用，环境检查等其余待实现
     ├── build_frontend.sh  # 安装锁定依赖并构建前端
     ├── check_environment.sh  # 服务器只读环境检查（空白）
     ├── dev.ps1  # Windows 开发入口（空白）
     ├── dev.sh  # Linux 开发入口（空白）
     ├── init_mysql.sh  # 对配置中的项目数据库执行 Alembic 升级
     ├── start_api.sh  # 独立启动 API
-    ├── start_dispatcher.sh  # 独立启动 outbox 投递器（空白）
-    └── start_worker.sh  # 独立启动 PDF 消费者（空白）
+    ├── start_dispatcher.sh  # 独立启动 outbox 投递器
+    └── start_worker.sh  # 独立启动 PDF 消费者
 ```
 
 ## 三个功能的代码位置与数据流
 
 ### 1. 批量 PDF 上传和异步解析
 
-规划链路：`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。当前已实现 HTTP 上传到 MySQL outbox 持久化这一段，前端上传 UI 和后续队列/解析仍待实现。
+规划链路：`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。当前已实现 HTTP 上传到 MySQL outbox、投递器确认后标记已发送、Kafka 至少一次消费和 Worker 幂等完成；前端上传 UI 与真实 MinerU/ES 联调仍待完成。
 
 浏览器通过 HTTP 上传，Kafka 只传任务元数据；原始文件留在共享文件存储。队列按至少一次投递设计，消费者需要幂等、超时处理、有限重试与失败记录，不能将数据库写入和 Kafka 发送假定为一个天然原子操作。
 
@@ -197,7 +198,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 | `completed` | 解析完成 | 产物已保存，并已在当前检索模式下可用 |
 | `failed` | 解析失败 | 失败原因已持久化，可按策略重试 |
 
-`DocumentList.vue`、`ParseStatus.vue` 和 `stores/documents.ts` 负责展示与轮询，`repositories/document.py` 负责持久化查询和状态更新。Redis 可缓存查询，不能成为唯一状态来源。
+`DocumentList.vue`、`ParseStatus.vue` 和 `stores/documents.ts` 负责展示与轮询，`repositories/document.py`、`repositories/task.py` 负责持久化查询、租约和条件状态更新。Redis 可缓存查询，不能成为唯一状态来源。
 
 ### 3. 多模态 RAG 问答
 
@@ -217,4 +218,4 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 - [docs/configuration.md](docs/configuration.md)：配置加载、限制、日志与路径约定。
 - [docs/verification.md](docs/verification.md)：实际检查结果与未验证项。
 
-基础工程已可检查和构建，完整业务链路仍待实现；不执行剩余空白脚本，不把基础测试当业务联调通过。服务器材料中的原始密码没有复制进本项目。
+后端 outbox/Kafka/Worker 与人工重试已可单元验证；真实 MinerU/ES/Kafka 联调、检索问答和业务 UI 仍待实现。不把本地模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。

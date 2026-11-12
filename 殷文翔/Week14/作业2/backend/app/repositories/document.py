@@ -2,10 +2,13 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.api.errors import ApiError
 from app.core.config import Settings
+from app.db.base import new_id
 from app.models import Document, OutboxEvent, ParseTask
+from app.repositories.outbox import add_parse_requested
 from app.schemas.common import ErrorDetail, Page
-from app.schemas.document import DocumentRead, TaskRead
+from app.schemas.document import DocumentRead, ParseEvent, TaskRead
 
 
 def task_read(task: ParseTask) -> TaskRead:
@@ -65,6 +68,42 @@ class DocumentRepository:
 
     def storage_key(self, document_id: str) -> str | None:
         return self.session.scalar(select(Document.storage_key).where(Document.id == document_id))
+
+    def retry(self, document_id: str, expected_latest_version: int, retry_key: str,
+              settings: Settings) -> TaskRead:
+        """Create a new manual version; idempotency and latest-version checks share one lock."""
+        document = self.session.scalar(select(Document).where(Document.id == document_id)
+                                       .with_for_update())
+        if document is None:
+            raise ApiError(404, "DOCUMENT_NOT_FOUND", "文档不存在")
+        existing = self.session.scalar(select(ParseTask).where(
+            ParseTask.document_id == document_id, ParseTask.retry_key == retry_key))
+        if existing is not None:
+            if existing.version == expected_latest_version + 1:
+                return task_read(existing)
+            raise ApiError(409, "IDEMPOTENCY_CONFLICT", "相同幂等键对应了不同的重试请求",
+                           details={"latest_version": document.latest_version})
+        if document.latest_version != expected_latest_version:
+            raise ApiError(409, "VERSION_CONFLICT", "文档已有更新的解析版本，请刷新后重试",
+                           details={"latest_version": document.latest_version})
+        latest = self.session.scalar(select(ParseTask).where(
+            ParseTask.document_id == document_id, ParseTask.version == expected_latest_version))
+        if latest is None or latest.status != "failed":
+            raise ApiError(409, "TASK_NOT_RETRYABLE", "只有失败的最新任务可以重试",
+                           details={"status": latest.status if latest else None})
+        task = ParseTask(
+            id=new_id(), document_id=document_id, version=expected_latest_version + 1,
+            status="pending", stage="queued", attempts=0, max_retries=settings.task_max_retries,
+            retry_key=retry_key, retrieval_mode=settings.retrieval_mode,
+        )
+        self.session.add(task)
+        document.latest_version = expected_latest_version + 1
+        self.session.flush()
+        add_parse_requested(self.session, settings, ParseEvent(
+            event_id=new_id(), document_id=document_id, task_id=task.id,
+            version=task.version, storage_key=document.storage_key))
+        self.session.flush()
+        return task_read(task)
 
     def list(self, page: int, page_size: int, status: str | None) -> Page[DocumentRead]:
         query = self.latest_query()

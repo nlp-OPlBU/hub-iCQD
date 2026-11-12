@@ -1,6 +1,6 @@
 # 部署规划与当前限制
 
-当前可运行后端基础入口、PDF 批量上传与文档/任务查询、文件补偿工具、MySQL Alembic 迁移及前端构建；Nginx 配置、Worker、outbox 投递器及完整业务链路仍为占位。此文包含本地开发步骤与后续服务器部署规划，不代表已部署。
+当前可运行后端基础入口、PDF 批量上传与文档/任务查询、人工重试、文件补偿工具、MySQL Alembic 迁移、outbox 投递器和可恢复 PDF Worker；Nginx 配置、真实 MinerU/ES 联调及检索问答仍待完成。此文包含本地开发步骤与后续服务器部署规划，不代表已部署。
 
 ## 本地基础工程
 
@@ -19,7 +19,7 @@ python -m app.main
 
 API 从根目录 `.env` 读取 APP_HOST/APP_PORT，默认 `127.0.0.1:8001`。访问 `http://127.0.0.1:8001/api/health`、`/api/docs`。没有数据库也可做进程健康检查；需要数据库就绪时，先按 [database.md](database.md) 创建项目专用数据库/账号，配置 MYSQL_* 并执行 `python -m alembic upgrade head`，再调用 `/api/health/ready`。开发自动重载可用 APP_DEBUG=true。
 
-数据库迁移完成且 DATA_DIR 可写后，可以在 `/api/docs` 调用 `POST /api/documents/batch` 上传多个 PDF，再通过文档列表/详情和任务接口追踪。逐文件结果在 HTTP 200 的 results 中，须分别检查 outcome；当前没有投递器/Worker，任务停在 pending。新依赖 python-multipart 需按更新后的清单安装。补偿预览及停止所有上传写入后的清理步骤见 [database.md](database.md#上传文件补偿)。
+数据库迁移完成且 DATA_DIR 可写后，可以在 `/api/docs` 调用 `POST /api/documents/batch` 上传多个 PDF，再通过文档列表/详情和任务接口追踪。逐文件结果在 HTTP 200 的 results 中，须分别检查 outcome；可另开终端分别运行 `scripts/start_dispatcher.sh` 与 `scripts/start_worker.sh`，使 pending 任务经 Kafka 进入 Worker；实际运行需要可用的 MySQL、Kafka、MinerU、ES 和共享 DATA_DIR。新依赖 python-multipart 需按更新后的清单安装。补偿预览及停止所有上传写入后的清理步骤见 [database.md](database.md#上传文件补偿)。
 
 另一个终端在 frontend 目录执行（Node.js 20.19+ 或 22.12+）：
 
@@ -52,11 +52,11 @@ npm run dev
 | `scripts/check_environment.sh` | 只读检查命令、服务连通性与版本，输出脱敏摘要 |
 | `scripts/init_mysql.sh` | 已实现：对配置中的已有项目数据库执行 Alembic upgrade head，不创建账号或共享服务 |
 | `scripts/start_api.sh` | 已实现：启动基础 API，不启动共享基础设施 |
-| `scripts/start_dispatcher.sh` | 启动 outbox 投递器 |
-| `scripts/start_worker.sh` | 启动 PDF 消费者 |
+| `scripts/start_dispatcher.sh` | 已实现：启动 outbox 投递器 |
+| `scripts/start_worker.sh` | 已实现：启动 PDF 消费者 |
 | `scripts/build_frontend.sh` | 已实现：npm ci + npm run build |
 | `scripts/dev.sh`、`scripts/dev.ps1` | 项目开发辅助入口，不假设 Windows 有服务器软件 |
 
 环境材料中的基础设施启动命令保留为参考，不写入一键启动脚本；避免重复启动或改变共享服务。
 
-上表未标“已实现”的脚本继续保留为空。三个已实现 Bash 脚本为 UTF-8/LF，默认使用系统 conda 环境 `py312` 的解释器，可通过 PYTHON 指定项目解释器；本轮未在 Linux 服务器执行它们。
+上表未标“已实现”的脚本继续保留为空。已实现 Bash 脚本为 UTF-8/LF，默认使用系统 conda 环境 `py312` 的解释器，可通过 PYTHON 指定项目解释器；本轮未在 Linux 服务器执行它们。

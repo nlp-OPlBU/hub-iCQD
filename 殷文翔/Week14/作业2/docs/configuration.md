@@ -25,6 +25,9 @@ DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERT
 | TASK_RETRY_BASE_SECONDS / MAX_SECONDS | 指数退避 5～300 秒 |
 | TASK_LEASE_SECONDS / HEARTBEAT_SECONDS | 120 / 30 秒；租约必须大于两倍心跳 |
 | OUTBOX_MAX_RETRIES / LEASE_SECONDS | 10 / 60 秒；投递器租约与解析租约独立 |
+| OUTBOX_POLL_SECONDS / BATCH_SIZE | 1 秒 / 20 条；投递器和崩溃恢复轮询节奏 |
+| KAFKA_PUBLISH_TIMEOUT_SECONDS | 10 秒；等待 broker 发送确认的上限 |
+| KAFKA_CONSUMER_POLL_SECONDS | 1 秒；Worker 单次 poll 等待 |
 | KAFKA_MAX_POLL_INTERVAL_MS | 3600000；需结合处理隔离方案服务器验证 |
 | MINERU_TIMEOUT_SECONDS / MAX_CONCURRENCY | 1800 秒 / 1 |
 | IMAGE_MAX_UPLOAD_FILES / MAX_FILE_BYTES | 4 张 / 每张 10 MiB |
@@ -37,7 +40,7 @@ DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERT
 | REDIS_CACHE_TTL_SECONDS | 60 秒；不影响 MySQL 状态 |
 | LLM_TIMEOUT_SECONDS | 120 秒 |
 
-Settings 已校验类型、正整数/非负重试、端口范围及关键大小/租约/预算关系。**UPLOAD_MAX_FILES、UPLOAD_MAX_FILE_BYTES、UPLOAD_MAX_REQUEST_BYTES 已在批量上传中执行**：总请求按流式实际读取字节计数（包含 multipart 开销），请求检查通过后才开始逐文件落盘/事务。其他 ZIP、Worker、模型限制仍仅为配置契约，对应功能尚未实现。
+Settings 已校验类型、正整数/非负重试、端口范围及关键大小/租约/预算关系。**UPLOAD_MAX_FILES、UPLOAD_MAX_FILE_BYTES、UPLOAD_MAX_REQUEST_BYTES 已在批量上传中执行**：总请求按流式实际读取字节计数（包含 multipart 开销），请求检查通过后才开始逐文件落盘/事务。ZIP 解压、投递重试、任务租约/心跳和重试预算已在 outbox 投递器与 Worker 中执行；真实 MinerU、ES 和模型限制仍需服务器联调验证。
 
 未来 ZIP 解压除上述限制还必须检查实际展开流量、规范化路径是否逃逸任务目录、拒绝绝对路径/`..`/链接等危险条目；不能只检查 ZIP 中声明的大小。数据目录由存储服务按需创建，上传原文件位于 `uploads/<UUID>.pdf`、请求体临时文件位于 `tmp/`、持久补偿记录位于 `tmp/upload-recovery/<UUID>.json`，均相对于 DATA_DIR。不要按文件年龄清空补偿记录；恢复命令见 [database.md](database.md#上传文件补偿)。multipart 解析的溢出暂存文件使用系统临时目录并在请求退出时关闭，部署需为项目及系统临时目录预留磁盘空间。API 与 Worker 使用同一可访问根路径和版本化 key。
 

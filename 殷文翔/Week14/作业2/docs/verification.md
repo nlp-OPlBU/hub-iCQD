@@ -1,5 +1,26 @@
 # 本地验收记录
 
+## 2026-11-12 outbox、Kafka 与可恢复 Worker
+
+新增 outbox 投递器、Kafka 生产/消费适配、任务租约与条件更新、有限重试、失败 Topic、崩溃恢复和人工重试新版本。未连接真实 Kafka、MinerU 或 Elasticsearch；Kafka 故障、重复投递、租约过期和旧 Worker 覆盖均通过注入故障的本地测试验证。
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 后端 pytest（默认 SQLite） | **37 passed, 2 skipped**（跳过项为默认不启用的真实 MySQL fixture） |
+| 后端 pytest（临时真实 MySQL 8.0.46） | **39 passed**；在隔离临时实例、随机端口和临时数据目录执行，未连接 `.env` 数据库 |
+| Kafka 不可用 | 投递失败后事件保持 pending、记录尝试次数与退避时间；Kafka 恢复后同一事件确认后标记 published，任务不丢 |
+| outbox 耗尽 | 请求事件持久化 failed，尚 pending 任务同事务标记 failed，并生成待投递的失败 Topic 事件 |
+| 投递崩溃恢复 | 过期 publishing 租约可被新投递器领取；发送成功但标记丢失时允许重发，消费者按任务/版本幂等 |
+| 重复投递 | 已完成任务再次投递不调用处理器、不生成新结果；processing 活跃租约返回 busy；提前投递不越过 next_attempt_at |
+| Worker 失败与重试 | 可重试错误回到 pending 并复用同一 outbox 事件；预算耗尽后 failed、错误摘要持久化、失败事件入库 |
+| 崩溃恢复 | 过期 processing 租约由投递器恢复为 pending；超过重试预算则终态失败，均不依赖 Redis 状态 |
+| 旧版本保护 | 人工重试创建新任务/版本；旧租约完成、重试、失败更新均因 latest_version/token 条件失败，不能覆盖新版本 |
+| offset | 结果、重试调度或终态失败事务提交后才 commit；模拟 MySQL 提交失败时不 commit 并回退记录重试 |
+| 人工重试 API | 相同幂等键返回原任务，不同请求冲突；版本过期 409，新任务与 outbox 同事务提交 |
+
+MinerU CLI 调用、安全 ZIP 解压、分块和 ES 写入适配已实现但未执行真实模型/索引联调；Kafka broker、Topic 权限、消费组、共享文件存储和服务器并发仍待服务器验证。本轮不修改数据库结构。
+
+
 ## 2026-11-12 切换到 conda py312
 
 项目依赖改为使用系统 conda 环境 `py312`（`/usr/local/miniconda3/envs/py312`，Python 3.12.11），不再使用根目录 `.venv`。已在该环境安装 `backend/requirements-dev.txt`，并将依赖清单调整为与同环境 vLLM 兼容的版本。未连接共享 MySQL，未启动 Kafka、MinerU 服务或模型。
@@ -103,9 +124,8 @@ python -m pytest -q
 
 ## 尚未实现和待服务器确认
 
-- 安全解压、人工重试接口、后续状态流转 repositories 与 Worker。
-- Kafka outbox 投递、幂等消费者、自动重试调度、租约恢复及失败 Topic。
-- MinerU、ES 写入/检索、Redis、Embedding/Reranker 和视觉 LLM 调用。
+- 真实服务器上的安全解压、Kafka 投递/消费、租约恢复和失败 Topic 联调。
+- 真实 MinerU 解析、ES 索引/检索、Redis、Embedding/Reranker 和视觉 LLM 调用（Worker 适配代码已存在，未联调）。
 - 图片资源接口、会话/消息 API、真实图文问答及完整业务前端；这些路由尚未注册。上传/文档/任务路由已实现。
 - 共享服务器的 MySQL 版本/账号/库与迁移、组件端口/权限、模型能力和 GPU 预算、Nginx 接入。
 

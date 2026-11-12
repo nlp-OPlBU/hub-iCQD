@@ -21,7 +21,7 @@
 
 统一 InnoDB、utf8mb4，时间用 DATETIME(6) 存 UTC。默认值由 ORM 创建对象时填充；直接 SQL INSERT 必须提供全部非空字段，不能假定数据库有未声明的服务端默认值。JSON 中不能存 Base64、凭据或绝对路径。原文件 SHA256 不设唯一约束：同一内容可作为两个独立文档上传。
 
-任务的文档外键先建，再用 ALTER TABLE 添加文档的可检索版本复合外键，解决 documents↔parse_tasks 的循环依赖。回滚时先移除此外键，再按依赖倒序删表。外键限制版本归属，状态转换及“completed 才可检索”仍需后续 repository 事务实现，详见 [API 契约](api.md)。已实现上传 repository 的文档/v1 pending 任务/outbox 原子插入及文档、任务查询；Worker 和 outbox 投递器仍未实现。本轮不改变表结构或迁移版本。
+任务的文档外键先建，再用 ALTER TABLE 添加文档的可检索版本复合外键，解决 documents↔parse_tasks 的循环依赖。回滚时先移除此外键，再按依赖倒序删表。外键限制版本归属，状态转换及“completed 才可检索”仍需后续 repository 事务实现，详见 [API 契约](api.md)。已实现上传 repository 的文档/v1 pending 任务/outbox 原子插入、文档/任务查询、人工重试新版本，以及基于状态/租约令牌/latest_version 的 Worker 条件更新和 outbox 投递租约。租约、重试、失败事件复用现有列，本轮不改变表结构或迁移版本。
 
 至少需要 **MySQL 8.0.16**（依赖真正执行的 CHECK 约束）；本机验收版本与结果见 [verification.md](verification.md)。服务器 MySQL 版本仍待确认。
 
