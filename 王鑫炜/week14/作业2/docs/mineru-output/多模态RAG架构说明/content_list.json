@@ -1,0 +1,132 @@
+[
+    {
+        "type": "text",
+        "text": "多模态 RAG：从文档到答案",
+        "text_level": 1,
+        "bbox": [
+            75,
+            49,
+            579,
+            82
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "王鑫炜 / 第十四周原创演示资料 / 2026-11-12",
+        "bbox": [
+            73,
+            92,
+            436,
+            110
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "一、上传与异步解析 ",
+        "text_level": 1,
+        "bbox": [
+            73,
+            135,
+            273,
+            155
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "浏览器一次可上传多份 PDF。后端先保存原文件，并在 SQLite 的同一事务中写入文档元数据和 outbox。  \n接口返回 202，不等待 MinerU 完成。Dispatcher 在 Kafka 确认后将 outbox 标为已发送。",
+        "bbox": [
+            73,
+            165,
+            910,
+            205
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "二、解析状态与可靠消费",
+        "text_level": 1,
+        "bbox": [
+            73,
+            229,
+            319,
+            249
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "文档最初为待解析（queued）。Kafka Worker 领取任务后写为解析中（processing），调用真实 MinerU，存储文本片段和图片后写为解析完成（completed），最后提交消费 offset。失败时显示 failed 并允许重试。",
+        "bbox": [
+            73,
+            259,
+            919,
+            322
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "三、多模态问答",
+        "text_level": 1,
+        "bbox": [
+            73,
+            346,
+            230,
+            366
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "检索文档文本和图片说明，关联同页插图。视觉大模型同时接收用户问题、用户附图、检索片段和文档插图；返回经过校验的文字块与图片块，前端按顺序图文混排。回答标注文档名称和页码。",
+        "bbox": [
+            73,
+            375,
+            912,
+            416
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "四、对话历史",
+        "text_level": 1,
+        "bbox": [
+            73,
+            441,
+            208,
+            460
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "text",
+        "text": "Redis List 保存用户与助手消息，使用 RPUSH 追加，LRANGE 读取最近历史，LTRIM 限制长度，EXPIRE 设置有效期。追问时从 Redis 取历史，先还原问题，再检索和生成。",
+        "bbox": [
+            72,
+            469,
+            919,
+            510
+        ],
+        "page_idx": 0
+    },
+    {
+        "type": "image",
+        "img_path": "images/68183618fe5c374a4546812b152fb770540c93d9d02e0052a67e571cf77bd856.jpg",
+        "image_caption": [
+            "图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。"
+        ],
+        "image_footnote": [],
+        "bbox": [
+            85,
+            722,
+            894,
+            879
+        ],
+        "page_idx": 0
+    }
+]

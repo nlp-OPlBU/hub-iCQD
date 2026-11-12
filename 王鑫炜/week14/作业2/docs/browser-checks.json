@@ -1,0 +1,36 @@
+{
+  "answerFigures": 2,
+  "assistantMessages": 2,
+  "chatError": "",
+  "clientWidth": 1512,
+  "loadedConversationImages": [
+    {
+      "alt": "多模态RAG架构说明.pdf · 第1页 · 图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。",
+      "loaded": true
+    },
+    {
+      "alt": "本轮提问附图",
+      "loaded": true
+    },
+    {
+      "alt": "多模态RAG架构说明.pdf · 第1页 · 图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。",
+      "loaded": true
+    }
+  ],
+  "scrollWidth": 1512,
+  "userMessages": 2,
+  "width": 1512,
+  "mobileChecks": [
+    {
+      "width": 375,
+      "height": 812,
+      "scrollWidth": 375
+    },
+    {
+      "width": 667,
+      "height": 375,
+      "scrollWidth": 667
+    }
+  ],
+  "historyAfterReload": true
+}
