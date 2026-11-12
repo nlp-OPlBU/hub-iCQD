@@ -4,16 +4,18 @@
 
 ## 本地基础工程
 
-在项目根目录建立并激活 Python 3.11+ 虚拟环境（本机验收 3.13.9）；仅第一次且没有 `.env` 时复制 `.env.example`。PowerShell：
+在项目根目录使用系统 conda 环境 `py312`（`/usr/local/miniconda3/envs/py312`，Python 3.12；本机验收 3.12.11）；仅第一次且没有 `.env` 时复制 `.env.example`：
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
-Copy-Item .env.example .env
+```bash
+conda activate py312
+python -m pip install -r backend/requirements-dev.txt
+cp -n .env.example .env
 cd backend
-..\.venv\Scripts\python.exe -m pytest
-..\.venv\Scripts\python.exe -m app.main
+python -m pytest
+python -m app.main
 ```
+
+`scripts/start_api.sh` 和 `scripts/init_mysql.sh` 默认使用该环境的解释器，也可通过 `PYTHON=/path/to/python` 覆盖。
 
 API 从根目录 `.env` 读取 APP_HOST/APP_PORT，默认 `127.0.0.1:8001`。访问 `http://127.0.0.1:8001/api/health`、`/api/docs`。没有数据库也可做进程健康检查；需要数据库就绪时，先按 [database.md](database.md) 创建项目专用数据库/账号，配置 MYSQL_* 并执行 `python -m alembic upgrade head`，再调用 `/api/health/ready`。开发自动重载可用 APP_DEBUG=true。
 
@@ -57,4 +59,4 @@ npm run dev
 
 环境材料中的基础设施启动命令保留为参考，不写入一键启动脚本；避免重复启动或改变共享服务。
 
-上表未标“已实现”的脚本继续保留为空。三个已实现 Bash 脚本为 UTF-8/LF，默认用根目录 .venv/bin/python，可通过 PYTHON 指定项目解释器；本轮未在 Linux 服务器执行它们。
+上表未标“已实现”的脚本继续保留为空。三个已实现 Bash 脚本为 UTF-8/LF，默认使用系统 conda 环境 `py312` 的解释器，可通过 PYTHON 指定项目解释器；本轮未在 Linux 服务器执行它们。

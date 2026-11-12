@@ -2,4 +2,4 @@
 set -euo pipefail
 PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT/backend"
-exec "${PYTHON:-$PROJECT_ROOT/.venv/bin/python}" -m app.main
+exec "${PYTHON:-/usr/local/miniconda3/envs/py312/bin/python}" -m app.main

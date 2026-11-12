@@ -83,7 +83,7 @@
 ## 验证与交付
 
 - 仅改骨架或文档时，检查目录、链接、术语和占位文件即可；不运行空白配置或为占位内容编造测试。
-- 实现后为改动执行必要检查。安装项目依赖并激活虚拟环境后执行 `cd backend && python -m pytest` 和 `cd frontend && npm run build`；真实 MySQL 临时实例测试需显式设置 `RAG_TEST_MYSQL_BINARY`，默认跳过，详情见 docs/database.md 和 docs/verification.md。
+- 实现后为改动执行必要检查。使用系统 conda 环境 `py312`（`/usr/local/miniconda3/envs/py312`）执行 `cd backend && python -m pytest` 和 `cd frontend && npm run build`；真实 MySQL 临时实例测试需显式设置 `RAG_TEST_MYSQL_BINARY`，默认跳过，详情见 docs/database.md 和 docs/verification.md。
 - 后端重点验证批量上传、状态流转、outbox 补偿、重复消费、重试和失败落地、MinerU 超时与异常 ZIP、ES 索引失败及真实图片输入。
 - 前端验证多文件上传、轮询清理、状态错误提示、图片预览、图文混排与来源展示；外部服务联调使用项目专属测试资源。
 - 交付说明写清已修改内容、已运行检查、尚未实现内容和环境待确认项。不得声称未实际执行的服务启动、部署、测试或问答已成功。

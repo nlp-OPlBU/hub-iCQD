@@ -1,5 +1,33 @@
 # 本地验收记录
 
+## 2026-11-12 切换到 conda py312
+
+项目依赖改为使用系统 conda 环境 `py312`（`/usr/local/miniconda3/envs/py312`，Python 3.12.11），不再使用根目录 `.venv`。已在该环境安装 `backend/requirements-dev.txt`，并将依赖清单调整为与同环境 vLLM 兼容的版本。未连接共享 MySQL，未启动 Kafka、MinerU 服务或模型。
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 项目依赖 | py312 中安装 requirements-dev.txt；SQLAlchemy、Alembic、PyMySQL、pytest 可用 |
+| 后端 pytest | `python -m pytest -q`：**25 passed, 2 skipped**（跳过项为默认不启用的真实 MySQL 测试） |
+| MinerU / vLLM | `import mineru`、`import vllm` 成功；`mineru-kit --version` 显示 4.1.7，`vllm --version` 显示 0.25.1 |
+| pip check | 仍有一条切换前已存在的 `mineru 4.1.7` 要求 `openai<3` 与已装 `openai 3.48.0` 冲突；本次未改动 openai |
+
+为兼容同环境 vLLM 0.25.1，`fastapi`、`uvicorn`、`pydantic-settings`、`python-multipart` 使用其已安装的较新版本，未按旧锁文件的较低版本降级。
+
+## 2026-11-12 模型权重下载
+
+使用 ModelScope 源下载 [models.md](models.md) 要求的权重到项目根目录，因 Hugging Face 经当前代理速度过低（实测约 0.2 MB/s），改用 ModelScope（实测约 5～20 MB/s）。未启动 vLLM、MinerU VLM 或解析服务，未执行真实模型推理。
+
+| 内容 | 结果 |
+| --- | --- |
+| Qwen3.5-4B | 9.34 GB，15 个文件，文件大小与 ModelScope 元数据一致 |
+| Qwen3-VL-Embedding-2B | 4.27 GB，21 个文件，大小一致 |
+| Qwen3-VL-Reranker-2B | 4.27 GB，24 个文件，大小一致 |
+| MinerU 小模型 + 专用 VLM | `MinerU-4_models_torch` 与 `MinerU2.5-Pro-2605-1.2B` 下载并通过 `models verify` |
+| Reranker 模板 | 来自 vLLM v0.25.1，保存到 `model-templates/qwen3_vl_reranker.jinja` |
+| 残留临时文件 | 未发现 `.incomplete` / `.part` |
+
+首次 MinerU 下载因缺少 `mineru/config.yaml` 失败；补建配置后下载完成。最终配置使用本地小模型与 `http://127.0.0.1:8104` 的外部 VLM 端点，服务尚未启动。权重体积大，下载期间磁盘可用空间从约 46GB 降至约 26GB。
+
 ## 2026-11-12 上传与查询验收
 
 仅在 Windows 本地执行，未连接共享服务器，未启动 Kafka、MinerU、ES 或模型。已实现 PDF 批量上传、文档列表/详情、任务查询，以及文件系统/数据库失败补偿；未改数据库结构。
@@ -56,7 +84,7 @@ Windows 沙箱阻塞 asyncio 创建内部 socket，导致 TestClient 等待；�
 
 ## 复现方式
 
-激活项目虚拟环境后，在 backend 执行：
+激活 conda 环境 `py312` 后，在 backend 执行：
 
 ```powershell
 python -m pytest -q

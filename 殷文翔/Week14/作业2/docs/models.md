@@ -1,8 +1,8 @@
 # 全本地多模态 RAG 模型选型与部署
 
-记录日期：2026-11-11。目标是非垂类、通用图文 RAG。用户确认的服务器规格为 CPU 20 核、单张 NVIDIA 40 系列 GPU 48GB 显存、90GB 内存；具体 GPU 型号、驱动与可用资源仍待服务器检查。
+记录日期：2026-11-11；2026-11-12 更新：项目与模型依赖统一使用系统 conda 环境 `py312`。目标是非垂类、通用图文 RAG。用户确认的服务器规格为 CPU 20 核、单张 NVIDIA 40 系列 GPU 48GB 显存、90GB 内存；具体 GPU 型号、驱动与可用资源仍待服务器检查。
 
-本文是模型部署指南，不是部署完成记录。项目基础 API、配置、数据库迁移和前端构建已实现，业务解析和问答仍待开发；模型依赖、权重和推理服务没有部署。以下命令用于服务器 Linux Bash，不在 Windows 工作区执行。所有显存预算和并发参数均需实测；基础工程本地验证另见 [verification.md](verification.md)。
+本文是模型部署指南，不是部署完成记录。项目基础 API、配置、数据库迁移和前端构建已实现，业务解析和问答仍待开发；Python 依赖已安装在 conda `py312`（MinerU 4.1.7、vLLM 0.25.1），Qwen3.5-4B、Qwen3-VL-Embedding-2B、Qwen3-VL-Reranker-2B 及 MinerU 权重已下载并通过文件检查，但推理服务尚未启动。以下命令用于服务器 Linux Bash，不在 Windows 工作区执行。所有显存预算和并发参数均需实测；基础工程本地验证另见 [verification.md](verification.md)。
 
 ## 1. 推荐组合与各阶段职责
 
@@ -64,7 +64,7 @@ Qwen3.5-9B BF16 可在后续单独评估，主模型预算可从 0.50、低并�
 
 | 内容 | 默认规划保存位置 |
 | --- | --- |
-| 独立模型 Python 环境 | `/workspace/multimodal-rag/.venv-models/` |
+| 模型/项目 Python 环境 | 系统 conda `py312`：`/usr/local/miniconda3/envs/py312/`（Python 3.12.11） |
 | 视觉问答权重 | `/workspace/multimodal-rag/models/Qwen3.5-4B/` |
 | Embedding 权重 | `/workspace/multimodal-rag/models/Qwen3-VL-Embedding-2B/` |
 | Reranker 权重 | `/workspace/multimodal-rag/models/Qwen3-VL-Reranker-2B/` |
@@ -91,18 +91,19 @@ Qwen3.5-9B BF16 可在后续单独评估，主模型预算可从 0.50、低并�
 
 ## 4. 检查环境与准备依赖
 
-先只读检查：
+先只读检查系统 conda 环境与硬件：
 
 ```bash
-nvidia-smi
-python3 --version
+/usr/local/miniconda3/envs/py312/bin/python --version
+/usr/local/miniconda3/envs/py312/bin/python -c "import importlib.metadata as m; print('vLLM:', m.version('vllm')); print('MinerU:', m.version('mineru'))"
 command -v mineru-kit
+nvidia-smi
 ss -ltn
 ```
 
-确认 GPU 实际型号、驱动、剩余显存、Python 3.12 是否可用以及上述端口是否空闲。当前指南按 MinerU 4.x 的 `mineru-kit` 接口编写；已有版本不匹配时先查看对应 `--help`，不要把旧版命令与新版配置混用。
+确认 GPU 实际型号、驱动、剩余显存、Python 版本以及上述端口是否空闲。当前指南按 MinerU 4.x 的 `mineru-kit` 接口编写；已有版本不匹配时先查看对应 `--help`，不要把旧版命令与新版配置混用。
 
-以下是准备新的项目专用环境的命令；已存在环境时先核对，避免原地升级共享安装：
+本项目的模型服务和后端依赖都使用系统 conda `py312`，不再创建单独的 `.venv-models`。该环境当前为 Python 3.12.11，已安装 MinerU 4.1.7、vLLM 0.25.1 及项目后端依赖。项目与模型服务共用环境时，升级任一方的依赖都必须同时检查另一方，不能用旧版本清单把 vLLM 所需的 `fastapi` / `starlette` 降级。准备项目数据目录并核对依赖：
 
 ```bash
 export RAG_ROOT=/workspace/multimodal-rag
@@ -113,16 +114,15 @@ mkdir -p "$RAG_ROOT/models" "$RAG_ROOT/model-templates" \
   "$RAG_ROOT/runtime" "$MINERU_HOME" "$HF_HOME"
 export MINERU_CONFIG="$MINERU_HOME/config.yaml"
 
-python3.12 -m venv "$RAG_ROOT/.venv-models"
-source "$RAG_ROOT/.venv-models/bin/activate"
-
-python -m pip install --upgrade pip
-python -m pip install "mineru[full]>=4,<5" huggingface_hub
+conda activate py312
+python -m pip install -r "$RAG_ROOT/backend/requirements-dev.txt"
 python -m pip check
 python -c "import importlib.metadata as m; print('vLLM:', m.version('vllm')); print('MinerU:', m.version('mineru'))"
 ```
 
-当前 MinerU 的 Linux `full` 依赖组合包含 vLLM。版本范围只是安装起点，不是经过本服务器验证的锁定版本；CUDA/驱动、PyTorch、Transformers、MinerU 与 vLLM 必须兼容。验证通过后记录 `pip freeze`、驱动、模型仓库 revision、模板来源及启动参数到 `runtime/`，后续部署使用实际验证版本，不持续追随 latest。
+`requirements-dev.txt` 已按 py312 中 vLLM 0.25.1 的要求调整。当前环境存在一条切换前已有的 `pip check` 冲突：MinerU 4.1.7 要求 `openai<3`，实际安装为 `openai 3.48.0`；它不影响已执行的导入和项目测试，但部署模型前应核实并记录处理方式，不能为了消除提示盲目降级而破坏 vLLM。
+
+已有环境时先核对版本，避免原地升级或替换系统 conda 环境。当前 MinerU 的 Linux `full` 依赖组合包含 vLLM；CUDA/驱动、PyTorch、Transformers、MinerU 与 vLLM 必须兼容。验证通过后记录 `pip freeze`、驱动、模型仓库 revision、模板来源及启动参数到 `runtime/`，后续部署使用实际验证版本，不持续追随 latest。
 
 ## 5. 下载模型与模板
 
@@ -145,6 +145,16 @@ curl -fL \
 ```
 
 开发版本、post 版本可能没有同名 Git 标签；若模板下载失败，先从对应发布源码取得模板，确认内容后再启动。不要把错误响应当模板，也不要随意混用 main 模板与旧版服务。正式复现时，`hf download` 应附加已验证的 `--revision <commit>`。
+
+如果 Hugging Face 经当前代理速度过低，可使用 ModelScope 同名仓库，本次实际安装即采用该方式：
+
+```bash
+modelscope download --model Qwen/Qwen3.5-4B --local-dir "$RAG_ROOT/models/Qwen3.5-4B"
+modelscope download --model Qwen/Qwen3-VL-Embedding-2B --local-dir "$RAG_ROOT/models/Qwen3-VL-Embedding-2B"
+modelscope download --model Qwen/Qwen3-VL-Reranker-2B --local-dir "$RAG_ROOT/models/Qwen3-VL-Reranker-2B"
+```
+
+切换源后仍需核对文件名、大小和配置，不能把下载完成当作推理验证。下载记录见 [verification.md](verification.md)。
 
 MinerU 配套模型先下载再配置服务端点；若预先配置 `server_url`，某些检查可能按外部 VLM 模式跳过本地 VLM 权重要求：
 
@@ -180,7 +190,7 @@ export CUDA_VISIBLE_DEVICES=0
 export OMP_NUM_THREADS=2
 export HF_HUB_OFFLINE=1
 export MINERU_MODEL_SOURCE=local
-source "$RAG_ROOT/.venv-models/bin/activate"
+conda activate py312
 ```
 
 ### 6.1 图文理解与回答：8100
@@ -296,7 +306,7 @@ model:
 
 `server_url` 使用本机回环地址，推理仍为全本地；配置后 CLI 调用已启动的专用 VLM，避免每个任务再加载一份 VLM。小模型仍在 CLI 解析进程中执行，占用要计入共卡预算。不要传 `--remote` 切换到云端解析。
 
-在继承 `MINERU_HOME`、隔离环境 PATH 的 Worker 中，继续使用 CLI：
+在继承 `MINERU_HOME`、使用 conda `py312` PATH 的 Worker 中，继续使用 CLI：
 
 ```bash
 mineru-kit parse /absolute/path/input.pdf \

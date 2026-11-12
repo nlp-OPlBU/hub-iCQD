@@ -27,12 +27,12 @@
 
 ## 首次安装与执行
 
-1. 在项目根目录建立虚拟环境，安装依赖。PowerShell：
+1. 在项目根目录激活系统 conda 环境 `py312`，安装依赖：
 
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt
-   Copy-Item .env.example .env
+   ```bash
+   conda activate py312
+   python -m pip install -r backend/requirements-dev.txt
+   cp -n .env.example .env
    ```
 
    已有 `.env` 时保留它，不重复覆盖。生产运行只需 requirements.txt；完整本地可复现版本另见 requirements-lock.txt。
@@ -48,17 +48,17 @@
      ON `<MYSQL_DATABASE>`.* TO '<MYSQL_USER>'@'<允许连接的主机>';
    ```
 
-3. 在 backend 目录使用同一虚拟环境执行：
+3. 在 backend 目录使用同一 conda 环境执行：
 
-   ```powershell
+   ```bash
    cd backend
-   ..\.venv\Scripts\python.exe -m alembic upgrade head --sql
-   ..\.venv\Scripts\python.exe -m alembic upgrade head
-   ..\.venv\Scripts\python.exe -m alembic current
-   ..\.venv\Scripts\python.exe -m alembic check
+   python -m alembic upgrade head --sql
+   python -m alembic upgrade head
+   python -m alembic current
+   python -m alembic check
    ```
 
-   第一条只生成可审阅 SQL，不连接数据库；第二条才实际建表。current 应显示 `0001_initial (head)`。重复执行 upgrade head 不重复建表。Linux 激活 `.venv` 后使用 `python -m alembic ...`，或执行项目 `scripts/init_mysql.sh`（只升级配置中的数据库）。
+   第一条只生成可审阅 SQL，不连接数据库；第二条才实际建表。current 应显示 `0001_initial (head)`。重复执行 upgrade head 不重复建表。也可执行项目 `scripts/init_mysql.sh`（只升级配置中的数据库）。
 
 4. 启动 `python -m app.main`，访问 `/api/health/ready` 核对 MySQL 和迁移版本。无数据库也可启动并调用 `/api/health`，ready 会返回 503，不能把它当数据库通过。
 
@@ -72,7 +72,7 @@
 
 恢复工具默认只读预览。**执行补偿前须停止所有 API/上传写入进程并等待在途事务结束**，使用与上传相同的 DATA_DIR 和主库配置；不要连接可能滞后的只读副本。不要在 API 启动时或按文件年龄自动清理，避免误删尚在提交的文件。当前没有自动补偿调度。
 
-在 backend 目录、激活虚拟环境后执行：
+在 backend 目录、激活 conda 环境 `py312` 后执行：
 
 ```powershell
 python -m app.services.upload_recovery

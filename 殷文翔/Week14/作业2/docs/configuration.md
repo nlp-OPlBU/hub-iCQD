@@ -41,7 +41,7 @@ Settings 已校验类型、正整数/非负重试、端口范围及关键大小/
 
 未来 ZIP 解压除上述限制还必须检查实际展开流量、规范化路径是否逃逸任务目录、拒绝绝对路径/`..`/链接等危险条目；不能只检查 ZIP 中声明的大小。数据目录由存储服务按需创建，上传原文件位于 `uploads/<UUID>.pdf`、请求体临时文件位于 `tmp/`、持久补偿记录位于 `tmp/upload-recovery/<UUID>.json`，均相对于 DATA_DIR。不要按文件年龄清空补偿记录；恢复命令见 [database.md](database.md#上传文件补偿)。multipart 解析的溢出暂存文件使用系统临时目录并在请求退出时关闭，部署需为项目及系统临时目录预留磁盘空间。API 与 Worker 使用同一可访问根路径和版本化 key。
 
-MySQL 引擎显式使用 REPEATABLE READ，使一次列表查询的 total 和分页内容处于同一数据库快照。运行依赖新增 [python-multipart](https://pypi.org/project/python-multipart/)，固定 0.0.33；完整依赖记录见 backend/requirements-lock.txt。
+MySQL 引擎显式使用 REPEATABLE READ，使一次列表查询的 total 和分页内容处于同一数据库快照。运行依赖新增 [python-multipart](https://pypi.org/project/python-multipart/)，固定 0.0.32；完整依赖记录见 backend/requirements-lock.txt。
 
 BM25 为默认模式，重排和视觉能力默认关闭。hybrid 需要独立 embedding 模型配置，模型名不空和维度为正只是配置校验，不能替代模型与索引实测。
 
