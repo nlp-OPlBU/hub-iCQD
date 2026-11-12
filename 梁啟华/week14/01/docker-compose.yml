@@ -1,0 +1,56 @@
+# =============================================================================
+# 本地教学环境：Redis + Kafka（单节点 KRaft 模式，无需 ZooKeeper）
+#
+# 启动：docker compose up -d
+# 查看：docker compose ps / docker compose logs -f kafka
+# 停止：docker compose down          （加 -v 会连数据一起删除）
+#
+# 端口：
+#   Redis  宿主机 6379  -> 容器 6379
+#   Kafka  宿主机 9092  -> 容器 9092（PLAINTEXT，无认证，仅供本地学习）
+# =============================================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: week14-redis
+    ports:
+      - "6379:6379"
+    # appendonly yes：开启 AOF 持久化，重启容器后历史对话仍在，便于观察
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: week14-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # ---- KRaft 单节点：同时担任 broker 和 controller ----
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+
+      # ---- 监听器配置 ----
+      # LISTENERS：容器内真正绑定的地址；CONTROLLER 是内部选主通道，不对宿主机暴露
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      # ADVERTISED_LISTENERS：broker 返回给客户端的地址（最容易踩坑的一项）
+      # 客户端在宿主机上，所以必须返回 127.0.0.1:9092，而不是容器名 kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://127.0.0.1:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # ---- 单节点必须调小的副本数，否则创建内部 topic 会失败 ----
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+      # 允许自动创建 topic（教学示例默认只有 1 个分区；想演示多分区见 README）
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+
+volumes:
+  redis-data:

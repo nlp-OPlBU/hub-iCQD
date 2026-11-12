@@ -1,0 +1,6 @@
+# 教学示例依赖（Python 3.10+）
+# 安装：pip install -r requirements.txt
+
+redis>=5.0,<6.0          # Redis 官方 Python 客户端
+kafka-python>=2.0,<3.0   # 纯 Python 的 Kafka 客户端，无需 librdkafka，安装省心
+PyYAML>=6.0              # 读取 config.yaml

@@ -1,0 +1,54 @@
+# ============================================
+# 多模态 RAG 问答系统 - Python 依赖
+# ============================================
+
+# -------- Web 框架 --------
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+jinja2==3.1.4
+
+# -------- 数据校验 --------
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# -------- 配置文件 --------
+pyyaml==6.0.2
+python-dotenv==1.0.1
+
+# -------- Kafka 客户端 --------
+kafka-python==2.0.2
+# 或者使用 confluent-kafka（性能更好，但需要 librdkafka）
+# confluent-kafka==2.3.0
+
+# -------- 数据库 --------
+aiosqlite==0.20.0
+
+# -------- PDF 解析 --------
+# MinerU / magic-pdf（核心解析引擎）
+magic-pdf==1.0.9
+# 备选：PyMuPDF（轻量级，用于降级）
+PyMuPDF==1.24.10
+# pdfplumber（备选）
+pdfplumber==0.11.4
+
+# -------- 向量存储 --------
+chromadb==0.5.5
+
+# -------- Embedding & LLM --------
+httpx==0.27.2
+
+# -------- 文档处理 --------
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# -------- 图片处理 --------
+Pillow==10.4.0
+
+# -------- 工具 --------
+tenacity==9.0.0
+tqdm==4.66.5
+loguru==0.7.2
+
+# -------- 启动脚本 --------
+click==8.1.7
