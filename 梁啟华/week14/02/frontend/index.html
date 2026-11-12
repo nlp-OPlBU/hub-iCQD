@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模态 RAG 问答系统</title>
+
+    <!-- Element Plus CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus@2.7.6/dist/index.css">
+    <!-- Markdown 渲染 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.6.1/github-markdown-light.css">
+    <!-- highlight.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
+
+    <link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- ===== 顶部导航 ===== -->
+        <el-header class="app-header">
+            <div class="header-left">
+                <el-icon class="logo-icon"><ChatDotRound /></el-icon>
+                <span class="title">多模态 RAG 问答系统</span>
+            </div>
+            <div class="header-right">
+                <el-tag type="info" effect="dark" round>
+                    <el-icon><Connection /></el-icon>
+                    Backend: {{ backendStatus }}
+                </el-tag>
+            </div>
+        </el-header>
+
+        <!-- ===== Tab 页签 ===== -->
+        <div class="tabs-container">
+            <el-tabs v-model="activeTab" class="main-tabs">
+                <!-- Tab 1: 文档上传 -->
+                <el-tab-pane label="📄 文档上传" name="upload">
+                    <div class="tab-content">
+                        <!-- 上传区域 -->
+                        <el-card class="upload-card" shadow="hover">
+                            <template #header>
+                                <div class="card-header">
+                                    <span>上传 PDF 文档</span>
+                                    <el-button link type="primary" @click="refreshDocList">
+                                        <el-icon><Refresh /></el-icon> 刷新
+                                    </el-button>
+                                </div>
+                            </template>
+
+                            <el-upload
+                                :auto-upload="false"
+                                :file-list="uploadFileList"
+                                :limit="10"
+                                accept=".pdf"
+                                multiple
+                                drag
+                                :on-change="onFileChange"
+                                :on-remove="onFileRemove"
+                                class="drag-upload"
+                            >
+                                <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+                                <div class="el-upload__text">
+                                    将 PDF 文件拖到此处，或 <em>点击上传</em>
+                                </div>
+                                <template #tip>
+                                    <div class="el-upload__tip">
+                                        支持 PDF 格式，单次最多 10 个文件，单文件最大 50MB
+                                    </div>
+                                </template>
+                            </el-upload>
+
+                            <div class="upload-actions">
+                                <el-button
+                                    type="primary"
+                                    size="large"
+                                    :loading="uploading"
+                                    :disabled="uploadFileList.length === 0"
+                                    @click="doUpload"
+                                >
+                                    <el-icon><Promotion /></el-icon>
+                                    上传并提交解析
+                                </el-button>
+                                <el-button @click="clearUploadList">清空列表</el-button>
+                            </div>
+                        </el-card>
+
+                        <!-- 文档状态列表 -->
+                        <el-card class="status-card" shadow="hover">
+                            <template #header>
+                                <div class="card-header">
+                                    <span>📋 文档处理状态</span>
+                                    <div class="status-stats">
+                                        <el-tag size="small" type="info" round>
+                                            待解析 {{ stats.pending || 0 }}
+                                        </el-tag>
+                                        <el-tag size="small" round>
+                                            解析中 {{ stats.parsing || 0 }}
+                                        </el-tag>
+                                        <el-tag size="small" type="success" round>
+                                            已完成 {{ stats.completed || 0 }}
+                                        </el-tag>
+                                        <el-tag size="small" type="danger" round>
+                                            失败 {{ stats.error || 0 }}
+                                        </el-tag>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <el-table :data="docList" v-loading="loadingDocs" stripe>
+                                <el-table-column prop="file_name" label="文件名" min-width="200">
+                                    <template #default="{ row }">
+                                        <div class="file-cell">
+                                            <el-icon><Document /></el-icon>
+                                            <span>{{ row.file_name }}</span>
+                                        </div>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="file_size" label="大小" width="100">
+                                    <template #default="{ row }">
+                                        {{ formatSize(row.file_size) }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="状态" width="120">
+                                    <template #default="{ row }">
+                                        <el-tag
+                                            :type="statusTagType(row.status)"
+                                            effect="dark"
+                                            round
+                                        >
+                                            <el-icon v-if="row.status === 'parsing'" class="parsing-spin">
+                                                <Loading />
+                                            </el-icon>
+                                            {{ statusLabel(row.status) }}
+                                        </el-tag>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="任务 ID" width="140">
+                                    <template #default="{ row }">
+                                        <code class="task-id">{{ row.task_id }}</code>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column prop="created_at" label="上传时间" width="170">
+                                    <template #default="{ row }">
+                                        {{ row.created_at ? row.created_at.substring(0, 19).replace('T', ' ') : '-' }}
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作" width="100" fixed="right">
+                                    <template #default="{ row }">
+                                        <el-button
+                                            link
+                                            type="primary"
+                                            @click="showDocPreview(row)"
+                                            :disabled="row.status !== 'completed'"
+                                        >
+                                            预览
+                                        </el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+
+                            <div v-if="docList.length === 0 && !loadingDocs" class="empty-hint">
+                                <el-empty description="暂无文档，请先上传 PDF">
+                                    <el-button type="primary" @click="activeTab = 'upload-card'">去上传</el-button>
+                                </el-empty>
+                            </div>
+                        </el-card>
+                    </div>
+                </el-tab-pane>
+
+                <!-- Tab 2: 多模态问答 -->
+                <el-tab-pane label="💬 多模态问答" name="chat">
+                    <div class="tab-content chat-tab">
+                        <!-- 左侧聊天区 -->
+                        <div class="chat-area">
+                            <div class="chat-header">
+                                <span>与知识库对话</span>
+                                <div class="chat-options">
+                                    <el-checkbox v-model="chatUseRAG">启用 RAG 检索</el-checkbox>
+                                </div>
+                            </div>
+
+                            <div ref="chatContainer" class="chat-messages">
+                                <!-- 欢迎消息 -->
+                                <div v-if="chatMessages.length === 0" class="welcome-message">
+                                    <el-avatar :size="64" class="welcome-avatar">
+                                        <el-icon :size="32"><ChatLineRound /></el-icon>
+                                    </el-avatar>
+                                    <h3>你好！我可以帮你解答文档中的问题 👋</h3>
+                                    <p>上传 PDF 后，我会自动解析并存入知识库</p>
+                                    <p>你可以直接提问，也可以发送图片让我理解</p>
+                                    <div class="quick-prompts">
+                                        <el-button
+                                            v-for="prompt in quickPrompts"
+                                            :key="prompt"
+                                            size="small"
+                                            round
+                                            @click="sendQuickPrompt(prompt)"
+                                        >
+                                            {{ prompt }}
+                                        </el-button>
+                                    </div>
+                                </div>
+
+                                <!-- 消息列表 -->
+                                <div
+                                    v-for="(msg, idx) in chatMessages"
+                                    :key="idx"
+                                    :class="['message-item', msg.role]"
+                                >
+                                    <el-avatar
+                                        :size="36"
+                                        :icon="msg.role === 'user' ? 'UserFilled' : 'Monitor'"
+                                        :class="msg.role"
+                                    />
+                                    <div class="message-content">
+                                        <!-- 用户的图片 -->
+                                        <div v-if="msg.images && msg.images.length" class="user-images">
+                                            <el-image
+                                                v-for="(img, i) in msg.images"
+                                                :key="i"
+                                                :src="img"
+                                                fit="cover"
+                                                class="chat-image"
+                                                :preview-src-list="msg.images"
+                                            />
+                                        </div>
+                                        <!-- Markdown 回答 -->
+                                        <div
+                                            class="markdown-body"
+                                            v-html="renderMarkdown(msg.content)"
+                                        />
+                                        <!-- 来源引用 -->
+                                        <div v-if="msg.sources && msg.sources.length" class="source-refs">
+                                            <el-divider content-position="left">参考来源</el-divider>
+                                            <div v-for="(s, si) in msg.sources" :key="si" class="source-item">
+                                                <el-icon><Document /></el-icon>
+                                                <span class="source-name">{{ s.source }}</span>
+                                                <span class="source-score">相似度 {{ (s.score * 100).toFixed(1) }}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Loading 状态 -->
+                                <div v-if="chatLoading" class="message-item assistant">
+                                    <el-avatar :size="36" icon="Monitor" class="assistant" />
+                                    <div class="message-content">
+                                        <div class="loading-dots">
+                                            <span></span><span></span><span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 输入区 -->
+                            <div class="chat-input-area">
+                                <!-- 预览已选图片 -->
+                                <div v-if="chatImages.length" class="chat-image-preview">
+                                    <el-image
+                                        v-for="(img, i) in chatImages"
+                                        :key="i"
+                                        :src="img"
+                                        fit="cover"
+                                        class="preview-thumb"
+                                        :preview-src-list="chatImages"
+                                    >
+                                        <template #error>
+                                            <div class="remove-btn" @click="removeChatImage(i)">
+                                                <el-icon><Close /></el-icon>
+                                            </div>
+                                        </template>
+                                    </el-image>
+                                </div>
+
+                                <div class="input-row">
+                                    <!-- 图片上传 -->
+                                    <el-upload
+                                        :show-file-list="false"
+                                        :before-upload="handleChatImage"
+                                        accept="image/*"
+                                        :auto-upload="false"
+                                    >
+                                        <el-button circle>
+                                            <el-icon :size="20"><Picture /></el-icon>
+                                        </el-button>
+                                    </el-upload>
+
+                                    <el-input
+                                        v-model="chatInput"
+                                        type="textarea"
+                                        :autosize="{ minRows: 1, maxRows: 4 }"
+                                        placeholder="输入你的问题，可附加图片..."
+                                        @keydown.enter.exact.prevent="sendChat"
+                                    />
+
+                                    <el-button
+                                        type="primary"
+                                        circle
+                                        :loading="chatLoading"
+                                        :disabled="!chatInput.trim() && chatImages.length === 0"
+                                        @click="sendChat"
+                                    >
+                                        <el-icon :size="20"><Promotion /></el-icon>
+                                    </el-button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
+        </div>
+    </div>
+
+    <!-- ===== Doc Preview Dialog ===== -->
+    <el-dialog v-model="previewVisible" title="文档内容预览" width="70%" top="5vh">
+        <div class="preview-content markdown-body" v-html="renderMarkdown(previewContent)"></div>
+    </el-dialog>
+
+    <!-- ===== Element Plus Icons ===== -->
+    <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+
+    <!-- ===== 依赖 ===== -->
+    <script src="https://unpkg.com/vue@3.4.27/dist/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/element-plus@2.7.6/dist/index.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/javascript.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/json.min.js"></script>
+
+    <!-- ===== App ===== -->
+    <script src="./assets/app.js"></script>
+</body>
+</html>
