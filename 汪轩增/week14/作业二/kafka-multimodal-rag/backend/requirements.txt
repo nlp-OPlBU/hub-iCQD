@@ -1,0 +1,23 @@
+# 推荐 Python 3.10 / 3.11；3.12+ 如遇安装问题请适当放宽版本限制
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+sqlalchemy==2.0.36
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Kafka（若在较新 Python 上无法安装，可换成 kafka-python-ng，导入 API 完全兼容）
+kafka-python>=2.0.2,<3.0.0
+
+# 向量库
+pymilvus==2.5.4
+
+# 向量模型（BGE 文本 + CLIP 图文）
+sentence-transformers==3.3.1
+torch>=2.1.0
+transformers>=4.40.0
+pillow==11.0.0
+numpy>=1.26,<3
+
+# OpenAI 兼容客户端（通义千问 Qwen-VL 等）
+openai==1.59.3
