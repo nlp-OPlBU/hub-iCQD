@@ -1,0 +1,23 @@
+# 运行时依赖（服务器为 conda py312 环境，已在 P0 预装 vllm / mineru，这里只补充项目直接依赖）
+fastapi==0.136.3
+uvicorn==0.51.0
+pydantic==2.13.4
+pydantic-settings==2.14.2
+SQLAlchemy>=2.0.36,<2.1
+PyMySQL==1.2.3
+redis==8.1.0
+kafka-python==3.0.13
+pymilvus==3.0.2
+milvus-lite>=3.0
+httpx==0.28.1
+python-multipart==0.0.32
+pillow==12.3.0
+PyMuPDF>=1.24,<3
+
+# P4 向量模型（torch 复用 vLLM 已装的 cu128 版本：RTX 5090 是 sm_120，旧版 torch 不支持，勿单独 pin）
+sentence-transformers>=5.0
+transformers>=4.51
+numpy>=1.26,<3
+
+# P5 问答编排（只取编排能力，不用 LangChain 的链式抽象）
+langgraph>=0.2.60,<2

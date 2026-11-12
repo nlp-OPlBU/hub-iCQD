@@ -1,0 +1,5 @@
+# golden set 示例：一行一个 JSON，空行与 # 开头的行会被忽略。
+# relevant 填“回答该问题所需的 chunk_id”，来自 MySQL chunk 表（形如 <doc_id>-000）。
+# 标注技巧：先从已入库文档里挑 10~20 个能回答的问题，再回填它们所在的 chunk。
+{"query": "这篇文档的核心结论是什么", "relevant": ["示例docid-000"], "doc_id": "示例docid"}
+{"query": "作者提到的三个限制分别是什么", "relevant": ["示例docid-004", "示例docid-005"]}
