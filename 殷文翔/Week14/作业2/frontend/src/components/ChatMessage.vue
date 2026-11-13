@@ -4,6 +4,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import type { Message } from '../types/chat'
 import SourceReferences from './SourceReferences.vue'
+import { sourceViewPath } from '../utils/documents'
 import { isImageResource } from '../utils/resources'
 
 const props = defineProps<{ message: Message }>()
@@ -44,8 +45,9 @@ const html = computed(() => {
       if (index < 0) continue
       fragment.append(node.data.slice(start, match.index))
       const link = document.createElement('a')
-      link.href = `#${referencePrefix}-source-${index}`
-      link.dataset.sourceTarget = `${referencePrefix}-source-${index}`
+      link.href = `#${sourceViewPath(props.message.sources[index]!)}`
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
       link.textContent = match[0]; link.className = 'citation'
       link.setAttribute('aria-label', `查看来源 ${match[1]}`)
       fragment.append(link); start = match.index! + match[0].length
@@ -54,15 +56,6 @@ const html = computed(() => {
   })
   return template.innerHTML
 })
-function openSource(event: MouseEvent) {
-  const link = (event.target as Element).closest<HTMLAnchorElement>('a[data-source-target]')
-  if (!link) return
-  event.preventDefault()
-  const target = document.getElementById(link.dataset.sourceTarget || '')
-  const details = target?.closest('details')
-  if (details) details.open = true
-  target?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); target?.focus({ preventScroll: true })
-}
 </script>
 
 <template>
@@ -70,7 +63,7 @@ function openSource(event: MouseEvent) {
     <strong>{{ message.role === 'user' ? '你' : '文档助手' }}</strong>
     <p v-if="message.status === 'pending'" role="status">正在检索并生成回答…可刷新会话查看进度。</p>
     <p v-else-if="message.error" role="alert">{{ message.error.message }}（{{ message.error.code }}）</p>
-    <div class="markdown" @click="openSource" v-html="html" />
+    <div class="markdown" v-html="html" />
     <div class="image-strip">
       <a v-for="image in images" :key="image.id" :href="image.url" target="_blank" rel="noopener noreferrer"><img :src="image.url" alt="用户原图" loading="lazy" /></a>
     </div>

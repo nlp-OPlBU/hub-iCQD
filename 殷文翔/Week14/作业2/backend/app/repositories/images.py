@@ -28,9 +28,12 @@ class ImageRepository:
             raise ApiError(422, 'INVALID_IMAGE_SCOPE', '用户图片必须属于当前会话')
         return rows
 
-    def document_images(self, settings, hit: dict):
+    def document_images(self, settings, hit: dict, *, context_limit: bool = True):
         """Never resolve arbitrary ES file keys. Cross-check immutable MinerU metadata."""
-        keys = list(dict.fromkeys([*hit.get('image_keys', []), *hit.get('page_image_keys', [])]))
+        direct = hit.get('image_keys', [])
+        # Table/image evidence owns its images; body text can use clearly labelled page context.
+        context = hit.get('page_image_keys', []) if hit.get('evidence_type', 'text') == 'text' and not direct else []
+        keys = list(dict.fromkeys([*direct, *context]))
         if not keys or hit.get('page') is None:
             return []
         task = self.session.scalar(select(ParseTask).where(
@@ -48,7 +51,7 @@ class ImageRepository:
         except (OSError, ValueError, KeyError, TypeError, ApiError):
             raise ApiError(503, 'SOURCE_UNAVAILABLE', '文档图片来源校验失败') from None
         rows = []
-        for key in keys[:settings.image_max_context_count]:
+        for key in (keys[:settings.image_max_context_count] if context_limit else keys):
             if key not in allowed or not key.startswith(task.artifact_key + '/'):
                 raise ApiError(503, 'INVALID_SOURCE_IMAGE', '索引图片与文档页码不匹配')
             row_id = str(uuid5(NAMESPACE_URL, 'multimodal-rag:' + key))
@@ -71,5 +74,7 @@ class ImageRepository:
                                               .with_for_update())
                     if row is None:
                         raise
+            if row.document_id != hit['document_id'] or row.version != hit['version'] or row.page != hit['page']:
+                raise ApiError(503, 'INVALID_SOURCE_IMAGE', '图片资源与来源文档版本或页码不匹配')
             rows.append(row)
         return rows

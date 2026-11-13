@@ -36,6 +36,15 @@ class SourceReference(Contract):
     filename: str
     page: int | None = Field(default=None, ge=1)
     chunk_id: str
+    evidence_type: Literal["text", "table", "image"] = "text"
+    text_origin: Literal["content", "page_context"] = "content"
+    block_index: int | None = Field(default=None, ge=0)
+    char_offset: int | None = Field(default=None, ge=0)
+    char_end: int | None = Field(default=None, ge=1)
+    bbox: list[float] | None = Field(default=None, min_length=4, max_length=4)
+    image_relation: Literal["block", "page"] | None = None
+    retrieval_score: float | None = None
+    rerank_score: float | None = None
     image_ids: list[UUID] = Field(default_factory=list)
     images: list[ImageRead] = Field(default_factory=list)
 
@@ -73,6 +82,8 @@ class SearchRequest(Contract):
 
 
 class SearchHit(Contract):
+    rerank_status: Literal["disabled", "completed", "degraded"] = "disabled"
+    warning: str | None = None
     text: str
     score: float
     source: SourceReference

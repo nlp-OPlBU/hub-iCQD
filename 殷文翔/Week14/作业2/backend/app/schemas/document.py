@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
+from app.schemas.chat import ImageRead
 from app.schemas.common import Contract, ErrorDetail, UTCTimestamp
 
 TaskStatus = Literal["pending", "processing", "completed", "failed"]
@@ -76,3 +77,21 @@ class ParseEvent(Contract):
     task_id: UUID
     version: int = Field(ge=1)
     storage_key: str = Field(min_length=1, max_length=512)
+
+
+class EvidenceBlockRead(Contract):
+    block_index: int = Field(ge=0)
+    evidence_type: Literal['text', 'table', 'image']
+    text_origin: Literal['content', 'page_context'] = 'content'
+    text: str
+    bbox: list[float] | None = None
+    images: list[ImageRead] = Field(default_factory=list)
+
+
+class DocumentPageRead(Contract):
+    document_id: UUID
+    version: int = Field(ge=1)
+    filename: str
+    page: int = Field(ge=1)
+    page_count: int = Field(ge=1)
+    blocks: list[EvidenceBlockRead]

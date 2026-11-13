@@ -1,6 +1,6 @@
 import type { Capabilities, ErrorResponse, HealthResponse } from '../types/common'
 
-const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+export const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 
 export class ApiError extends Error {
   constructor(public status: number, public body: ErrorResponse) { super(body.error.message) }

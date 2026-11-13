@@ -58,7 +58,7 @@ class ChatRepository:
     def expire(self, row, settings):
         # Two sequential model calls, image preparation, and a safety margin.
         if row.status == 'pending' and row.updated_at < utcnow() - timedelta(
-                seconds=3 * settings.llm_timeout_seconds + 120):
+                seconds=3 * settings.llm_timeout_seconds + settings.rerank_timeout_seconds + 120):
             row.status, row.error_code, row.error_message = (
                 'failed', 'REQUEST_INTERRUPTED', '问答进程中断或超时，请用新的幂等键重试')
 
@@ -90,8 +90,6 @@ class ChatRepository:
             if rows[1].status == 'pending':
                 raise ApiError(409, 'REQUEST_IN_PROGRESS', '问题仍在处理中')
             return rows[0].id, rows[1].id, None, False
-        if settings.retrieval_mode != 'bm25' or settings.rerank_enabled:
-            raise ApiError(503, 'RETRIEVAL_UNSUPPORTED', '当前问答仅支持 BM25，尚未启用向量或重排')
         if payload.image_ids and not settings.llm_vision_enabled:
             raise ApiError(503, 'VISION_NOT_READY', '视觉能力尚未启用')
         if len(payload.image_ids) > settings.image_max_upload_files:

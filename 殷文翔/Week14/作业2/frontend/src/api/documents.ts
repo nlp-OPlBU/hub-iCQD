@@ -1,6 +1,6 @@
-import { request } from './http'
+import { baseUrl, request } from './http'
 import type { Page } from '../types/common'
-import type { BatchUploadResponse, DocumentRecord, ParseTask, TaskStatus } from '../types/document'
+import type { BatchUploadResponse, DocumentPage, DocumentRecord, ParseTask, TaskStatus } from '../types/document'
 
 export function listDocuments(page = 1, status?: TaskStatus, signal?: AbortSignal) {
   const query = new URLSearchParams({ page: String(page), page_size: '20' })
@@ -22,3 +22,9 @@ export const retryDocument = (id: string, version: number, key: string, signal?:
     method: 'POST', headers: { 'Idempotency-Key': key },
     body: JSON.stringify({ expected_latest_version: version }), signal,
   })
+
+export const getDocumentPage = (id: string, version: number, page: number, signal?: AbortSignal) =>
+  request<DocumentPage>(`/documents/${encodeURIComponent(id)}/pages/${page}?version=${version}`, { signal })
+
+export const documentContentUrl = (id: string, version: number) =>
+  `${baseUrl}/documents/${encodeURIComponent(id)}/content?version=${version}`

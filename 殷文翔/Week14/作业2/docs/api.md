@@ -215,4 +215,23 @@ ImageRead 字段：`id, kind, url, media_type, size_bytes, width, height, docume
 - Markdown 先经 DOMPurify 标签/属性白名单处理，再将图片和链接限制为本轮用户图片或来源中的合法 `/api/images/<uuid>/content` 地址；来源缩略图和用户原图也执行相同的资源路径校验。引用 [S1] 生成受控页内链接，可展开并聚焦对应文档/页码/版本/图片来源。脚本、事件属性、危险 URL、外部追踪图和未关联图片不会渲染。
 - 文档列表与 pending 消息轮询使用 `VITE_POLL_INTERVAL_MS`（默认 3000，至少 1000；非法值回退默认值）。页面卸载会终止请求并清除定时器，异步请求结束后也不会重新启动轮询。
 
-当前文档详情接口只提供持久化文档和任务元数据，页面展示解析结果是否可检索；全文 Markdown、原 PDF 下载和 ZIP 下载没有对应 API，本轮不伪造下载入口。相关图文内容通过问答及来源图片展示。
+文档详情接口提供持久化文档和任务元数据；在线查看使用下方新增原始 PDF 与页面证据接口。全文 Markdown 与 ZIP 下载仍未提供独立 API。
+
+
+## 图文证据与文档在线查看
+
+`SourceReference` 新增 `evidence_type`（text/table/image，旧来源默认 text）、`text_origin`（content/page_context）、`block_index`（从 0 开始）、`char_offset`/`char_end`（归一化原文块 Unicode 码点范围，左闭右开）、`bbox`（页面 0～1 坐标，四元素或 null）、`image_relation`（block/page/null）。旧来源缺失的位置字段为 null。检索与回答引用共用相同来源结构，新索引位置与不可变产物不一致返回 503 `INVALID_SOURCE_POSITION`。
+
+- `GET /api/documents/{document_id}/content?version=1`：按内部存储标识 inline 返回原始 PDF，支持 Range/206；文档或版本不存在为 404，原文件缺失/不在数据根目录内为 404 `DOCUMENT_FILE_UNAVAILABLE`。上传后尚未解析时也可查看。带 nosniff 和 private 缓存头。
+- `GET /api/documents/{document_id}/pages/{page}?version=1`：返回 `{document_id, version, filename, page, page_count, blocks}`，block 包含 `{block_index, evidence_type, text_origin, text, bbox, images: ImageRead[]}`。页码从 1 开始。不存在的版本/页码为 404 `DOCUMENT_VERSION_NOT_FOUND`/`DOCUMENT_PAGE_NOT_FOUND`；未完成解析为 409 `DOCUMENT_NOT_PARSED`；产物缺失或版本不匹配为 503 `SOURCE_UNAVAILABLE`。
+- 省略 version 时选择 current_searchable_version，否则 latest_version；显式版本一直查该版本。非法页码或版本返回 422。接口不返回存储键和绝对路径。
+
+前端文档列表与回答来源可打开在线查看页；来源链接携带文档、解析版本、页码与块内位置，右侧高亮归一化证据，左侧 PDF 请求定位对应物理页。具体结构、兼容方式和限制见 [图文分块与来源查看](evidence.md)。
+
+## 向量检索补充（2026-11-13）
+
+/search 保持原有文字请求和来源响应；RETRIEVAL_MODE=hybrid 时 score 是 RRF 融合分数，不是概率。图文问答将用户原图同时用于向量查询与最终视觉回答，仍可用读图关键词补充 BM25。任一路失败返回 SEARCH_UNAVAILABLE，不静默降级；重排仍不支持。范围和有效版本保持原契约。配置和迁移见 [向量检索](vector-retrieval.md)。
+
+## 图文重排响应补充
+
+`POST /search` 与问答共用候选来源校验和重排流程。搜索仍返回列表，每项新增 `rerank_status`（disabled/completed/degraded）及 `warning`；`score` 在成功重排时为相关性评分，否则为原召回分数。SourceReference 新增可空 `retrieval_score`、`rerank_score`，随会话来源持久化，旧消息兼容。重排故障不会令问答自动失败，回答首部显示中文降级提示；不相关证据的明确拒答不附加来源或图片。详见 [图文重排](reranking.md)。

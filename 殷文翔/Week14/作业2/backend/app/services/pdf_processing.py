@@ -23,8 +23,6 @@ class MineruTaskProcessor:
         self.index = ElasticsearchStore(settings)
 
     def process(self, claim: TaskClaim) -> TaskResult:
-        if claim.retrieval_mode != 'bm25':
-            raise TaskProcessingError('RETRIEVAL_UNSUPPORTED', '当前解析仅支持 BM25', retryable=False)
         pdf_path = self.storage.pdf_path(claim.document_id)
         if not pdf_path.is_file():
             raise TaskProcessingError('PDF_MISSING', '原始 PDF 不存在', retryable=False)
@@ -40,6 +38,7 @@ class MineruTaskProcessor:
             extracted = workspace / 'extracted'
             safe_extract(zip_path, extracted, self.settings)
             artifact = load_artifacts(extracted, artifact_key)
+            artifact.update(document_id=claim.document_id, version=claim.version)
             chunks = build_chunks(document_id=claim.document_id, version=claim.version,
                                   filename=claim.original_filename or pdf_path.name, artifact=artifact)
             with (extracted / 'normalized.json').open('x', encoding='utf-8') as output:
@@ -61,6 +60,9 @@ class MineruTaskProcessor:
                     break
             stage = 'indexing'
             self.index.index_chunks(chunks)
+            if self.settings.vector_enabled or self.settings.retrieval_mode == 'hybrid':
+                from app.services.vector_index import VectorIndex
+                VectorIndex(self.settings).index_chunks(chunks)
         except MineruError as exc:
             raise TaskProcessingError(exc.code, exc.message, retryable=exc.retryable,
                                       details={'stage': stage, 'attempt': claim.attempts}) from exc
@@ -72,7 +74,7 @@ class MineruTaskProcessor:
         finally:
             cleanup_workspace(workspace)
         return TaskResult(artifact_key=artifact_key, index_name=self.settings.es_index,
-                          indexed_at=utcnow(), retrieval_mode='bm25')
+                          indexed_at=utcnow(), retrieval_mode=self.settings.retrieval_mode)
 
 
 def _sync_directory(path):

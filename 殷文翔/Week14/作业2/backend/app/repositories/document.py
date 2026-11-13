@@ -71,6 +71,17 @@ class DocumentRepository:
     def storage_key(self, document_id: str) -> str | None:
         return self.session.scalar(select(Document.storage_key).where(Document.id == document_id))
 
+    def source_record(self, document_id: str, version: int | None = None):
+        document = self.session.get(Document, document_id)
+        if document is None:
+            raise ApiError(404, 'DOCUMENT_NOT_FOUND', '文档不存在')
+        selected = version if version is not None else (document.current_searchable_version or document.latest_version)
+        task = self.session.scalar(select(ParseTask).where(
+            ParseTask.document_id == document_id, ParseTask.version == selected))
+        if task is None:
+            raise ApiError(404, 'DOCUMENT_VERSION_NOT_FOUND', '文档版本不存在')
+        return document, task
+
     def retry(self, document_id: str, expected_latest_version: int, retry_key: str,
               settings: Settings) -> TaskRead:
         """Create a new manual version; idempotency and latest-version checks share one lock."""
@@ -121,9 +132,12 @@ class DocumentRepository:
         query = select(Document.id, ParseTask.version).join(ParseTask, (
             (ParseTask.document_id == Document.id)
             & (ParseTask.version == Document.current_searchable_version)
-        )).where(ParseTask.status == 'completed', ParseTask.retrieval_mode == 'bm25')
+        )).where(ParseTask.status == 'completed', ParseTask.retrieval_mode.in_(['bm25', 'hybrid']))
         if document_ids is not None:
             query = query.where(Document.id.in_(document_ids))
         if index_name is not None:
             query = query.where(ParseTask.index_name == index_name)
         return dict(self.session.execute(query).all())
+
+    def has_processing_tasks(self) -> bool:
+        return self.session.scalar(select(ParseTask.id).where(ParseTask.status == 'processing').limit(1)) is not None

@@ -1,5 +1,51 @@
 # 验收记录
 
+## 图文重排与 RAG 交付（2026-11-13）
+
+- Qwen3-VL-Reranker-2B 在独立 8103 部署，实际 ID `rag-reranker`；文本、纯图片候选及图文查询 `/score` 实测通过。混合候选经真实评分后选 Top-K，第 4 页手机表格从文字说明之后提升为首位。
+- `scripts/verify_reranker.py` 连接真实 MySQL、ES、Embedding、Reranker 和视觉模型，经过应用 API/存储链路验证：图文问题回答 Mate40 价格 6999，引用 test2.pdf 第 4 页，图片资源 HTTP 200；真实模型最终输入含 1 张用户原图副本与 2 张文档图片。无依据问题返回明确说明且不展示无关来源/图片。
+- 同一脚本使用独立应用配置指向关闭的本机端口验证重排故障，真实模型仍可回答，搜索响应与持久化 Markdown 明确标记降级。没有停止在线重排服务；超时、部分响应、重复/越界 index、模型不匹配、非法/NaN 分数由专项自动检查覆盖。
+- 显式 `RAG_TEST_MYSQL_BINARY=/usr/sbin/mysqld` 的后端全套：**175 passed、3 skipped**；随后新增的无依据来源清理用例：**2 passed**（SQLite 与临时真实 MySQL）。合计本轮覆盖 177 个通过用例，跳过项未计为成功。
+- `npm run build` 通过；接口模拟 Chromium：**21 passed**。真实 Nginx Chromium `reranker.spec.ts`：**1 passed，8.3 秒**，验证在线 `/search` 已启用重排、图文问答、图片加载、引用打开第 4 页及无依据拒答。首次脚本使用普通路径而页面使用 hash 路由，修正为 `/#/chat` 后通过。截图保留于忽略目录 `frontend/test-results/server-reranker.png`。
+- `runtime/deployment/project.env` 已启用重排，本项目 API 已优雅重启；`bash start.sh --check` 所有必要模块通过，Reranker 包含在一键启动中。其他模型与共享服务配置未修改。
+- 证据：忽略目录 `runtime/reranker/acceptance.json`、`acceptance.log`、`server.log`。四模型同时驻留约 39108 / 49140 MiB；未进行四模型峰值并发、长期稳定性、大规模相关性评测。非 root、开机托管、鉴权和公网 TLS 仍未实现。配置、协议、预算和复现见 [图文重排说明](reranking.md)。
+
+> 2026-11-13 向量检索更新：本机 8102 Embedding 已部署，真实文本/图片 2048 维、历史回填及 BM25+向量 RRF 混合召回已验证；本页较早的“Embedding 待部署/仅支持 BM25”记录由[向量检索与回填说明](vector-retrieval.md)覆盖。Reranker 仍未接入。
+
+## 2026-11-13 安全停止脚本（保留模型）
+
+新增 `stop.sh` / `scripts/stop_project.py`，复用启动配置与互斥锁，依次优雅停止项目 Nginx、API、投递器、Worker、私有 MySQL。全部模型部署与共享服务均在白名单之外，超时不强杀并保留后续模块；支持 `--check`/`--dry-run` 只读预览。身份验证、pidfd 适配及旧监督器限制见 [安全停止说明](deployment.md#安全停止项目linux保留模型)。
+
+- 新增 9 项隔离停机测试：真实临时子进程收到 SIGTERM 后延迟写入收尾标记，再确认退出；验证数据库最后停、模型模拟进程保留、重复调用跳过、超时保留进程和数据库、预览不发信号/不创建文件、无法确认的端口导致全量预检拒绝、进程身份变化拒绝、已退出 pidfd 不影响其他进程、MySQL 标记/可执行文件/参数而非 PID 文件内容的身份确认、另一配置的应用进程保护数据库，以及旧监督器保护。未向真实部署进程发送测试信号。
+- py312 后端全量 `python -m pytest -q`：**117 passed, 38 skipped，28.29 秒**；未设置 `RAG_TEST_MYSQL_BINARY` 或在线验收开关，真实数据库/外部服务用例按条件跳过。
+- 前端 `npm run build` 通过；`bash -n stop.sh`、`--help`、`git diff --check` 通过。
+- 真实 `bash stop.sh --check` 通过：仅列出项目 Nginx、API、投递器、Worker、私有 MySQL 的 PID 与优雅退出信号，明确保留 vLLM/MinerU 等模型和共享服务。当前 py312 没有标准 pidfd 包装，Linux x86_64 系统调用路径已在隔离进程停机测试及真实只读预览中执行；aarch64 分支尚未实机验证。
+
+本轮仅编写脚本、隔离测试及只读预览，**没有实际停止当前应用、MySQL 或模型服务**，不将其记为真实业务任务收尾/部署停机验收。
+
+## 2026-11-13 图文分块、来源关联与在线查看
+
+本轮完成 schema 2 正文/表格/图片证据归一化、表格内嵌图片关联、文档/版本/物理页/块序号/bbox/字符范围、检索与回答来源共用校验，以及原始 PDF 与页面证据接口。前端文档列表、来源文档名和答案引用可打开在线查看页；引用位置在解析证据区高亮。结构、兼容与上线要求见 [图文分块与来源查看](evidence.md)。
+
+- py312 执行 `cd backend && python -m pytest`：**102 passed, 38 skipped，22.66 秒**。未设置真实 MySQL/在线服务开关，真实 MySQL、Kafka/MinerU/ES/模型链路用例按条件跳过。新增证据用例覆盖两页正文/无说明图片/表格及其内嵌图、确定性有界分块和文本重建、位置与图片不匹配拒绝、产物版本不匹配、历史引用、图片单独构成文档、PDF inline 与 Range/206、缺失版本/页面/文件，以及已有 ES 索引新增字段 mapping。API 使用隔离 SQLite、检索和模型适配模拟，未连接现有业务数据库。
+- `cd frontend && npm run build`：TypeScript 与 Vite 构建通过。
+- Chromium 接口模拟 `npm run test:ui`：**21 passed，4.1 秒**。新增引用新标签页打开、保留旧版本与指定页、表格字符高亮、查看整页证据、切页、未解析提示和原始 PDF 入口检查。沿用项目 `runtime/browser-libs/extracted/usr/lib/x86_64-linux-gnu` 的 LD_LIBRARY_PATH，不修改系统库。PDF 流在浏览器用例中为模拟响应，未据此宣称浏览器原生 PDF 引擎真实渲染验收。
+- 只读复核 `runtime/deployment/data/parsed/` 中五份不同的已有 MinerU 真实产物，重新在内存中归一化和分块，未覆盖原始文件或 normalized.json。其中四份为 6 页，分别得到 54/57/57/58 个分块、11/23/22/22 个直接关联图片（包括表格单元格内嵌图）；一份纯文本产物为 1 页、29 个分块。逐块验证文本重建、字符切片、文档/版本、bbox 和直接图片关联，均通过。仅元数据检查报告保存于 Git 忽略目录 `runtime/evidence-check.json`。
+- `git diff --check` 通过。未启动/重启部署进程，未改已有 MySQL/ES 数据和共享配置，也未重新执行 MinerU CLI 或调用真实模型。
+
+旧 schema 1 产物和历史会话不原地升级，缺少的位置字段保持未知；要应用独立图片分块、表格行文本与内嵌图关联，需重新上传解析。运行中服务加载新代码、实际浏览器 PDF 页码定位及完整真实服务联调仍待部署验证。
+
+## 2026-11-13 一键启动脚本
+
+新增根目录 `start.sh` 和 `scripts/start_project.py`，为已初始化的 Linux 项目部署检查并启动缺失模块，已启动则提示跳过；共享 Kafka/ES 仅检查，不启动或修改。配置选择、后台日志与参数见 [部署文档](deployment.md#一键启动当前部署linux)。
+
+- 新增 7 项启动器测试，使用临时 loopback HTTP 进程验证首次启动及重复跳过、日志追加、端口被不健康服务占用、只读模式不创建日志/进程、依赖失败、子进程早退、超时保留进程、项目/配置进程识别及并发启动锁。
+- py312 后端全量 `python -m pytest -q`：**98 passed, 38 skipped**。未设置 `RAG_TEST_MYSQL_BINARY` 或在线验收开关，真实 MySQL/外部服务用例按默认条件跳过。
+- 前端 `npm run build` 通过；根入口 `bash -n start.sh`、`--help` 和 `git diff --check` 通过。
+- 在当前服务器执行 `bash start.sh --check`，只读探测真实部署：Kafka（含两个项目 Topic）和 ES 项目索引可用；MySQL 13306、问答模型 8100、MinerU 模型 8104 未就绪；API 与 Nginx 进程存在但数据库 ready 失败；dispatcher/Worker 进程存活。整体应返回 1，未创建业务数据或启动/停止服务。
+
+本轮未执行真实 GPU/数据库的一键启动，不把隔离测试或只读检查当成业务恢复成功。下方已通过的完整链路属于较早验收快照，不能据此推断当前服务仍在线。
+
 ## 2026-11-13 完整异常验证与项目服务器部署
 
 **首个里程碑已通过真实服务验收**：批量 PDF 经 MySQL → outbox → Kafka → 独立 Worker → MinerU → ES 完成处理，四种状态可通过 API 查询，已完成内容可限定文档检索。完整可复现步骤、当前端口、进程启动/停止与限制见 [服务器部署与完整链路复验](server-acceptance.md)。以下为本轮执行结果，覆盖较早“Kafka/advanced/部署待验证”的结论。
@@ -348,3 +394,7 @@ python -m pytest -q
 - 共享 MySQL 恢复后的服务端版本/账号/库与迁移验证；非 root 目录写权限、Nginx 接入和四模型共卡峰值预算。当前端口、文件权限和单模型能力检查见最新记录。
 
 上传大小/数量限制、ZIP 安全解压、重试与租约已实现；JSON 页码/图片来源已入索引；业务图像预算执行仍待完成。单元测试和独立组件通过不代表完整 RAG 系统已实现或服务器联调成功。
+
+## 向量链路验收（2026-11-13）
+
+详见 [向量检索验收](vector-retrieval.md)：真实 2048 维文本/图片、8 份历史文档 390 块可恢复回填、新增一页文档 5 块、两代原子切换/回退、两路范围和版本过滤及 HTTP 图文回答通过。证据保留在忽略目录 runtime/embedding；最终完整后端 156 passed / 3 skipped（含向量专项 10 项），前端构建通过。已有长任务由租约恢复，不计入成功验收。

@@ -34,3 +34,20 @@ export interface BatchUploadResponse {
   results: UploadResult[]
 }
 export interface RetryRequest { expected_latest_version: number }
+
+export interface EvidenceBlock {
+  block_index: number
+  evidence_type: 'text' | 'table' | 'image'
+  text_origin: 'content' | 'page_context'
+  text: string
+  bbox: number[] | null
+  images: import('./chat').ImageResource[]
+}
+export interface DocumentPage {
+  document_id: string
+  version: number
+  filename: string
+  page: number
+  page_count: number
+  blocks: EvidenceBlock[]
+}

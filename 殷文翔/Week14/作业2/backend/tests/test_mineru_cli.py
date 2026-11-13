@@ -37,7 +37,8 @@ def test_valid_artifacts_and_bounded_deterministic_sources(tmp_path):
     assert chunks == build_chunks(**kwargs)
     assert all(c['page'] == 1 and len(c['text']) <= 3 for c in chunks)
     assert chunks[0]['page_image_keys'] == ['parsed/d/v1/images/a.jpg']
-    assert ''.join(c['text'] for c in chunks) == '商品可以添加100件'
+    assert ''.join(c['text'] for c in chunks if c['evidence_type'] == 'text') == '商品可以添加100件'
+    assert any(c['evidence_type'] == 'image' and c['image_keys'] for c in chunks)
 
 
 @pytest.mark.parametrize('name', ['../escape', '/absolute', 'C:/drive', 'a/../../escape'])

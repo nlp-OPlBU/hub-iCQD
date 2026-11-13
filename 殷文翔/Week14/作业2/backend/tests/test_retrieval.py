@@ -48,3 +48,18 @@ def test_bm25_scope_is_document_version_pairs(monkeypatch):
     assert scope['minimum_should_match'] == 1
     assert scope['should'][0]['bool']['filter'] == [
         {'term': {'document_id': 'doc'}}, {'term': {'version': 2}}]
+
+
+def test_existing_index_gets_only_additive_evidence_mapping(monkeypatch):
+    store = ElasticsearchStore(Settings(_env_file=None))
+    calls = []
+    def response(method, path, body=None):
+        calls.append((method, path, json.loads(body) if body else None))
+        return 200, b'{"acknowledged":true}'
+    monkeypatch.setattr(store, '_request', response)
+    store.ensure_index()
+    assert calls[0][0] == 'HEAD'
+    method, path, mapping = calls[1]
+    assert method == 'PUT' and path.endswith('/_mapping')
+    assert mapping == {'properties': {'char_end': {'type': 'integer'},
+        'evidence_type': {'type': 'keyword'}, 'text_origin': {'type': 'keyword'}}}

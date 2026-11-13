@@ -1,16 +1,22 @@
 # 统一配置与日志
 
+> 2026-11-13 向量检索更新：本机 8102 Embedding 已部署，真实文本/图片 2048 维、历史回填及 BM25+向量 RRF 混合召回已验证；本页较早的“Embedding 待部署/仅支持 BM25”记录由[向量检索与回填说明](vector-retrieval.md)覆盖。Reranker 仍未接入。
+
 实现位置 `backend/app/core/config.py`、`logging.py`。API、Alembic 与后续 Worker 统一复用 Settings，不在业务模块内读取零散环境变量或硬编码连接信息。
 
 ## 加载规则
 
 配置优先级为显式 Settings 参数 > 进程环境变量 > **项目根目录 .env** > 代码默认值。运行入口可通过 `RAG_ENV_FILE=runtime/deployment/project.env` 选择单独的部署文件（替代默认 .env，不合并；指定文件不存在立即报错），相对文件名基于项目根目录。应用不自动加载 `.env.example`，它只供复制/审阅；不从当前工作目录猜测 `.env`。get_settings 缓存一个进程的配置，修改后重启项目进程。
 
+`bash start.sh` 是部署便捷入口：先按 `--env-file`、`RAG_ENV_FILE`、既有 `runtime/deployment/project.env`、根 `.env` 的顺序选定一个文件，再通过 `RAG_ENV_FILE` 传给所有新启动进程。Settings 的字段优先级不变，环境变量仍可覆盖所选文件。启动器不会重载已运行进程；修改配置后须单独重启对应模块。完整参数见 [一键启动](deployment.md#一键启动当前部署linux)。
+
 DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERTS 等相对路径均基于项目根目录。创建 Settings 不创建目录、不访问网络，也不操作环境文档中的 `/workspace` 路径；Linux 服务器的路径配置不应直接照搬为 Windows 运行路径。MINERU_COMMAND 可以是 PATH 中的可执行命令或部署环境绝对路径，subprocess 调用不经 shell。
 
 敏感字段使用 SecretStr；MySQL URL 使用 SQLAlchemy URL.create 构造，密码含 `@ / %` 也不会破坏连接串。CORS_ORIGINS 为 JSON 数组，默认 `[]`，前端走同源/Vite 代理。未知变量忽略以允许同一 `.env` 存 VITE_*；拼写应对照示例核查。浏览器只接收 VITE_*，禁止将密码放入这个前缀。
 
 ## 限制与默认值
+
+`bash stop.sh` 复用一键启动的配置文件选择规则，只用于确认所属项目和等待时限；不改模型配置或模型服务状态。默认每个模块优雅退出等待 `MINERU_TIMEOUT_SECONDS + 120` 秒，可用 `--timeout` 覆盖；自定义 Nginx/私有 MySQL 路径需与启动时一致，见 [安全停止](deployment.md#安全停止项目linux保留模型)。
 
 | 配置 | 默认值/含义 |
 | --- | --- |
@@ -56,6 +62,8 @@ BM25 为默认模式，重排和视觉能力默认关闭。hybrid 需要独立 e
 
 ## 日志
 
+当前服务器的实际日志路径、查看命令与原始 MinerU 日志保留限制见 [日志位置与查看方法](logging.md)。
+
 标准 logging 统一输出每行 JSON 到 stderr，包含 UTC 时间、level、logger、request_id、message；LOG_LEVEL 控制级别，LOG_DIR 是保留的运行目录配置，当前不自动写日志文件，可由进程托管工具收集和轮转。
 
 访问日志只记录匹配后的路由模板、方法、HTTP 状态和耗时，不记录完整路径/查询字符串、请求体、上传文件内容。未知路径显示 unmatched。日志过滤已配置密钥、URL 内嵌密码、Bearer 与常见 token/password 字段；异常只输出类型，响应只含通用错误，不输出原始 SQL 和堆栈中的输入。SQLAlchemy 隐藏 SQL 参数；HTTPX/HTTPCore 请求级日志默认关闭。该过滤是兜底，后续业务代码仍禁止主动日志输出敏感内容。
@@ -85,3 +93,7 @@ Linux CLI 由独立进程组的 guardian 启动，设置 parent-death signal；W
 前端通过只读 `GET /api/capabilities` 获取视觉开关和 PDF/图片上传限制，不复制服务端阈值到浏览器环境变量。此接口只反映 Settings；`vision_enabled=true` 不表示模型实时可用，调用失败仍显示实际错误。关闭或返回 `VISION_NOT_READY` 时明确提示，可继续文字问答。接口失败显示能力未知，服务端校验仍为最终依据。
 
 `VITE_POLL_INTERVAL_MS=3000` 控制文档列表和 pending 消息的轮询间隔，允许至少 1000 毫秒，非法值回退 3000。属于 Vite 构建时配置，修改后需重启开发服务器或重新构建。两个页面复用卸载时清理的轮询逻辑，使用 AbortController 取消在途请求，并防止异步初始化在离页后再创建定时器。浏览器通过现有 `VITE_API_BASE_URL` 访问 API，受控图片仍使用 API 返回的同源资源 URL；部署时保留 `/api/images/` 代理。
+
+## 重排配置
+
+RERANK_ENABLED 已实现；示例仍关闭，本机部署开启。新增 timeout、batch_size、max_images、模型/模板路径与 GPU 使用比例均通过 Settings 读取；默认值、预算和降级规则见 [图文重排](reranking.md#配置与启停)。

@@ -20,6 +20,15 @@ export interface SourceReference {
   filename: string
   page: number | null
   chunk_id: string
+  evidence_type?: 'text' | 'table' | 'image'
+  text_origin?: 'content' | 'page_context'
+  block_index?: number | null
+  char_offset?: number | null
+  char_end?: number | null
+  bbox?: number[] | null
+  image_relation?: 'block' | 'page' | null
+  retrieval_score?: number | null
+  rerank_score?: number | null
   image_ids: string[]
   images: ImageResource[]
 }

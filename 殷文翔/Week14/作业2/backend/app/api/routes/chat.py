@@ -9,9 +9,9 @@ from app.repositories.document import DocumentRepository
 from app.schemas.chat import (AnswerResponse, ConversationCreate, ConversationRead, MessageRead,
                               QuestionRequest, SearchHit, SearchRequest)
 from app.schemas.common import Page
-from app.services.elasticsearch_store import ElasticsearchError, ElasticsearchStore
-from app.services.rag import answer_question, sources_for_hits, transaction
-from app.services.retrieval import document_scope, search_snapshot
+from app.services.elasticsearch_store import ElasticsearchError
+from app.services.rag import answer_question, sources_for_hits, transaction, retrieve_evidence
+from app.services.retrieval import document_scope
 
 router = APIRouter(tags=['chat'])
 PageNumber = Annotated[int, Query(ge=1)]
@@ -46,16 +46,15 @@ def ask(conversation_id: UUID, payload: QuestionRequest, request: Request,
 @router.post('/search', response_model=list[SearchHit])
 def search(payload: SearchRequest, request: Request):
     settings, factory = request.app.state.settings, request.app.state.session_factory
-    if settings.retrieval_mode != 'bm25' or settings.rerank_enabled:
-        raise ApiError(503, 'RETRIEVAL_UNSUPPORTED', '当前仅支持 BM25 检索')
     with transaction(factory) as session:
         versions = document_scope(DocumentRepository(session),
             [str(x) for x in payload.document_ids] if payload.document_ids is not None else None,
             index_name=settings.es_index)
     try:
-        hits = search_snapshot(ElasticsearchStore(settings), payload.text, versions, payload.limit)
+        hits, warning = retrieve_evidence(factory, settings, payload.text, versions, payload.limit)
     except ElasticsearchError:
         raise ApiError(503, 'SEARCH_UNAVAILABLE', '检索服务暂不可用', True) from None
     sources, _ = sources_for_hits(factory, settings, hits)
-    return [SearchHit(text=hit['text'], score=hit.get('score') or 0, source=source)
+    return [SearchHit(text=hit['text'], score=hit.get('score') or 0, source=source,
+                      rerank_status=hit.get('rerank_status', 'disabled'), warning=warning)
             for hit, source in zip(hits, sources)]

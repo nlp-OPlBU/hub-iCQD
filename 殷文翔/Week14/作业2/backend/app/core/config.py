@@ -87,10 +87,24 @@ class Settings(BaseSettings):
     embedding_api_key: SecretStr = SecretStr("EMPTY")
     embedding_model: str = "rag-embedding"
     embedding_dimensions: PositiveInt = 2048
+    embedding_timeout_seconds: PositiveInt = 120
+    embedding_model_path: Path = Path("models/Qwen3-VL-Embedding-2B")
+    embedding_gpu_memory_utilization: float = Field(default=0.15, gt=0, le=1)
+    vector_read_alias: str = "multimodal_rag_vectors_active"
+    vector_write_alias: str = "multimodal_rag_vectors_writes"
+    vector_enabled: bool = False
+    retrieval_candidates: int = Field(default=40, ge=1, le=100)
+    retrieval_rrf_k: PositiveInt = 60
     rerank_base_url: str = "http://127.0.0.1:8103"
     rerank_api_key: SecretStr = SecretStr("EMPTY")
     rerank_model: str = "rag-reranker"
     rerank_enabled: bool = False
+    rerank_timeout_seconds: PositiveInt = 60
+    rerank_batch_size: int = Field(default=4, ge=1, le=16)
+    rerank_max_images: int = Field(default=2, ge=1, le=4)
+    rerank_model_path: Path = Path("models/Qwen3-VL-Reranker-2B")
+    rerank_template_path: Path = Path("model-templates/qwen3_vl_reranker.jinja")
+    rerank_gpu_memory_utilization: float = Field(default=0.15, gt=0, le=1)
 
     upload_max_files: PositiveInt = 10
     upload_max_file_bytes: PositiveInt = 50 * 1024 * 1024
@@ -129,7 +143,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_and_resolve(self):
-        for name in ("data_dir", "log_dir", "mineru_working_dir", "mineru_home", "mineru_config", "es_ca_certs", "llm_model_path"):
+        for name in ("data_dir", "log_dir", "mineru_working_dir", "mineru_home", "mineru_config", "es_ca_certs", "llm_model_path", "embedding_model_path", "rerank_model_path", "rerank_template_path"):
             value = getattr(self, name)
             if value is not None:
                 setattr(self, name, (PROJECT_ROOT / value).resolve() if not value.is_absolute() else value.resolve())

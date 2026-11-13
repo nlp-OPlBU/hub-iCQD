@@ -1,5 +1,20 @@
-"""Deterministic, bounded chunks with physical page and block provenance."""
+"""Bounded evidence chunks with offsets into normalized block text."""
 from __future__ import annotations
+
+from app.services.mineru_artifacts import evidence_type
+
+
+def text_spans(text: str, max_chars: int, *, table: bool):
+    start = 0
+    while start < len(text):
+        end = min(start + max_chars, len(text))
+        if table and end < len(text):
+            # Prefer whole rows; exceptionally long rows still obey the size bound.
+            boundary = text.rfind('\n', start, end)
+            if boundary >= start:
+                end = boundary + 1
+        yield start, end
+        start = end
 
 
 def build_chunks(*, document_id: str, version: int, filename: str,
@@ -11,14 +26,17 @@ def build_chunks(*, document_id: str, version: int, filename: str,
         page_images = sorted({key for b in page['blocks'] for key in b['image_keys']})
         for block in page['blocks']:
             text = block['text']
-            for offset in range(0, len(text), max_chars):
-                index = len(chunks)
+            kind = block.get('evidence_type', evidence_type(block['type']))
+            for offset, end in text_spans(text, max_chars, table=kind == 'table'):
+                if not text[offset:end].strip():
+                    continue
                 chunks.append({
                     'chunk_id': f'{document_id}:{version}:{page["page"]}:{block["block_index"]}:{offset}',
                     'document_id': document_id, 'version': version, 'filename': filename,
                     'page': page['page'], 'block_index': block['block_index'],
-                    'char_offset': offset, 'bbox': block['bbox'],
+                    'evidence_type': kind, 'text_origin': block.get('text_origin', 'content'),
+                    'char_offset': offset, 'char_end': end, 'bbox': block['bbox'],
                     'image_keys': block['image_keys'], 'page_image_keys': page_images,
-                    'chunk_index': index, 'text': text[offset:offset + max_chars],
+                    'chunk_index': len(chunks), 'text': text[offset:end],
                 })
     return chunks

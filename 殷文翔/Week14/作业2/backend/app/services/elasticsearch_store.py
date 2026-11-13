@@ -10,6 +10,12 @@ import urllib.request
 from app.core.config import Settings
 
 
+EVIDENCE_PROPERTIES = {
+    'char_end': {'type': 'integer'}, 'evidence_type': {'type': 'keyword'},
+    'text_origin': {'type': 'keyword'},
+}
+
+
 class ElasticsearchError(Exception):
     pass
 
@@ -52,6 +58,7 @@ class ElasticsearchStore:
     def ensure_index(self) -> None:
         status, _ = self._request("HEAD", f"/{self.settings.es_index}")
         if status == 200:
+            self._json('PUT', f'/{self.settings.es_index}/_mapping', {'properties': EVIDENCE_PROPERTIES})
             return
         if status != 404:
             raise ElasticsearchError(f"Index check failed: HTTP {status}")
@@ -60,6 +67,7 @@ class ElasticsearchStore:
             "version": {"type": "integer"}, "filename": {"type": "keyword"},
             "page": {"type": "integer"}, "chunk_index": {"type": "integer"},
             "block_index": {"type": "integer"}, "char_offset": {"type": "integer"},
+            **EVIDENCE_PROPERTIES,
             "bbox": {"type": "float", "index": False},
             "image_keys": {"type": "keyword"}, "page_image_keys": {"type": "keyword"},
             "text": {"type": "text", "analyzer": self.settings.es_analyzer},
@@ -73,6 +81,7 @@ class ElasticsearchStore:
             concurrent = False
         if not concurrent:
             raise ElasticsearchError(f"Index creation failed: HTTP {status}")
+        self._json('PUT', f'/{self.settings.es_index}/_mapping', {'properties': EVIDENCE_PROPERTIES})
 
     def index_chunks(self, chunks: list[dict]) -> None:
         if not chunks:

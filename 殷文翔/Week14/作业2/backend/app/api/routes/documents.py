@@ -2,7 +2,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, Header, Path as PathParam, Query, Request, status
+from fastapi.responses import FileResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
@@ -10,9 +11,13 @@ from starlette.concurrency import run_in_threadpool
 from app.api.errors import ApiError
 from app.db.session import get_session
 from app.repositories.document import DocumentRepository
+from app.repositories.images import ImageRepository
 from app.schemas.common import ErrorDetail, ErrorResponse, Page
-from app.schemas.document import (BatchUploadResponse, DocumentRead, RetryRequest, TaskRead,
+from app.schemas.document import (BatchUploadResponse, DocumentPageRead, DocumentRead, EvidenceBlockRead, RetryRequest, TaskRead,
                                   TaskStatus, UploadAccepted, UploadRejected)
+from app.services.evidence import read_evidence
+from app.services.images import image_read, resource_path
+from app.services.mineru_artifacts import evidence_type
 from app.services.storage import FileStorage
 from app.services.upload_multipart import staged_files
 from app.services.uploads import accept_upload, check_database
@@ -98,3 +103,48 @@ def retry_document(document_id: UUID, payload: RetryRequest, request: Request,
                 request.app.state.settings)
     except SQLAlchemyError:
         raise ApiError(503, "DATABASE_NOT_READY", "数据库暂不可用", True) from None
+
+
+@router.get('/documents/{document_id}/content')
+def document_content(document_id: UUID, request: Request, session: DBSession,
+                     version: Annotated[int | None, Query(ge=1)] = None):
+    try:
+        with session.begin():
+            document, _ = DocumentRepository(session).source_record(str(document_id), version)
+            try:
+                path = resource_path(request.app.state.settings, document.storage_key)
+            except ApiError:
+                raise ApiError(404, 'DOCUMENT_FILE_UNAVAILABLE', '原始 PDF 不可用') from None
+            filename = document.original_filename
+    except SQLAlchemyError:
+        raise ApiError(503, 'DATABASE_NOT_READY', '文档查询暂不可用', True) from None
+    return FileResponse(path, media_type='application/pdf', filename=filename,
+                        content_disposition_type='inline', headers={
+                            'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'private, max-age=3600'})
+
+
+@router.get('/documents/{document_id}/pages/{page}', response_model=DocumentPageRead)
+def document_page(document_id: UUID, page: Annotated[int, PathParam(ge=1)],
+                  request: Request, session: DBSession,
+                  version: Annotated[int | None, Query(ge=1)] = None):
+    settings = request.app.state.settings
+    try:
+        with session.begin():
+            document, task = DocumentRepository(session).source_record(str(document_id), version)
+            artifact = read_evidence(settings, task)
+            selected = next((item for item in artifact['pages'] if item['page'] == page), None)
+            if selected is None:
+                raise ApiError(404, 'DOCUMENT_PAGE_NOT_FOUND', '文档页码不存在')
+            blocks = []
+            for block in selected['blocks']:
+                kind = block.get('evidence_type', evidence_type(block['type']))
+                images = ImageRepository(session).document_images(settings, {
+                    'document_id': document.id, 'version': task.version, 'page': page,
+                    'evidence_type': kind, 'image_keys': block['image_keys']}, context_limit=False)
+                blocks.append(EvidenceBlockRead(block_index=block['block_index'], evidence_type=kind,
+                    text=block['text'], text_origin=block.get('text_origin', 'content'),
+                    bbox=block.get('bbox'), images=[image_read(row) for row in images]))
+            return DocumentPageRead(document_id=document.id, version=task.version,
+                filename=document.original_filename, page=page, page_count=len(artifact['pages']), blocks=blocks)
+    except SQLAlchemyError:
+        raise ApiError(503, 'DATABASE_NOT_READY', '文档查询暂不可用', True) from None
