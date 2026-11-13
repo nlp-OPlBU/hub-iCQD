@@ -79,7 +79,7 @@ SQL 外键保证指针属于同一文档的真实任务，不能单靠外键保�
 }
 ```
 
-## 3. 批量上传与查询（已实现，人工重试除外）
+## 3. 批量上传与查询（含人工重试，已实现）
 
 `POST /api/documents/batch`：multipart 中重复的 `files` 字段，保持提交顺序。默认最多 10 个 PDF，每个 50 MiB，整个 HTTP 请求最多 200 MiB（含 multipart 开销）。不能只信 Content-Length；读取时也必须累计限流，先将整个请求暂存并校验请求总上限，再开始逐文件提交，避免请求级 413 时已有文件悄悄入库。临时文件在失败后清理。
 
@@ -187,3 +187,31 @@ ImageRead 字段：`id, kind, url, media_type, size_bytes, width, height, docume
 `GET /api/health` → 200 `{ "status": "ok", "service": "Multimodal RAG", "scope": "process" }`。不访问 MySQL/Kafka/ES/模型；配置可加载时即可检查进程。
 
 `GET /api/health/ready` → 检查 MySQL SELECT 1 和 alembic_version=0001_initial；成功 200 且 scope=mysql_schema，不可连接/无版本表 503 DATABASE_NOT_READY，版本不符 503 SCHEMA_NOT_READY。它仅表示数据库基础就绪，不表示 Kafka、MinerU、ES、图片问答已联调成功。启动 API 不自动创建数据库、建表或执行迁移。
+
+## 8. 前端能力与限制配置（已实现）
+
+`GET /api/capabilities` 无需访问数据库或外部服务，仅返回统一 Settings 中可公开的 UI 配置：
+
+```json
+{
+  "vision_enabled": false,
+  "upload_max_files": 10,
+  "upload_max_file_bytes": 52428800,
+  "upload_max_request_bytes": 209715200,
+  "image_max_upload_files": 4,
+  "image_max_file_bytes": 10485760
+}
+```
+
+`vision_enabled` 对应 `LLM_VISION_ENABLED`，表示管理员配置的开关，**不是模型实时就绪探测**。关闭时前端明确提示并禁用图片选择，仍可文字提问；服务端后续返回 `VISION_NOT_READY` 时前端也切换到该提示，保留未发送草稿，允许清除图片。开启时只声明“已启用”，模型不可用和预算等错误仍以实际问答结果为准。该接口不返回模型地址、连接串、路径或凭据。能力请求失败时显示无法确认，不伪称视觉已验证；所有上传仍由服务端校验。
+
+## 9. 两个前端页面的交互
+
+- 文档页使用批量上传结果的 `index` 展示逐文件结果，同名文件也独立呈现；HTTP 200 不表示全部成功。列表分页、四种状态筛选、任务阶段/执行次数、错误摘要、自动重试时间和可检索版本均来自 API。已完成文档可跳转 `/#/chat?document=<id>`，问答页据此使用显式文档范围。
+- 人工重试沿用一次请求的版本和幂等键；网络/5xx 结果不明时显示“获取重试结果”，不创建新的请求。409 显示冲突原因并刷新。批量上传结果不明时只刷新列表并提示核对，清空文件选择，不自动重传整批。
+- 问答页读取所有分页的会话、文档和消息；只列出具有可检索版本的文档。空的显式范围、无效范围和超过 100 个显式文档禁止提交，不自动改为全库。消息 pending 时轮询，问答响应不明时使用原幂等键获取结果。
+- 问题图片用 multipart 上传，随后以 `image_ids` 发送问题，支持纯图片问题；选择时校验类型/数量/大小，可预览、移除，并在更换/移除/离页时释放 object URL。图片上传提交不明时阻止直接重复提交，提示核对或清除图片继续文字提问。
+- Markdown 先经 DOMPurify 标签/属性白名单处理，再将图片和链接限制为本轮用户图片或来源中的合法 `/api/images/<uuid>/content` 地址；来源缩略图和用户原图也执行相同的资源路径校验。引用 [S1] 生成受控页内链接，可展开并聚焦对应文档/页码/版本/图片来源。脚本、事件属性、危险 URL、外部追踪图和未关联图片不会渲染。
+- 文档列表与 pending 消息轮询使用 `VITE_POLL_INTERVAL_MS`（默认 3000，至少 1000；非法值回退默认值）。页面卸载会终止请求并清除定时器，异步请求结束后也不会重新启动轮询。
+
+当前文档详情接口只提供持久化文档和任务元数据，页面展示解析结果是否可检索；全文 Markdown、原 PDF 下载和 ZIP 下载没有对应 API，本轮不伪造下载入口。相关图文内容通过问答及来源图片展示。

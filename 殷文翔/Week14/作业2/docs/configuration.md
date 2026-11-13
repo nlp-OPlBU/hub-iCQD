@@ -73,3 +73,9 @@ CLI 的实际 cwd 是每次租约独立目录，`MINERU_WORKING_DIR` 仅保留�
 `IMAGE_MAX_CONTEXT_COUNT` 必须小于等于服务实际允许图片数。模型指南原命令上限 4 图，因此沿用该服务时设为 4；用户图片占满 4 个名额且检索有相关图时会提示预算不足，需减少用户图。默认配置 8 图不代表已通过最大多图验收。
 
 模型请求通过 httpx 直接连接配置端点，禁用环境代理且不自动重试；所有模型图片都是服务端校验并缩放后的 JPEG data URL。新增运行依赖 httpx 0.28.1、Pillow 12.3.0，原图仍保存在项目 DATA_DIR。`LLM_VISION_ENABLED` 默认 false，启用前必须核对当前服务能力与限制。
+
+## 前端能力配置与轮询
+
+前端通过只读 `GET /api/capabilities` 获取视觉开关和 PDF/图片上传限制，不复制服务端阈值到浏览器环境变量。此接口只反映 Settings；`vision_enabled=true` 不表示模型实时可用，调用失败仍显示实际错误。关闭或返回 `VISION_NOT_READY` 时明确提示，可继续文字问答。接口失败显示能力未知，服务端校验仍为最终依据。
+
+`VITE_POLL_INTERVAL_MS=3000` 控制文档列表和 pending 消息的轮询间隔，允许至少 1000 毫秒，非法值回退 3000。属于 Vite 构建时配置，修改后需重启开发服务器或重新构建。两个页面复用卸载时清理的轮询逻辑，使用 AbortController 取消在途请求，并防止异步初始化在离页后再创建定时器。浏览器通过现有 `VITE_API_BASE_URL` 访问 API，受控图片仍使用 API 返回的同源资源 URL；部署时保留 `/api/images/` 代理。

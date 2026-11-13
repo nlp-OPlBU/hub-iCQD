@@ -1,4 +1,4 @@
-import type { ErrorResponse, HealthResponse } from '../types/common'
+import type { Capabilities, ErrorResponse, HealthResponse } from '../types/common'
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 
@@ -21,3 +21,4 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
 }
 
 export const getHealth = (signal?: AbortSignal) => request<HealthResponse>('/health', { signal })
+export const getCapabilities = (signal?: AbortSignal) => request<Capabilities>('/capabilities', { signal })

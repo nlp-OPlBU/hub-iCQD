@@ -70,6 +70,25 @@ def test_health_errors_and_no_automatic_database_connection(monkeypatch):
         assert '/api/health' in client.get('/api/openapi.json').json()['paths']
 
 
+@pytest.mark.parametrize('vision', [False, True])
+def test_public_capabilities_follow_config_without_connecting_to_services(monkeypatch, vision):
+    app = create_app(Settings(_env_file=None, llm_vision_enabled=vision,
+                              upload_max_files=3, image_max_upload_files=2,
+                              mysql_password='private-test-password'))
+    def unavailable():
+        raise AssertionError('Capabilities must not connect to the database')
+    with TestClient(app) as client:
+        monkeypatch.setattr(app.state.engine, 'connect', unavailable)
+        response = client.get('/api/capabilities')
+        assert response.status_code == 200
+        assert response.json() == {
+            'vision_enabled': vision, 'upload_max_files': 3,
+            'upload_max_file_bytes': 52428800, 'upload_max_request_bytes': 209715200,
+            'image_max_upload_files': 2, 'image_max_file_bytes': 10485760,
+        }
+        assert 'private-test-password' not in response.text
+
+
 def test_validation_and_unexpected_error_do_not_expose_inputs():
     app = create_app(Settings(_env_file=None))
 

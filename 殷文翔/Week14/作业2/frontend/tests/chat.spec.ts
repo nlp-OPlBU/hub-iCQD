@@ -21,6 +21,9 @@ test('image preview, scoped question, stable retry, sources and safe Markdown', 
     const request = route.request(), path = new URL(request.url()).pathname
     let json: unknown
     if (path.endsWith('/health')) json = { status: 'ok' }
+    else if (path.endsWith('/capabilities')) json = { vision_enabled: true, upload_max_files: 10,
+      upload_max_file_bytes: 52428800, upload_max_request_bytes: 209715200,
+      image_max_upload_files: 4, image_max_file_bytes: 10485760 }
     else if (path === '/api/conversations') json = { items: [
       { id: conversation, title: '验收会话', created_at: timestamp, updated_at: timestamp },
     ], total: 1, page: 1, page_size: 100 }
@@ -65,7 +68,9 @@ test('image preview, scoped question, stable retry, sources and safe Markdown', 
   expect(submissions[0]?.body).toEqual({ text: '', image_ids: [imageId], document_ids: [document] })
   expect(submissions[0]?.key).toMatch(/^[0-9a-f-]{36}$/)
   await expect(page.locator('.markdown img')).toHaveCount(1)
-  await expect(page.locator('.markdown script, .markdown [onerror], .markdown a[href]')).toHaveCount(0)
+  await expect(page.locator('.markdown script, .markdown [onerror], .markdown a[href]:not(.citation)')).toHaveCount(0)
+  await page.getByLabel('查看来源 S1').click()
+  await expect(page.locator('.sources article')).toBeFocused()
   expect(await page.evaluate(() => (window as Window & { __xss?: number }).__xss)).toBeUndefined()
   expect(requests.some(url => url.includes('evil.example'))).toBe(false)
   await expect(page.getByAltText('待发送图片预览')).toHaveCount(0)

@@ -6,7 +6,7 @@ import type { DocumentRecord } from '../types/document'
 export const createConversation = (signal?: AbortSignal) => request<Conversation>('/conversations', {
   method: 'POST', body: JSON.stringify({ title: '文档问答' }), signal,
 })
-export const listConversations = (signal?: AbortSignal) => request<Page<Conversation>>('/conversations?page_size=100', { signal })
+export const listConversations = (signal?: AbortSignal, page = 1) => request<Page<Conversation>>(`/conversations?page=${page}&page_size=100`, { signal })
 export const listMessages = (id: string, page = 1, signal?: AbortSignal) =>
   request<Page<Message>>(`/conversations/${id}/messages?page=${page}&page_size=100`, { signal })
 export const listDocuments = (page: number, signal?: AbortSignal) =>

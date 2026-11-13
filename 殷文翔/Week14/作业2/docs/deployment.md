@@ -1,6 +1,6 @@
 # 部署规划与当前限制
 
-当前可运行后端基础入口、PDF 批量上传与文档/任务查询、人工重试、文件补偿工具、MySQL Alembic 迁移、outbox 投递器和可恢复 PDF Worker；Nginx 配置、真实 MinerU/ES 联调及检索问答仍待完成。此文包含本地开发步骤与后续服务器部署规划，不代表已部署。
+当前可运行 PDF 批量上传与任务查询/重试、MySQL 迁移与补偿工具、outbox 投递器、可恢复 Worker、BM25 图文问答及两个前端核心页面。basic MinerU/ES 与后端本地模型问答已有独立实测，前端已通过接口模拟浏览器验收；Kafka 真实传输、advanced 和 Nginx/常驻部署仍待完成。此文包含本地开发步骤与后续服务器部署规划，不代表已部署。
 
 ## 本地基础工程
 
@@ -29,7 +29,7 @@ npm run build
 npm run dev
 ```
 
-构建输出 frontend/dist；开发服务器通过 VITE_DEV_API_TARGET 将 `/api` 转发到 API，生产环境则由 Nginx 提供同源转发。页面显示真实健康请求结果，文档与问答页面仍是明确的待实现状态。npm run preview 仅预览静态构建，不作为生产反向代理。
+构建输出 frontend/dist；开发服务器通过 VITE_DEV_API_TARGET 将 `/api` 转发到 API，生产环境则由 Nginx 提供同源转发。页面显示实际健康请求结果，文档页与图文问答页已接入 API，交互与能力配置见 [API 契约](api.md#8-前端能力与限制配置已实现)，验证范围见 [验收记录](verification.md)。构建成功不表示外部业务服务就绪。npm run preview 仅预览静态构建，不作为生产反向代理。
 
 使用 `backend/requirements-lock.txt` 可复现本次验收的完整 Python 依赖；常规运行/开发依赖分别为 requirements.txt 和 requirements-dev.txt。依赖升级后重跑验证并更新锁文件。
 

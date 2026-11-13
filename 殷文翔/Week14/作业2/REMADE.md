@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；已补齐 MinerU 4.1.7 结构化产物、页码图片来源、分块和 BM25 检索可见性验证；basic 样例已通过 CLI → MySQL → 临时 ES 检索，Kafka 传输及 advanced 档仍待联调。已接入 BM25 检索 HTTP、受控图片资源、会话/消息/来源 MySQL 持久化和 Vue 图文问答页面；真实 MySQL + 独立 ES + Qwen3.5-4B 文本与图文链路通过，详见验证记录。文档上传/任务管理 UI 仍待实现。2026-11-13 已复核服务器环境、完成 MinerU basic 六页样例解析和 vLLM 实际 PDF 图片输入测试；未修改共享服务配置，临时模型服务已停止。样本位置、实测结果与限制见 [验证记录](docs/verification.md)。
+已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；已补齐 MinerU 4.1.7 结构化产物、页码图片来源、分块和 BM25 检索可见性验证；basic 样例已通过 CLI → MySQL → 临时 ES 检索，Kafka 传输及 advanced 档仍待联调。已接入 BM25 检索 HTTP、受控图片资源、会话/消息/来源 MySQL 持久化和 Vue 图文问答页面；真实 MySQL + 独立 ES + Qwen3.5-4B 文本与图文链路通过，详见验证记录。文档页与问答页两个核心页面已完成：批量上传/逐文件结果、四种状态/失败重试、指定文档范围、图片预览、安全 Markdown 与来源引用、视觉未就绪提示和离页轮询清理；浏览器接口模拟验收见验证记录。2026-11-13 已复核服务器环境、完成 MinerU basic 六页样例解析和 vLLM 实际 PDF 图片输入测试；未修改共享服务配置，临时模型服务已停止。样本位置、实测结果与限制见 [验证记录](docs/verification.md)。
 
 优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
 
@@ -183,7 +183,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 ### 1. 批量 PDF 上传和异步解析
 
-规划链路：`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。当前已实现 HTTP 上传到 MySQL outbox、投递器确认后标记已发送、Kafka 至少一次消费和 Worker 幂等完成；basic 档真实 MinerU/ES 与 MySQL Worker 处理通过；Kafka 传输、advanced 和前端上传 UI 仍待完成。
+规划链路：`PdfUploader.vue` → `api/routes/documents.py` → `storage.py` 保存文件 → MySQL 事务保存文档、任务和 outbox → `outbox_dispatcher.py` + `kafka_producer.py` → Kafka → `pdf_consumer.py` → `mineru_cli.py` → 解析结果保存与 `chunking.py` → `elasticsearch_store.py` → MySQL 状态更新。当前已实现 HTTP 上传到 MySQL outbox、投递器确认后标记已发送、Kafka 至少一次消费和 Worker 幂等完成；basic 档真实 MinerU/ES 与 MySQL Worker 处理通过；前端上传及任务管理已完成接口模拟浏览器验收；Kafka 真实传输和 advanced 仍待联调。
 
 浏览器通过 HTTP 上传，Kafka 只传任务元数据；原始文件留在共享文件存储。队列按至少一次投递设计，消费者需要幂等、超时处理、有限重试与失败记录，不能将数据库写入和 Kafka 发送假定为一个天然原子操作。
 
@@ -220,4 +220,4 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 - [docs/configuration.md](docs/configuration.md)：配置加载、限制、日志与路径约定。
 - [docs/verification.md](docs/verification.md)：实际检查结果与未验证项。
 
-后端 outbox/Kafka/Worker 与人工重试已有测试；basic MinerU/ES 与 MySQL Worker 已联调，检索、受控图片和问答已完成真实本地模型应用验收。Kafka 传输、advanced、向量/重排、文档管理 UI 与常驻部署仍待完成。不把模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。
+后端 outbox/Kafka/Worker 与人工重试已有测试；basic MinerU/ES 与 MySQL Worker 已联调，检索、受控图片和问答已完成真实本地模型应用验收。文档管理与问答 UI 已通过接口模拟浏览器验收；Kafka 传输、advanced、向量/重排与常驻部署仍待完成。不把模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。

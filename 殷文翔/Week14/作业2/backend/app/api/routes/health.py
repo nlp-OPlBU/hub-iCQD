@@ -17,6 +17,25 @@ class HealthResponse(Contract):
     scope: str
 
 
+class CapabilitiesResponse(Contract):
+    vision_enabled: bool
+    upload_max_files: int
+    upload_max_file_bytes: int
+    upload_max_request_bytes: int
+    image_max_upload_files: int
+    image_max_file_bytes: int
+
+
+@router.get("/capabilities", response_model=CapabilitiesResponse)
+def capabilities(request: Request):
+    """Public UI configuration, not a model or dependency readiness probe."""
+    settings = request.app.state.settings
+    return CapabilitiesResponse(**{
+        name: getattr(settings, "llm_vision_enabled" if name == "vision_enabled" else name)
+        for name in CapabilitiesResponse.model_fields
+    })
+
+
 @router.get("/health", response_model=HealthResponse)
 def health(request: Request):
     return HealthResponse(status="ok", service=request.app.state.settings.app_name, scope="process")
