@@ -24,6 +24,8 @@ def isolated_mysql(tmp_path_factory):
     data = work / 'data'
     flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
     common = [binary, '--no-defaults', f'--basedir={Path(binary).resolve().parent.parent}', f'--datadir={data}']
+    if os.name == 'posix' and os.geteuid() == 0:
+        common.append('--user=root')  # Only the explicitly opted-in, temporary test instance.
     with (work / 'init.log').open('wb') as log:
         subprocess.run([*common, '--initialize-insecure', '--console'], stdout=log, stderr=log,
                        check=True, timeout=120, creationflags=flags)

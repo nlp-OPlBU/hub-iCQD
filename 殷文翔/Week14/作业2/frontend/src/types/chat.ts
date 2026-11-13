@@ -14,12 +14,14 @@ export interface ImageResource {
   page: number | null
 }
 export interface SourceReference {
+  source_id: string
   document_id: string
   version: number
   filename: string
   page: number | null
   chunk_id: string
   image_ids: string[]
+  images: ImageResource[]
 }
 export interface QuestionRequest { text: string; image_ids: string[]; document_ids: string[] | null }
 export interface Message {
@@ -36,3 +38,5 @@ export interface Message {
   updated_at: string
 }
 export interface AnswerResponse { user_message: Message; assistant_message: Message }
+export type Question = QuestionRequest
+export type Answer = AnswerResponse

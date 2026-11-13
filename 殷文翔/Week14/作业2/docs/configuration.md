@@ -39,6 +39,8 @@ DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERT
 | MYSQL_POOL_SIZE / POOL_RECYCLE_SECONDS | 5 / 1800 秒，开启 pool_pre_ping |
 | REDIS_CACHE_TTL_SECONDS | 60 秒；不影响 MySQL 状态 |
 | LLM_TIMEOUT_SECONDS | 120 秒 |
+| LLM_CONTEXT_WINDOW_TOKENS | 16384；输入预算 + 输出上限不得超过此值，须与实际模型窗口一致 |
+| RETRIEVAL_TOP_K | 6，问答召回上限，范围 1～30 |
 
 Settings 已校验类型、正整数/非负重试、端口范围及关键大小/租约/预算关系。**UPLOAD_MAX_FILES、UPLOAD_MAX_FILE_BYTES、UPLOAD_MAX_REQUEST_BYTES 已在批量上传中执行**：总请求按流式实际读取字节计数（包含 multipart 开销），请求检查通过后才开始逐文件落盘/事务。ZIP 解压、投递重试、任务租约/心跳和重试预算已在 outbox 投递器与 Worker 中执行；真实 MinerU、ES 和模型限制仍需服务器联调验证。
 
@@ -60,6 +62,14 @@ BM25 为默认模式，重排和视觉能力默认关闭。hybrid 需要独立 e
 
 CLI 的实际 cwd 是每次租约独立目录，`MINERU_WORKING_DIR` 仅保留兼容旧配置；模型和配置仍使用绝对路径。Linux 本机各 Worker 共享 DATA_DIR 下的 flock 槽位限制并发，Windows Worker 未验证且暂不支持。默认超时 1800 秒同时作为等待名额上限；取得名额后解析再计时。ZIP 限制和产物支持格式见 [MinerU 接入](../infra/mineru/README.md)。
 
-`ES_TIMEOUT_SECONDS=30` 控制单次 ES HTTP 超时，`ES_BULK_BATCH_SIZE=200` 控制每批分块数。默认 standard 分词与 ES 默认 BM25；未验证 IK 时不启用 IK。分块不跨页、不跨来源块，最多 1200 字符，ID 为 `文档ID:版本:页码:块序号:字符偏移`。保存直接关联的 image_keys 和同页关联的 page_image_keys，二者不等同于图像内容本身。查询只接受数据库确认的当前已完成版本，并与用户文档范围相交。`retrieval.retrieve` 是服务入口，HTTP 检索和问答接口仍待实现。
+`ES_TIMEOUT_SECONDS=30` 控制单次 ES HTTP 超时，`ES_BULK_BATCH_SIZE=200` 控制每批分块数。默认 standard 分词与 ES 默认 BM25；未验证 IK 时不启用 IK。分块不跨页、不跨来源块，最多 1200 字符，ID 为 `文档ID:版本:页码:块序号:字符偏移`。保存直接关联的 image_keys 和同页关联的 page_image_keys，二者不等同于图像内容本身。查询只接受数据库确认的当前已完成版本，并与用户文档范围相交。`retrieval.retrieve` 是服务入口，已接入 `/api/search` 和问答接口；HTTP 层严格检查显式范围，不静默移除不可用项，并限定任务 index_name 与当前 ES_INDEX 一致。
 
 每批 bulk 必须 HTTP 成功且所有 item 成功，refresh 后再通过 `_search` 检查本批全部 ID 可见；失败不得返回 TaskResult。产物已持久化且上述检查通过才允许 Worker 发布 completed 和 current_searchable_version。hybrid 任务明确失败为 RETRIEVAL_UNSUPPORTED，不伪称已建立向量索引。
+
+## 问答预算与图片输入
+
+图片校验、缩放、总张数、JPEG 副本字节数和图像 token 预算已执行，规则见 [API 图片资源](api.md#5-图片资源已实现)。总输入文本使用序列化消息 UTF-8 字节数 + 128 保守计费，包含系统指令、问题、来源元数据及图片标签；先按预算选择实际检索片段，最终发送前再次检查，不静默截断问题或用户图片。模型 usage 超过输入预算时保存失败，不返回超预算回答。超长单条片段无法纳入时也明确失败。不同图片处理器、长上下文与最大并发仍需专项服务器压力测试。
+
+`IMAGE_MAX_CONTEXT_COUNT` 必须小于等于服务实际允许图片数。模型指南原命令上限 4 图，因此沿用该服务时设为 4；用户图片占满 4 个名额且检索有相关图时会提示预算不足，需减少用户图。默认配置 8 图不代表已通过最大多图验收。
+
+模型请求通过 httpx 直接连接配置端点，禁用环境代理且不自动重试；所有模型图片都是服务端校验并缩放后的 JPEG data URL。新增运行依赖 httpx 0.28.1、Pillow 12.3.0，原图仍保存在项目 DATA_DIR。`LLM_VISION_ENABLED` 默认 false，启用前必须核对当前服务能力与限制。

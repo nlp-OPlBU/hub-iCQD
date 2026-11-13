@@ -19,6 +19,7 @@ kafka-python==3.0.13
 Mako==1.4.3
 MarkupSafe==3.0.4
 packaging==26.3
+Pillow==12.3.0
 pluggy==1.7.0
 pycparser==3.12
 pydantic==2.14.3

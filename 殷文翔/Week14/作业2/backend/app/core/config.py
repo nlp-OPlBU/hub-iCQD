@@ -105,6 +105,8 @@ class Settings(BaseSettings):
     image_token_budget: PositiveInt = 4096
     rag_context_token_budget: PositiveInt = 12000
     llm_max_output_tokens: PositiveInt = 2048
+    llm_context_window_tokens: PositiveInt = 16384
+    retrieval_top_k: int = Field(default=6, ge=1, le=30)
 
     @model_validator(mode="before")
     @classmethod
@@ -131,6 +133,8 @@ class Settings(BaseSettings):
             raise ValueError("IMAGE_MAX_UPLOAD_FILES exceeds IMAGE_MAX_CONTEXT_COUNT")
         if self.image_token_budget >= self.rag_context_token_budget:
             raise ValueError("Image token budget must leave room for text context")
+        if self.rag_context_token_budget + self.llm_max_output_tokens > self.llm_context_window_tokens:
+            raise ValueError("Input and output budgets exceed LLM_CONTEXT_WINDOW_TOKENS")
         if self.retrieval_mode == "hybrid" and not self.embedding_model.strip():
             raise ValueError("Hybrid retrieval requires an embedding model")
         return self

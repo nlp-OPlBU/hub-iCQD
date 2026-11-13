@@ -211,6 +211,8 @@ vllm serve "$RAG_ROOT/models/Qwen3.5-4B" \
   --enforce-eager
 ```
 
+应用问答客户端已用该命令的 4 图上限完成真实图文验收，报告见 [verification.md](verification.md)。部署沿用此命令时，应用设 `IMAGE_MAX_CONTEXT_COUNT=4`；`.env.example` 的 8 图预算需与 vLLM 上限共同调整并单独压力验证。用户原图占满名额且检索到相关图时会报预算不足，需减少用户图。
+
 该服务复用到问题理解、图片说明和最终回答。不能使用 `--language-model-only`，否则失去本项目需要的图片输入。调用时使用实际 `image_url` 内容块及受控 data URL，不能用文件名或图片说明替代原图。
 
 ### 6.2 多模态 Embedding：8102

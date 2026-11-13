@@ -15,7 +15,7 @@
 | documents | 稳定 UUID、原名、内部 storage_key、SHA256、字节数、latest_version、可空 current_searchable_version；不重复保存易失配的任务状态 |
 | parse_tasks | UUID、document_id/version 唯一、status/stage、attempts/max_retries、错误、下次尝试、租约持有者/令牌/到期/心跳、产物 key、索引名/索引时间、检索模式；document_id/retry_key 唯一 |
 | outbox_events | 事件 UUID、task_id/document_id/version 复合外键、事件类型/Topic/payload、投递状态、尝试次数/预算、可投递时间、租约、发送确认时间、错误；task_id/event_type 唯一 |
-| conversations | UUID、标题、next_sequence、创建/更新时间；后续事务锁定序号分配 |
+| conversations | UUID、标题、next_sequence、创建/更新时间；短事务锁定序号分配，模型请求在事务外执行 |
 | messages | UUID、conversation_id、sequence、request_key/request_hash、role/status、Markdown、image_ids、实际 document_scope 快照、来源 JSON、模型及错误；会话+序号唯一，会话+请求键+角色唯一 |
 | image_resources | UUID、内部存储 key、类型、MIME、尺寸/大小/SHA256；文档图绑定 document_id/version/page，用户图绑定 conversation_id；CHECK 保证二者互斥 |
 
@@ -91,3 +91,11 @@ python -m app.services.upload_recovery --apply --uploads-stopped
 `python -m alembic downgrade -1` 会执行上一版本的 downgrade；当前首版 downgrade 会删除全部业务表和数据，只可用于可丢弃测试库或经备份和明确安排的回退。MySQL DDL 通常隐式提交，迁移中途失败不能假定整批自动回滚；停止后审阅实际结构并修复，不随意 stamp 跳过失败。
 
 参考：[Alembic 官方教程](https://alembic.sqlalchemy.org/en/latest/tutorial.html)、[离线 SQL 生成](https://alembic.sqlalchemy.org/en/latest/offline.html)。
+
+## 会话、图片与来源实现
+
+会话创建/分页、消息分页及问答幂等已接入现有表，无结构变更。每轮用户/助手消息及 document_scope 版本快照同事务提交，结束时保存助手 Markdown、实际来源 JSON 或失败错误。同一会话并发请求通过行锁分配序号；同 key 不同问题冲突，已完成/失败结果直接重放。过期 pending 在查询时转为 REQUEST_INTERRUPTED，恢复规则见 API 契约。
+
+用户原图绑定 conversation_id；命中文档图片按版本和归一化产物页码校验后，以 UUID v5 登记 image_resources。来源 JSON 包含 source_id、文档 UUID/版本/原名、实际页码、分块 ID 与图片元数据/受控 URL，不保存绝对路径或 Base64。文档后续重试不改写已保存来源，也不删除旧图片。
+
+图片上传明确回滚时清理文件；提交结果不明时保留原图并尝试主库复查，否则返回 IMAGE_UPLOAD_COMMIT_UNCERTAIN 和资源 ID。尚无图片孤立文件自动补偿工具，维护者需在停写后核对主库，不能按年龄自动删除。

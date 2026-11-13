@@ -117,11 +117,13 @@ class DocumentRepository:
         return Page[DocumentRead](items=[document_read(*row) for row in rows], page=page,
                                   page_size=page_size, total=total)
 
-    def searchable_versions(self, document_ids: list[str] | None = None) -> dict[str, int]:
+    def searchable_versions(self, document_ids: list[str] | None = None, *, index_name: str | None = None) -> dict[str, int]:
         query = select(Document.id, ParseTask.version).join(ParseTask, (
             (ParseTask.document_id == Document.id)
             & (ParseTask.version == Document.current_searchable_version)
         )).where(ParseTask.status == 'completed', ParseTask.retrieval_mode == 'bm25')
         if document_ids is not None:
             query = query.where(Document.id.in_(document_ids))
+        if index_name is not None:
+            query = query.where(ParseTask.index_name == index_name)
         return dict(self.session.execute(query).all())

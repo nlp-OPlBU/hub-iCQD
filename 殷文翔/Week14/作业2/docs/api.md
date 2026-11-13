@@ -1,10 +1,10 @@
 # HTTP API 契约（v1）
 
-已实现 **健康检查、统一错误结构、请求 ID、PDF 批量上传、文档列表/详情、任务状态查询、人工重试**。图片资源、会话与问答仍为开发契约，尚未注册路由。Pydantic 定义在 `backend/app/schemas/`，前端类型在 `frontend/src/types/`。`/api/docs`、`/api/redoc`、`/api/openapi.json` 仅展示实际已实现接口；outbox 投递器、Kafka 生产/消费和可恢复解析 Worker 已实现；上传后任务会由独立进程推进，真实 MinerU/ES 联调仍待服务器验证。
+已实现 **健康检查、PDF 上传与任务查询/重试、BM25 检索、受控图片资源、会话与图文问答**。Pydantic 定义在 `backend/app/schemas/`，前端类型在 `frontend/src/types/`。`/api/docs` 展示实际接口。真实 MySQL + 独立 ES + Qwen3.5-4B 文本/图文应用验收见 [verification.md](verification.md)；常驻部署、Kafka 传输、advanced、向量与重排仍待验证。
 
 ## 1. 通用约定
 
-- 前缀 `/api`，JSON UTF-8；上传使用 `multipart/form-data`。UUID v4 采用小写带连字符字符串；版本为从 1 开始的整数。API 时间为 UTC RFC 3339（`Z`）；MySQL DATETIME(6) 存 UTC，不随本机时区转换。
+- 前缀 `/api`，JSON UTF-8；上传使用 `multipart/form-data`。业务 UUID v4、文档图片确定性 UUID v5 均采用小写带连字符字符串；版本从 1 开始。API 时间为 UTC RFC 3339（`Z`）；MySQL DATETIME(6) 存 UTC。
 - 服务生成 `X-Request-ID`；错误体及批量结果包含相同 `request_id`。不信任客户端传入的日志关联 ID。
 - 列表统一 `?page=1&page_size=20`，page ≥ 1、page_size 1～100。返回 `{ "items": [], "page": 1, "page_size": 20, "total": 0 }`；超出末页返回空 items，非法参数 422。文档/会话按 `created_at DESC, id DESC`，消息按 `sequence ASC`；分页和 total 在一次数据库读取事务中取快照。并发插入时跨请求页可能变化，首版不承诺游标快照。
 - 无全局 success 包装：成功直接返回具体对象；错误如下。`details` 仅含字段名、允许值等可公开信息，不回显请求正文、密码、SQL、模型报错原文或服务器路径。
@@ -137,18 +137,22 @@ SQL 外键保证指针属于同一文档的真实任务，不能单靠外键保�
 
 任务租约默认 120 秒，每 30 秒续约，必须大于两倍心跳间隔；每次领取产生新的 lease_token，所有心跳、阶段及结果更新携带令牌条件和文档 latest_version 条件。租约过期后由投递器恢复，旧令牌不能提交。PDF 解析 1800 秒超时不等于租约时长；Kafka poll 与处理分离，并配置合理 max poll interval。offset 只在结果、重试安排或终态失败及失败 outbox 已提交后确认；持久化失败时不提交并回退到该记录重试。
 
-## 5. 图片资源（待实现）
+## 5. 图片资源（已实现）
 
 - `POST /api/conversations/{id}/images`：multipart `files`，返回 201 `{ "items": [ImageRead] }`。用户图片必须绑定已存在会话；本接口采用全部成功或全部失败（暂存校验全部通过才事务保存，失败清理），与 PDF 批量逐项语义不同。
 - `GET /api/images/{image_id}`：返回 ImageRead 元数据。
 - `GET /api/images/{image_id}/content`：返回二进制 png/jpeg/webp，设置正确 Content-Type、`X-Content-Type-Options: nosniff` 和私有缓存策略；资源不存在返回 404。不允许通过 URL 查询参数传服务器路径；存储 key 仅服务器读取。
 - 提取图片保存 document_id/version/page（页码从 1 开始），用户原图保存 conversation_id。两种归属由数据库 CHECK 区分。旧回答引用的旧版本图片保留，首版不提供物理删除 API。
+- 文档图片在命中检索时登记为确定性资源：先与解析任务的 `normalized.json` 页码关联核对，再解码图片；不直接读取索引中任意路径。受控读取拒绝路径穿越和逃逸数据根目录的符号链接。用户图片按实际解码格式识别，不信扩展名/MIME；拒绝动画。
+- 用户图片全部校验后才落盘并在短事务保存。明确提交前失败会清理原件；COMMIT 确认丢失时用新主库会话查询资源 ID，确认成功仍返回 201，否则返回 `503 IMAGE_UPLOAD_COMMIT_UNCERTAIN`（retryable=false，details.image_ids），保留原件等待维护者核对。图片上传暂没有 PDF 那样的补偿调度工具；不能仅凭一次 404 或文件年龄自动删文件/重传。
 
 ImageRead 字段：`id, kind, url, media_type, size_bytes, width, height, document_id, version, page`；用户图片最后三项为 null。url 只允许 `/api/images/<uuid>/content`。格式校验需解码图片，拒绝 SVG 等主动内容及解压像素炸弹；不信扩展名。
 
 默认每次最多上传 4 张、每张 10 MiB、原图不超过 2000 万像素。视觉输入最大边 2048；单次上下文总图片最多 8 张、解码后的模型输入图片字节总量最多 20 MiB、图像 token 预算 4096。总上下文输入预算 12000，输出上限 2048，必须结合实际模型窗口和图像 token 估算验证。超预算显式报错或按文档化规则压缩，不得静默丢弃用户图片；用户原图持久化保留，模型可使用受控缩放副本。
 
-## 6. 会话、消息与问答（待实现）
+模型副本去 EXIF、转 RGB/JPEG，先限制最大边，再按 `ceil(width/28)*ceil(height/28)+32` 保守估算图像 token 并等比分配/缩放。用户图片全部优先保留，其次按召回顺序选文档图片、去重；超过总张数或字节预算的后续文档图片不进入本轮模型输入或图文回答来源。存在相关文档图片却无法容纳任何一张时返回预算错误，要求减少用户图或提高预算。视觉关闭的文本阶段可展示检索图片来源，但不发送视觉输入。应用张数上限必须与实际 vLLM `limit-mm-per-prompt` 一致；本轮实测为 4 图，默认 8 图需另行验证。token 公式针对当前 Qwen3.5，不能代替换模型后的实测；模型返回 usage 时再次检查实际输入预算。
+
+## 6. 会话、消息与问答（已实现）
 
 | 方法与路径 | 请求与响应 |
 | --- | --- |
@@ -165,14 +169,18 @@ ImageRead 字段：`id, kind, url, media_type, size_bytes, width, height, docume
 }
 ```
 
-- text 最多 20000 字符，去空白后与 image_ids 至少一项非空；image_ids 不允许重复、必须属于当前会话且满足动态预算。
+- text 最多 20000 字符，去空白后与 image_ids 至少一项非空；image_ids 不允许重复、必须属于当前会话且满足动态预算。单次显式文档范围最多 100 项；纯图片问题会先将真实图片发送给同一视觉模型提取检索文本，最终回答请求仍带用户图片和召回的相关文档图片。
 - document_ids=null 或省略代表全部当前可检索文档；空数组拒绝为 422，避免意外扩大范围。显式范围含不存在或不可检索文档返回 INVALID_DOCUMENT_SCOPE，不悄悄移除过滤条件。
 - 必须带 UUID `Idempotency-Key`，规范化问题及范围计算 request_hash；相同 key/相同请求返回持久化结果（进行中 409 REQUEST_IN_PROGRESS，失败返回已保存错误，不再次调用模型），相同 key/不同请求 409。用户主动重试失败问答使用新 key，生成新消息对。
 - 在短事务中锁定会话 next_sequence，分配用户及助手消息两个连续序号并保存；模型请求在事务外执行，结束后更新助手结果。消息 `status=pending/completed/failed` 与解析任务状态独立；用户消息持久化后 completed，助手消息可能 pending 或 failed。相同会话并发问题按分配序号排序，不能按模型返回顺序排序。
-- AnswerResponse 为 `{ "user_message": MessageRead, "assistant_message": MessageRead }`。MessageRead 包含 id、conversation_id、sequence、role、status、content、images、sources、error、created_at、updated_at；content 是 Markdown。SourceReference 包含 document_id、version、filename、page、chunk_id、image_ids，页码未知为 null，禁止编造。
+- AnswerResponse 为 `{ "user_message": MessageRead, "assistant_message": MessageRead }`。MessageRead 包含 id、conversation_id、sequence、role、status、content、images、sources、error、created_at、updated_at；content 是 Markdown。SourceReference 包含 source_id（本次证据标记 S1/S2）、document_id、version、filename、page、chunk_id、image_ids、images（ImageRead），页码未知为 null。来源由服务端从实际命中生成；文档名以 MySQL 为准。只保存最终回答引用的实际证据；模型引用不存在的 S 编号则持久化 INVALID_MODEL_CITATION。没有命中或没有有效引用时统一回答依据不足、sources=[]。模型生成的 Markdown 链接会移除，图片引用由服务端使用实际来源补齐。
 - document_scope JSON 持久化本次实际检索的 document_id/version 快照；来源不随后续文档重试被改写。无检索证据时说明依据不足，sources=[]。
 - 用户原图、检索到的文档图片和文字要共同传到视觉模型；仅传路径或文字说明不符合契约。`LLM_VISION_ENABLED=false` 且问题带图片时返回 503 VISION_NOT_READY。该开关只有真实图片输入验证后才可开启。
 - 前端 Markdown 禁止不安全 HTML/URL，图片仅允许受控资源地址；服务端将图片转换为受控 data URL 等模型可访问形式。文档和检索片段是数据，不能作为系统指令或执行授权。
+
+问答预校验失败返回相应 HTTP 错误；消息对已提交后发生的模型超时、检索或预算失败以 **HTTP 200 + assistant_message.status=failed/error** 返回持久化结果，同 key 重放也返回它。提交完成结果时数据库异常为 HTTP 503，客户端须用原 key 获取结果。pending 超过 `3*LLM_TIMEOUT_SECONDS+120` 秒后，在消息查询或同 key 重放时标记 REQUEST_INTERRUPTED；不自动重跑模型。首版每轮独立按本轮问题/图片检索，不将历史回答作为新证据；会话历史用于浏览和追溯。
+
+`POST /api/search` 请求 `{ "text": "购物车", "document_ids": ["<UUID>"], "limit": 6 }`，返回 `[{ "text": "实际片段", "score": 1.2, "source": SourceReference }]`。limit 1～30；问答使用 `RETRIEVAL_TOP_K` 默认 6。显式范围每项均须是当前 ES_INDEX 中 MySQL 确认已完成的可用版本，否则 INVALID_DOCUMENT_SCOPE；空范围禁止扩大为全库。ES 超时/部分分片失败返回 SEARCH_UNAVAILABLE，不当作无证据。当前只支持 BM25，配置 hybrid 或启用 rerank 返回 RETRIEVAL_UNSUPPORTED。
 
 ## 7. 已实现的健康检查
 

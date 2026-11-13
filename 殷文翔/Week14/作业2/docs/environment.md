@@ -93,3 +93,9 @@
 ## MinerU/BM25 应用接入补充（2026-11-13）
 
 本轮项目 MySQL 3306 已可访问，成功保存样例 completed 与三类故障 failed。独立临时 ES 8.15.3 使用 19200/19300、独立配置及数据目录完成 standard/BM25 检索，随后停止；没有覆盖共享 ES 配置或启动共享 9200。basic 六页样例的 CLI、来源转换、索引与 MySQL 状态链路通过；advanced/8104、Kafka 实际投递、共享服务常驻和非 root Worker 权限仍待验证。详细数据与复验脚本见 [验证记录](verification.md) 顶部。上文端口不可达为较早检查时的状态。
+
+## 检索与多模态问答应用实测（2026-11-13）
+
+本轮完成 BM25 文本与用户图片问答的真实应用验收：独立临时 MySQL（随机本机端口）、ES 8.15.3（19200/19300）和 Qwen3.5-4B vLLM（8100）通过，过程与证据见 [verification.md](verification.md) 顶部。没有改动共享服务配置或 .env；独立测试服务均已停止，8100/19200/19300 释放、GPU 回到 1MiB。应用视觉开关默认仍为 false，部署时显式开启并核对实际模型图片上限。
+
+Python 项目新增运行依赖 Pillow 12.3.0 和 httpx 0.28.1，均已在 py312 中存在，无须改动 MinerU/vLLM 的安装。前端新增 marked、DOMPurify 及 Playwright 开发检查，锁文件已更新。Chromium 验证所需的 libgbm/wayland-server 仅以 .deb 解压副本放在项目 runtime 并通过 LD_LIBRARY_PATH 使用，未改系统包或共享服务。常驻部署、最大多图与并发压力、advanced/8104、Embedding/Reranker 仍待验证。

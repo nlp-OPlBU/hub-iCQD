@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；已补齐 MinerU 4.1.7 结构化产物、页码图片来源、分块和 BM25 检索可见性验证；basic 样例已通过 CLI → MySQL → 临时 ES 检索，Kafka 传输及 advanced 档仍待联调。Vue 3 / TypeScript / Vite 工程可构建，检索 HTTP 接口、问答及业务 UI 仍未实现。2026-11-13 已复核服务器环境、完成 MinerU basic 六页样例解析和 vLLM 实际 PDF 图片输入测试；未修改共享服务配置，临时模型服务已停止。样本位置、实测结果与限制见 [验证记录](docs/verification.md)。
+已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；已补齐 MinerU 4.1.7 结构化产物、页码图片来源、分块和 BM25 检索可见性验证；basic 样例已通过 CLI → MySQL → 临时 ES 检索，Kafka 传输及 advanced 档仍待联调。已接入 BM25 检索 HTTP、受控图片资源、会话/消息/来源 MySQL 持久化和 Vue 图文问答页面；真实 MySQL + 独立 ES + Qwen3.5-4B 文本与图文链路通过，详见验证记录。文档上传/任务管理 UI 仍待实现。2026-11-13 已复核服务器环境、完成 MinerU basic 六页样例解析和 vLLM 实际 PDF 图片输入测试；未修改共享服务配置，临时模型服务已停止。样本位置、实测结果与限制见 [验证记录](docs/verification.md)。
 
 优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
 
@@ -204,7 +204,9 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 `ChatInput.vue` 提交文字和可选图片 → `api/routes/chat.py` → `llm_client.py` 按需理解图片并形成检索文本，`embedding.py` 编码图文查询 → `retrieval.py` 在已完成且当前有效的文档范围内召回、融合和重排 → `rag.py` 组织上下文与来源 → `llm_client.py` 将问题、用户原图和相关文档图文一起送给视觉模型 → `ChatMessage.vue` 展示 Markdown 图文 → `SourceReferences.vue` 展示来源文档和页码。
 
-已完成 Embedding 与 Reranker 的选型和配置示例，但没有部署或验证服务，因此默认仍使用 BM25、关闭重排，不伪造向量或评分；后续验证真实模型、2048 维输出和 ES 索引后再启用混合检索。Qwen3.5-4B 已通过 vLLM 真实图片输入测试；应用视觉开关仍为 false，需待常驻服务、图片客户端和业务链路完成后再开启。上述单组件结果不代表多模态 RAG 最终验收完成。
+当前实现先以严格文档/版本范围过滤跑通 BM25 文本链路；图片问题先读图生成检索关键词，再将问题、用户原图副本和相关文档图文送入最终模型。会话和消息先分配序号并落库，模型在事务外调用，回答引用的来源及失败结果随后持久化。来源 ID、页码和图片地址由实际命中生成，未知引用拒绝，无证据明确说明依据不足。
+
+已完成 Embedding 与 Reranker 的选型和配置示例，但没有部署或验证服务，因此默认仍使用 BM25、关闭重排，不伪造向量或评分；后续验证真实模型、2048 维输出和 ES 索引后再启用混合检索。Qwen3.5-4B 已通过 vLLM 真实图片输入测试；默认视觉开关仍为 false，常驻部署前须按实际服务图片上限配置并显式开启。图片客户端与业务链路已完成，文本和图文应用验收见验证记录；最大多图/并发仍待压力验证。
 
 ## 开发入口与约定
 
@@ -218,4 +220,4 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 - [docs/configuration.md](docs/configuration.md)：配置加载、限制、日志与路径约定。
 - [docs/verification.md](docs/verification.md)：实际检查结果与未验证项。
 
-后端 outbox/Kafka/Worker 与人工重试已可单元验证；basic MinerU/ES 与 MySQL Worker 已联调，Kafka 传输、advanced、检索 HTTP 接口、问答和业务 UI 仍待实现。不把本地模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。
+后端 outbox/Kafka/Worker 与人工重试已有测试；basic MinerU/ES 与 MySQL Worker 已联调，检索、受控图片和问答已完成真实本地模型应用验收。Kafka 传输、advanced、向量/重排、文档管理 UI 与常驻部署仍待完成。不把模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。

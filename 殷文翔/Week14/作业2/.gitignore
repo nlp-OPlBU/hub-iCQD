@@ -16,6 +16,8 @@ venv/
 .coverage
 htmlcov/
 node_modules/
+test-results/
+playwright-report/
 dist/
 *.log
 .DS_Store

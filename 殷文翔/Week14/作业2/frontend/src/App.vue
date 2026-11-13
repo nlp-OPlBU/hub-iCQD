@@ -26,6 +26,6 @@ onBeforeUnmount(() => controller.abort())
       <RouterLink to="/chat">图文问答</RouterLink>
     </nav>
     <main><RouterView /></main>
-    <footer>开发阶段：基础工程已初始化，业务能力待接入。</footer>
+    <footer>回答依据所选文档生成，请结合原文与来源核对。</footer>
   </div>
 </template>

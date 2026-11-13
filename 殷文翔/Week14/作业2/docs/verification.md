@@ -1,5 +1,44 @@
 # 验收记录
 
+## 2026-11-13 检索与多模态问答应用验收
+
+已实现 BM25 文本检索 → 指定文档范围 → 回答与来源，并接入用户图片辅助检索、最终问题/用户图/文档图共同输入、受控图片资源、MySQL 会话/消息/来源持久化和 Vue 问答页面。沿用 0001_initial 表结构，无新迁移；生产常驻部署另行安排。
+
+本轮使用独立临时 MySQL（显式 RAG_TEST_MYSQL_BINARY，随机本机端口及专属测试库）、独立 ES 8.15.3（19200/19300，runtime/rag-acceptance/es，512MiB 堆）和临时 Qwen3.5-4B vLLM（8100，rag-vlm，16K 窗口，BF16，GPU 比例 0.32，每请求最多 4 图）。未启动共享 MySQL 3306、ES 9200、Kafka、Redis、Nginx，未修改共享服务配置或项目 .env。结束后临时 MySQL/ES/vLLM 已停止，8100/19200/19300 已释放，GPU 回到 1MiB；没有留下常驻业务 API 或模型。
+
+实际结果：
+
+- 文本链路：问题“购物车最多可以添加多少件商品？”限定 test2.pdf 时回答 **100 件**，来源 S1 为真实第 2 页分块；同一问题限定专属对照文档时回答 **999 件**、来源为对照文档第 1 页，没有越界检索。不存在或未完成范围、空范围会拒绝；随机无命中查询返回“依据不足”、空来源。
+- 用户图片来自已有 MinerU basic 六页样本的 page_0_image_5.jpg，原图 1359×473、107952 字节。询问“图中底部流程中间的方框内写着什么？购物车最多可以添加多少件商品？”，模型读出 **问答技能** 和 **100 件**；来源页码/块 ID 与真实 ES 分块逐项核对，相关图片的元数据和二进制资源接口均成功读取。初次复验使用含糊的“蓝色框”问法，模型读取了另一处蓝色虚线区域，因此改为指明“底部流程中间方框”，问句未包含期望答案。
+- 无文字、仅用户图片时，先用真实图像提取检索文本，最终回答说明问答技能工作机制，引用实际第 1 页 S1/S2 与相关图片。
+- 实际模型 HTTP 请求共 6 次，图像内容块数量依次为 **0、0、1、3、1、2**：两次纯文本回答；两次各包含“图片辅助检索 + 最终图文回答”。拦截仅观察并转发真实请求，未替换模型响应。每个 data URL 被 Base64 解码并经 Pillow 验证像素尺寸，报告保留字节数/尺寸/SHA256，不把文件名或路径当图像。原图模型副本为 69069 字节 JPEG，相关文档图片副本为 89271 字节等；均受尺寸、总字节、数量和 token 预算控制。
+- 同 key 重放返回同一消息对，不增加模型请求；10 条消息、顺序、实际文档版本快照和完整来源 JSON 经真实 MySQL 读回核对。测试库及专属 ES 索引完成后移除；原始样本副本与报告保留在 Git 忽略目录 `runtime/rag-acceptance/`，不提交用户文件、解析产物或运行数据。
+- 最新成功报告 `runtime/rag-acceptance/report.json`，run_id `6d5b500c-9ddd-4871-a0f1-1be20053e2ed`，conversation `d88ecce2-e9b4-41ea-bf84-114fd7af5548`。本轮 test2 文档为 `53958ae6-77ac-4c52-aea4-7545a0f974ad`，对照为 `35d0d777-2775-42b5-b694-7e3ee8a56e81`；此为可丢弃验收数据，不是生产文档身份。
+
+自动检查：
+
+- py312 执行下面完整命令：**79 passed, 1 skipped**；包含已有上传/Worker 回归、SQLite 与真实 MySQL 双后端问答接口、模型真实 HTTP 图像内容、跨会话图片拒绝、未知引用拒绝、输入/图片预算、来源路径校验、幂等失败持久化、pending 恢复及 MySQL 并发序号/图片登记。唯一跳过项是 SQLite 行锁并发测试，对应真实 MySQL 用例已执行。
+- `cd frontend && npm run build`：TypeScript 与 Vite 构建通过。
+- Chromium `npm run test:ui`：**1 passed**；使用 API 固定响应验证文档选择、图片预览、纯图片问题请求、网络失败后沿用原幂等键、消息刷新及真实 Markdown 图文来源展示；恶意 HTML、事件属性、javascript URL、外部追踪图片均被过滤且没有外部请求。这项浏览器测试不冒充真实模型联调，真实后端联调由上述测试单独完成。
+- `git diff --check` 通过。
+
+复验入口（服务需事先独立准备，该测试不启动共享 ES/模型；MySQL 由显式选择的 fixture 启动并清理）：
+
+```bash
+cd backend
+RAG_TEST_MYSQL_BINARY=/usr/sbin/mysqld \
+RAG_LIVE_ES_URL=http://127.0.0.1:19200 \
+RAG_LIVE_LLM_URL=http://127.0.0.1:8100/v1 \
+RAG_LIVE_ARTIFACT_DIR='<已有 MinerU 产物目录，含 normalized.json 和 images/>' \
+/usr/local/miniconda3/envs/py312/bin/python -m pytest -x -q
+```
+
+不设置 RAG_TEST_MYSQL_BINARY 时默认跳过隔离 MySQL 用例；不设置三个 RAG_LIVE_* 变量时跳过真实 ES/模型测试。可单独运行 `tests/test_rag_live.py`，它使用已有 basic 产物，不再次运行 MinerU 或 Kafka。
+
+浏览器检查首次需 `cd frontend && npm ci && npx playwright install chromium`，系统需有 Chromium 运行依赖。本环境缺 libgbm/wayland-server，因此只将这两个 .deb 解压至项目忽略目录 `runtime/browser-libs/extracted`，通过对应 `usr/lib/x86_64-linux-gnu` 的 LD_LIBRARY_PATH 执行 `npm run test:ui`，未安装系统包或修改共享配置。
+
+当前边界：检索模式为 BM25，向量/重排未实现，配置启用它们会明确失败；最大 8 图、20MiB 图像、高并发与模型窗口边界仍需压力验证（实测服务上限 4 图，应用须与服务一致）；图片上传孤立文件暂没有自动补偿工具；会话首版逐轮独立检索。文档管理/上传 UI、鉴权、多租户、Kafka 真实传输、advanced/8104、常驻服务与 Nginx 部署不在本轮完成范围。以下条目保留历史状态，较早的“问答待实现”结论以本节覆盖。
+
 ## 2026-11-13 MinerU 与 BM25 应用验收
 
 本轮实现并执行 CLI → 结构化产物 → 来源分块 → ES BM25 → MySQL completed，直接调用 Worker，不经过 Kafka。使用项目 MySQL 现有库新增专属测试文档/任务；ES 8.15.3 以 esuser 在独立数据/配置目录 `runtime/bm25-acceptance/es/` 临时运行，仅绑定 127.0.0.1:19200（transport 19300），堆 512MiB。未覆盖共享 ES 配置、未启动共享 9200。验收后本轮临时 ES 已停止，19200/19300 均已确认释放；测试记录、PDF 与解析产物保留在项目忽略目录，未提交 Git。
