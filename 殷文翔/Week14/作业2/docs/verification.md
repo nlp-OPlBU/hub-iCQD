@@ -1,4 +1,96 @@
-# 本地验收记录
+# 验收记录
+
+## 2026-11-13 服务器复核与真实图片验收
+
+在 `/workspace/hub-iCQD/殷文翔/Week14/作业2` 执行。共享软件、配置、端口和权限只读检查；仅在项目测试目录保存解析样本与报告，临时启动项目专属 8100 模型做图片推理。未启动 MySQL、Kafka、Redis、ES、Nginx，未修改账号、权限、配置、数据库或索引，未安装/升级依赖。以下是最新状态，2026-11-12 的记录保留为历史。
+
+### 环境、连通性和认证
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 系统 | Ubuntu 22.04.5；内核 6.12.115-compshare；20 核；90GiB 内存；`/workspace` 可用约 23GiB |
+| Python/模型软件 | conda py312 Python 3.12.11；MinerU 4.1.7；vLLM 0.25.1；PyTorch 2.11.0（CUDA 13.0）；Transformers 5.14.1 |
+| 其他版本 | Node v22.23.5；npm 10.9.10；MySQL 客户端 8.0.46；Redis 可执行程序 7.2.5；Kafka JAR 2.13-4.4.0；ES JAR 8.15.3；Nginx 1.18.0 |
+| 连通性 | 本机 TCP 3306、9092、6379、9200、80 均连接失败，`ss` 未见监听；不能据安装文件推定服务运行正常 |
+| Kafka 认证配置 | `server.properties` 的业务 listener 为 PLAINTEXT，未配置 authorizer；服务不在线，未验证 broker、Topic、消费组及运行时权限 |
+| Redis 认证配置 | `bind 127.0.0.1 -::1`、`protected-mode yes`；未见活动的 requirepass、aclfile 或 user 配置；服务未在线，未做运行时 AUTH/ACL 验证 |
+| ES 认证配置 | `xpack.security.enabled=false`、HTTP TLS=false；analysis-ik 目录存在；未验证运行时认证、IK 分词、索引及集群版本 |
+| Nginx 认证配置 | 已检查 `/etc/nginx` 配置文件未见活动 basic-auth 指令；80 未监听，未验收反向代理或业务路由 |
+| MySQL 认证 | 使用 `.env` 加载项目账号尝试连接，返回 `OperationalError 2003`，3306 不可达；本次没有进入认证阶段，不判定密码是否有效。客户端版本不是本次服务端版本实测 |
+| 8001 | 未监听；`127.0.0.1:8001` 临时 bind 成功并立即关闭；本次未启动 API，历史 health/ready 成功不可当作当前可用 |
+| 目录权限 | 当前身份 root；`data/{tmp,uploads,parsed,images}`、`logs`、`runtime`、`models`、`mineru` 均为 root:root 755，当前用户可读写；样例 PDF 为 root:root 644。非 root 服务账号写入尚未验证，未改权限 |
+| GPU | RTX 4090 49140MiB，驱动 615.78.08；存在 `/dev/nvidia5`、nvidiactl、UVM；`torch.cuda.is_available()`=True，CUDA 初始化与推理成功。`NVIDIA_VISIBLE_DEVICES=void` 仍存在，不能脱离实测将其解释为 CUDA 必然不可用 |
+| 依赖一致性 | `python -m pip check` 仍报告 MinerU 4.1.7 要求 `openai<3,>=1.70.0`，实际为 3.48.0；本次未修复依赖冲突，未将成功样例解释为全环境兼容 |
+
+### 可分析的 PDF 解析样本
+
+本次样本保留在 `data/tmp/server-acceptance-20261113T052100Z/`，与旧样本目录分开；该目录受 Git 忽略，仅文档提交，不提交用户 PDF、解析结果、运行日志或权重。
+
+- 输入：`/workspace/pdf/test2.pdf`，6 页，SHA256 `4ef0598c30785d65c96849fa261e25e46b024106a400b3b4a94a9cdf27c4c64c`。
+- 执行：py312 的 `mineru-kit parse /workspace/pdf/test2.pdf --format zip -o <本次目录>/test2-basic.zip --tier basic`；子进程设置项目 `MINERU_HOME`、`MINERU_CONFIG`、`MINERU_DEVICE_MODE=cpu`、离线模型读取和 OMP/MKL 各 2 线程。未调用云端解析。
+- 结果：退出码 0，耗时 33.24 秒；ZIP 为 1,164,595 字节，SHA256 `4f26462629df5e925f9e949ea8c23605df7c6b7f4e7fe5bdbb1c3ba3a0769f35`；ZIP CRC 检查及项目 `safe_extract` 安全解压通过。
+- 文本：`extract/markdown.md` 共 4,747 字符；`structured_content.json` 有 43 个正文/标题块。`middle_json.json` 可读取，顶层含 metadata、extensions、pages、schema 和 schema_version。
+- 页码：PDF 原始页数与结构化结果均为 6，`page_idx` 连续为 0–5，用户展示需转换为 1–6 页；正文块、表格和图片均归属对应 page。
+- 图片：共 11 张（7 张正文图片、4 张表格裁剪），全部由结构化 JSON 的 `image_source` 关联，均有实际文件，无缺失或孤立图片。7 张正文图片出现在 Markdown；4 张表格以内容呈现，其裁剪图仅在 JSON 关联，不能要求它们都出现在 Markdown 图片语法中。
+
+| `page_idx`（展示页码） | 图片文件名（均位于 `extract/images/`） |
+| --- | --- |
+| 0（1） | `page_0_image_5.jpg` |
+| 1（2） | `page_1_image_4.jpg` |
+| 2（3） | `page_2_image_1.jpg`、`page_2_table_3.jpg` |
+| 3（4） | `page_3_image_5.jpg`、`page_3_table_2.jpg` |
+| 4（5） | `page_4_image_1.jpg`、`page_4_image_6.jpg`、`page_4_table_0.jpg` |
+| 5（6） | `page_5_image_0.jpg`、`page_5_table_3.jpg` |
+
+完整核对项保存在同目录 `report.json`，含命令、时长、页码及每张图的关联；`extract/` 保留可直接分析的 Markdown、JSON 和图片。本次验证 basic 档，8104 未监听，未重跑 advanced；历史 advanced 失败不等于本次 GPU 仍不可用。当前 Worker 的 `build_chunks` 仍将 page 设为 null，尚未把此处 JSON 页码与图片关联写入检索来源，这属于后续实现，不能把样本关联成功当作应用来源展示已完成。
+
+### vLLM 实际模型 ID 和真实图片结果
+
+- 使用本地 Qwen3.5-4B，在 `127.0.0.1:8100` 临时启动 vLLM 0.25.1；BF16、16K 上下文、GPU 比例 0.32、最多 2 序列、每请求最多 4 图、eager 模式，参数与 [models.md](models.md) 6.1 一致。
+- 本轮启动 76.02 秒；`GET /health` 和 `GET /v1/models` 均为 200，实际 ID 为 **`rag-vlm`**、`max_model_len=16384`。测试服务未启用 API key，未验证生产认证方案；原 8000 服务未改动。
+- 实际输入为本次 ZIP 解出的 `images/page_0_image_5.jpg`，通过 `image_url` 中的 JPEG data URL 发送原始图像字节；不是只发送图片路径、文件名或 OCR 文本。
+- 人工查看原图后，补充询问“中间蓝色方框内是什么文字？图中购物车最多可添加多少件商品？”，问句未提供答案；HTTP 200，模型正确返回“问答技能”和“100件”。实际问题及完整响应保存在 `vision-unbiased.json`，视觉验收以此为准。首个问句误写了“绿色方框”，模型沿用了该描述，因此未将首答的颜色描述用作验收证据。
+- 同日此前的 `logs/vllm-startup-check-20261113-recheck.json` 另记录文本 `2+3=5` 及同时输入两张实际 PNG 字节的颜色/形状测试，均为 200；这些是补充证据，本轮 PDF 原图测试独立通过。
+- 推理时 GPU 使用 14,382MiB / 49,140MiB；临时 vLLM 退出码 0，8100 端口已释放，GPU 回到 1MiB。未留下常驻服务，未修改 `.env`、`LLM_VISION_ENABLED` 或共享服务。
+
+### 验收结论与交付检查
+
+**本次目标已取得可分析的 basic 解析样本，且主模型 vLLM 的真实图片输入验证通过。** 2026-11-12 的 GPU/主模型视觉失败不再是当前阻塞；视觉验证若后续回归失败，上传和文本检索开发可继续，多模态最终验收仍须暂停。
+
+本次通过的是单组件检查：共享服务均未在线，当前 MySQL 登录不可验证；MinerU 专用 VLM 8104、advanced、Embedding/Reranker、ES 索引、图像资源接口、业务图文问答及共卡并发仍待实现或联调。应用保持 `LLM_VISION_ENABLED=false`、BM25、关闭重排，完整多模态 RAG 尚未最终验收。
+
+交付仅修改文档：核对实测报告、样本文件、文档链接、术语及 `git diff --check`；不为文档修改重跑后端 pytest 或前端构建，历史测试数不作本轮执行结果。
+
+## 2026-11-12 服务器环境实测（Ubuntu）
+
+在服务器项目目录 `/workspace/hub-iCQD/殷文翔/Week14/作业2` 执行只读检查、样例解析和模型权重回退测试。未修改共享服务配置；临时启动的 vLLM 因 CUDA 不可用立即退出，未留下常驻进程。
+
+| 检查 | 实际结果 |
+| --- | --- |
+| 系统/硬件 | Ubuntu 22.04.5，内核 6.12.115；20 核；内存 90GB；`/workspace` 50GB，可用约 26GB |
+| GPU | `nvidia-smi` 显示 RTX 4090、49140MiB、空闲；但容器 `NVIDIA_VISIBLE_DEVICES=void`，仅有 `/dev/nvidia1`，`cuInit` 失败，`torch.cuda.is_available()` 为 False |
+| Python/MinerU/vLLM | py312 Python 3.12.11；MinerU 4.1.7；vLLM 0.25.1 |
+| Node/npm | Node v22.23.5，npm 10.9.9；`npm run build` 通过 |
+| MySQL | 8.0.46，`127.0.0.1:3306` 可连；项目账号认证成功，`multimodal_rag` 已含 7 张业务表 |
+| Kafka/Redis/ES/Nginx | 9092/6379/9200/80 均未监听；软件已安装：Kafka 2.13-4.4.0、Redis 7.2.5、ES 8.15.3（含 analysis-ik）、Nginx 1.18.0 |
+| 认证配置 | Kafka 为 PLAINTEXT 无认证；Redis 仅绑定本机、protected-mode 开启、未配置 requirepass；ES 关闭 security；MySQL 项目账号可用 |
+| 8001 端口 | 未监听；bind 测试成功。临时启动 API 后 `/api/health`、`/api/health/ready`、`/api/openapi.json` 均返回 200，随后已停止，端口释放 |
+| 目录权限 | 项目 `data/{tmp,uploads,parsed,images}`、`logs`、`runtime` 均为 root:root 755；root 可写，非 root 服务账号不可写 |
+| 后端测试 | `cd backend && python -m pytest -q`：**37 passed, 2 skipped**（跳过项为默认不启用的真实 MySQL fixture） |
+
+### MinerU 样例解析
+
+- 输入 `/workspace/pdf/test2.pdf`（6 页），`--tier basic`，CPU 执行，约 37 秒，ZIP 约 1.2MB。样本已保留在 `data/tmp/mineru-verify/`（ZIP + 解压后的 Markdown/JSON/images）。
+- ZIP 含 `markdown.md`、`middle_json.json`、`structured_content.json` 和 11 张图片：7 张正文图片 + 4 张表格裁剪。
+- 页码与图片关联：`page_idx` 0–5；正文图片 `page_0_image_5` 到 `page_5_image_0`，表格裁剪 `page_2_table_3` 等；复核确认 11 张图均由 JSON 关联且文件存在，7 张正文图还在 Markdown 引用，4 张表格裁剪仅由 JSON 关联，无缺失文件。
+- 文本与表格：中文标题、段落和页码归属正常；4 个表格均输出 HTML/Markdown 内容并带裁剪图。
+- `--tier advanced` 失败：无法连接 `http://127.0.0.1:8104`，MinerU 专用 VLM 因 CUDA 不可用无法启动，未生成高级 ZIP。
+
+### vLLM 与视觉能力
+
+- 8000、8100、8102、8103、8104 均未监听，无法查询 `/v1/models`；vLLM 实际 served model ID **未验证**。权重配置为 `Qwen3.5-4B`（`Qwen3_5ForConditionalGeneration`，含 `vision_config` 和 image token），规划别名 `rag-vlm`。
+- 因 vLLM 无法启动，改用 transformers（CPU、float32）对同一权重做真实图片输入回退测试：输入 MinerU 裁剪图 `page_0_image_5.jpg`，模型正确回答中间蓝色方框文字“问答技能”，并读出底部“100件”。该结果只证明权重和图像处理可读取真实图片，**不等于** vLLM 端点或 8104 MinerU VLM 已验证。
+- 当日多模态最终验收被阻塞；2026-11-13 GPU 与 8100 图片验证已通过，8104 和完整业务链路仍待验证。上传与文本检索开发可继续。
 
 ## 2026-11-12 outbox、Kafka 与可恢复 Worker
 
@@ -124,9 +216,9 @@ python -m pytest -q
 
 ## 尚未实现和待服务器确认
 
-- 真实服务器上的安全解压、Kafka 投递/消费、租约恢复和失败 Topic 联调。
-- 真实 MinerU 解析、ES 索引/检索、Redis、Embedding/Reranker 和视觉 LLM 调用（Worker 适配代码已存在，未联调）。
+- Kafka 投递/消费、租约恢复和失败 Topic 的服务器联调；basic 解析与项目安全解压已独立通过，未验证完整 Worker 流程。
+- MinerU 8104/advanced、ES 索引/检索、Redis、Embedding/Reranker 的运行时联调；主模型真实视觉输入已独立通过，应用图片客户端尚未实现。
 - 图片资源接口、会话/消息 API、真实图文问答及完整业务前端；这些路由尚未注册。上传/文档/任务路由已实现。
-- 共享服务器的 MySQL 版本/账号/库与迁移、组件端口/权限、模型能力和 GPU 预算、Nginx 接入。
+- 共享 MySQL 恢复后的服务端版本/账号/库与迁移验证；非 root 目录写权限、Nginx 接入和四模型共卡峰值预算。当前端口、文件权限和单模型能力检查见最新记录。
 
-上传大小/数量限制已在运行时执行；ZIP、重试、租约和图像预算已定义与配置校验，其业务实现仍待完成。本地验收通过不代表完整 RAG 系统已实现或服务器联调成功。
+上传大小/数量限制、ZIP 安全解压、重试与租约已实现；JSON 页码/图片来源入索引及业务图像预算执行仍待完成。单元测试和独立组件通过不代表完整 RAG 系统已实现或服务器联调成功。

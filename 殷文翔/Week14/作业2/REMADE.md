@@ -2,11 +2,11 @@
 
 ## 当前阶段
 
-已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；这些外部组件尚未在当前环境联调，真实解析/索引仍需服务器验证。Vue 3 / TypeScript / Vite 工程可构建，检索、问答及业务 UI 仍未实现。本次没有连接或修改共享服务器；本地验收与限制见 [验证记录](docs/verification.md)。
+已完成后端基础工程、PDF 批量上传与文件补偿、文档/任务查询，以及 **MySQL outbox 投递器、Kafka 任务生产/消费、可恢复解析 Worker、有限重试/失败 Topic、租约恢复和人工重试新版本**。Worker 具备 MinerU CLI 调用、安全 ZIP 解压、确定性分块和 ES 写入适配；完整队列、解析与索引链路仍待联调。Vue 3 / TypeScript / Vite 工程可构建，检索、问答及业务 UI 仍未实现。2026-11-13 已复核服务器环境、完成 MinerU basic 六页样例解析和 vLLM 实际 PDF 图片输入测试；未修改共享服务配置，临时模型服务已停止。样本位置、实测结果与限制见 [验证记录](docs/verification.md)。
 
 优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
 
-已补充 [全本地模型部署指南](docs/models.md)：基于用户确认的单卡 48GB 显存、CPU 20 核、90GB 内存，说明模型职责、权重保存位置、下载与启动命令、MinerU 配置及验证步骤。文档命令未执行，不代表服务器已部署。
+已补充 [全本地模型部署指南](docs/models.md)：服务器已确认单卡 RTX 4090 49140MiB、CPU 20 核、90GiB 内存；Qwen3.5-4B 在 8100 临时启动并通过文本及图像测试。Embedding、Reranker、MinerU 专用 VLM 和四模型共卡方案仍待验证，尚未部署常驻模型服务。
 
 ## 环境适配后的技术规划
 
@@ -19,7 +19,7 @@
 | 业务存储 | 现有 MySQL，保存文档、状态、任务、会话、消息与 outbox |
 | 检索存储 | 现有 Elasticsearch，目标 BM25 + 2048 维图文向量及多模态重排；实测前保持 BM25 |
 | 缓存 | 现有 Redis，辅助缓存与协调，MySQL 保留持久化状态 |
-| 模型 | 全本地 Qwen3.5-4B（8100）、Qwen3-VL-Embedding-2B（8102）、Qwen3-VL-Reranker-2B（8103），均待部署验证；保留原 8000 环境记录 |
+| 模型 | Qwen3.5-4B（8100）单服务文本/图片测试通过；Embedding（8102）、Reranker（8103）待部署验证；保留原 8000 环境记录 |
 | 文件 | API 与 Worker 共享可访问的数据目录，保存原始 PDF、解析产物和图片 |
 | 部署 | 服务器原生进程 + Nginx；不以 Docker、PostgreSQL、Qdrant 为默认依赖 |
 
@@ -204,7 +204,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 `ChatInput.vue` 提交文字和可选图片 → `api/routes/chat.py` → `llm_client.py` 按需理解图片并形成检索文本，`embedding.py` 编码图文查询 → `retrieval.py` 在已完成且当前有效的文档范围内召回、融合和重排 → `rag.py` 组织上下文与来源 → `llm_client.py` 将问题、用户原图和相关文档图文一起送给视觉模型 → `ChatMessage.vue` 展示 Markdown 图文 → `SourceReferences.vue` 展示来源文档和页码。
 
-已完成 Embedding 与 Reranker 的选型和配置示例，但没有部署或验证服务，因此默认仍使用 BM25、关闭重排，不伪造向量或评分；后续验证真实模型、2048 维输出和 ES 索引后再启用混合检索。视觉能力也必须经真实图片输入测试后开启。上述限制是后续联调任务，不代表多模态需求已取消或已完成。
+已完成 Embedding 与 Reranker 的选型和配置示例，但没有部署或验证服务，因此默认仍使用 BM25、关闭重排，不伪造向量或评分；后续验证真实模型、2048 维输出和 ES 索引后再启用混合检索。Qwen3.5-4B 已通过 vLLM 真实图片输入测试；应用视觉开关仍为 false，需待常驻服务、图片客户端和业务链路完成后再开启。上述单组件结果不代表多模态 RAG 最终验收完成。
 
 ## 开发入口与约定
 

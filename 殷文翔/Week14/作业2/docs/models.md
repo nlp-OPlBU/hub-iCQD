@@ -1,8 +1,8 @@
 # 全本地多模态 RAG 模型选型与部署
 
-记录日期：2026-11-11；2026-11-12 更新：项目与模型依赖统一使用系统 conda 环境 `py312`。目标是非垂类、通用图文 RAG。用户确认的服务器规格为 CPU 20 核、单张 NVIDIA 40 系列 GPU 48GB 显存、90GB 内存；具体 GPU 型号、驱动与可用资源仍待服务器检查。
+记录日期：2026-11-11；2026-11-13 更新：项目与模型依赖统一使用系统 conda 环境 `py312`。目标是非垂类、通用图文 RAG。已实测服务器为 CPU 20 核、单张 RTX 4090 49140MiB、90GiB 内存，驱动 615.78.08，CUDA 推理可用。
 
-本文是模型部署指南，不是部署完成记录。项目基础 API、配置、数据库迁移和前端构建已实现，业务解析和问答仍待开发；Python 依赖已安装在 conda `py312`（MinerU 4.1.7、vLLM 0.25.1），Qwen3.5-4B、Qwen3-VL-Embedding-2B、Qwen3-VL-Reranker-2B 及 MinerU 权重已下载并通过文件检查，但推理服务尚未启动。以下命令用于服务器 Linux Bash，不在 Windows 工作区执行。所有显存预算和并发参数均需实测；基础工程本地验证另见 [verification.md](verification.md)。
+本文是模型部署指南，不是常驻部署完成记录。Python 依赖已安装在 conda `py312`（MinerU 4.1.7、vLLM 0.25.1），Qwen3.5-4B、Embedding、Reranker 及 MinerU 权重已下载。2026-11-13 按 6.1 节参数临时启动 Qwen3.5-4B，实际 `/v1/models` 返回 `rag-vlm`，文本、双图片及真实 PDF 裁剪图输入均通过；复测启动约 76–78 秒，显存约 14GiB，测试后服务已停止。8102/8103/8104、四服务共卡与业务问答链路尚未验证。以下命令用于服务器 Linux Bash；其他显存预算和并发参数仍需实测，详见 [verification.md](verification.md)。
 
 ## 1. 推荐组合与各阶段职责
 
