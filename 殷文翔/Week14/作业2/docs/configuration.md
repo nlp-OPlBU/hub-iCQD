@@ -6,7 +6,7 @@
 
 配置优先级为显式 Settings 参数 > 进程环境变量 > **项目根目录 .env** > 代码默认值。应用不自动加载 `.env.example`，它只供复制/审阅；不从当前工作目录猜测 `.env`。get_settings 缓存一个进程的配置，修改后重启项目进程。
 
-DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERTS 等相对路径均基于项目根目录。创建 Settings 不创建目录、不访问网络，也不操作环境文档中的 `/workspace` 路径；Linux 服务器的路径配置不应直接照搬为 Windows 运行路径。MINERU_COMMAND 可以是 PATH 中的可执行命令或部署环境绝对路径，未来 subprocess 调用不经 shell。
+DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERTS 等相对路径均基于项目根目录。创建 Settings 不创建目录、不访问网络，也不操作环境文档中的 `/workspace` 路径；Linux 服务器的路径配置不应直接照搬为 Windows 运行路径。MINERU_COMMAND 可以是 PATH 中的可执行命令或部署环境绝对路径，subprocess 调用不经 shell。
 
 敏感字段使用 SecretStr；MySQL URL 使用 SQLAlchemy URL.create 构造，密码含 `@ / %` 也不会破坏连接串。CORS_ORIGINS 为 JSON 数组，默认 `[]`，前端走同源/Vite 代理。未知变量忽略以允许同一 `.env` 存 VITE_*；拼写应对照示例核查。浏览器只接收 VITE_*，禁止将密码放入这个前缀。
 
@@ -55,3 +55,11 @@ BM25 为默认模式，重排和视觉能力默认关闭。hybrid 需要独立 e
 访问日志只记录匹配后的路由模板、方法、HTTP 状态和耗时，不记录完整路径/查询字符串、请求体、上传文件内容。未知路径显示 unmatched。日志过滤已配置密钥、URL 内嵌密码、Bearer 与常见 token/password 字段；异常只输出类型，响应只含通用错误，不输出原始 SQL 和堆栈中的输入。SQLAlchemy 隐藏 SQL 参数；HTTPX/HTTPCore 请求级日志默认关闭。该过滤是兜底，后续业务代码仍禁止主动日志输出敏感内容。
 
 `.env`、运行数据、日志和构建产物由 .gitignore 排除，不能提交真实密码和原始文件。
+
+## MinerU 与 BM25 实现补充（2026-11-13）
+
+CLI 的实际 cwd 是每次租约独立目录，`MINERU_WORKING_DIR` 仅保留兼容旧配置；模型和配置仍使用绝对路径。Linux 本机各 Worker 共享 DATA_DIR 下的 flock 槽位限制并发，Windows Worker 未验证且暂不支持。默认超时 1800 秒同时作为等待名额上限；取得名额后解析再计时。ZIP 限制和产物支持格式见 [MinerU 接入](../infra/mineru/README.md)。
+
+`ES_TIMEOUT_SECONDS=30` 控制单次 ES HTTP 超时，`ES_BULK_BATCH_SIZE=200` 控制每批分块数。默认 standard 分词与 ES 默认 BM25；未验证 IK 时不启用 IK。分块不跨页、不跨来源块，最多 1200 字符，ID 为 `文档ID:版本:页码:块序号:字符偏移`。保存直接关联的 image_keys 和同页关联的 page_image_keys，二者不等同于图像内容本身。查询只接受数据库确认的当前已完成版本，并与用户文档范围相交。`retrieval.retrieve` 是服务入口，HTTP 检索和问答接口仍待实现。
+
+每批 bulk 必须 HTTP 成功且所有 item 成功，refresh 后再通过 `_search` 检查本批全部 ID 可见；失败不得返回 TaskResult。产物已持久化且上述检查通过才允许 Worker 发布 completed 和 current_searchable_version。hybrid 任务明确失败为 RETRIEVAL_UNSUPPORTED，不伪称已建立向量索引。

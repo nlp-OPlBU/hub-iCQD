@@ -25,6 +25,7 @@ class TaskClaim:
     max_retries: int
     lease_token: str
     retrieval_mode: str
+    original_filename: str = ""
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,7 @@ def claim_task(session: Session, *, task_id: str, document_id: str, version: int
         task_id=task.id, document_id=document.id, version=task.version,
         storage_key=document.storage_key, attempts=task.attempts,
         max_retries=task.max_retries, lease_token=token,
-        retrieval_mode=task.retrieval_mode,
+        retrieval_mode=task.retrieval_mode, original_filename=document.original_filename,
     ))
 
 

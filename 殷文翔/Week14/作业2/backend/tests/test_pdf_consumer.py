@@ -332,3 +332,57 @@ def test_expired_lease_takeover_invalidates_old_token(worker_env):
         task = session.get(ParseTask, task_id)
         assert task.status == "completed" and task.artifact_key == "new"
         assert session.get(Document, document_id).current_searchable_version == 1
+
+
+@pytest.mark.parametrize('failure,code', [
+    ('timeout', 'MINERU_TIMEOUT'), ('zip', 'INVALID_ZIP'), ('es', 'INDEX_UNAVAILABLE'),
+])
+def test_real_processor_failures_are_persisted(worker_env, monkeypatch, failure, code):
+    from app.services.pdf_processing import MineruTaskProcessor
+    from app.services.mineru_cli import MineruError
+    from app.services.elasticsearch_store import ElasticsearchError
+    from tests.test_mineru_cli import artifact_zip
+
+    _, factory, settings = worker_env
+    document_id, task_id, payload = seed(factory, settings, max_retries=0)
+    pdf = settings.data_dir / 'uploads' / f'{document_id}.pdf'
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b'%PDF-test')
+    processor = MineruTaskProcessor(settings)
+
+    def run(pdf, output, workspace):
+        workspace.mkdir(parents=True)
+        if failure == 'timeout':
+            raise MineruError('MINERU_TIMEOUT', '解析超时')
+        if failure == 'zip':
+            output.write_bytes(b'corrupt')
+        else:
+            artifact_zip(output)
+    monkeypatch.setattr(processor.runner, 'run', run)
+    def index(chunks):
+        raise ElasticsearchError('bulk item failed')
+    monkeypatch.setattr(processor.index, 'index_chunks', index)
+    assert make_worker(settings, factory, processor).handle_message(payload)['outcome'] == 'failed'
+    with factory() as session:
+        task = session.get(ParseTask, task_id)
+        assert task.error_code == code and task.error_details['stage']
+        assert task.status == 'failed' and task.finished_at
+        assert session.get(Document, document_id).current_searchable_version is None
+        assert session.scalar(select(OutboxEvent).where(OutboxEvent.event_type == 'pdf.parse.failed'))
+
+
+def test_retrieval_filters_incomplete_versions_and_user_scope(worker_env):
+    from app.repositories.document import DocumentRepository
+    _, factory, settings = worker_env
+    doc, tid, _ = seed(factory, settings)
+    other, other_tid, _ = seed(factory, settings)
+    with factory() as session, session.begin():
+        repository = DocumentRepository(session)
+        assert repository.searchable_versions() == {}
+        session.get(ParseTask, tid).status = 'completed'
+        session.get(Document, doc).current_searchable_version = 1
+        session.flush()
+        assert repository.searchable_versions() == {doc: 1}
+        assert repository.searchable_versions([other]) == {}
+        assert repository.searchable_versions([]) == {}
+        assert repository.searchable_versions([doc]) == {doc: 1}

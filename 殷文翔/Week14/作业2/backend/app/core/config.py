@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     es_password: SecretStr = SecretStr("")
     es_ca_certs: Path | None = None
     es_analyzer: str = "standard"
+    es_timeout_seconds: PositiveInt = 30
+    es_bulk_batch_size: PositiveInt = 200
 
     llm_base_url: str = "http://127.0.0.1:8100/v1"
     llm_api_key: SecretStr = SecretStr("EMPTY")

@@ -1,5 +1,27 @@
 # 验收记录
 
+## 2026-11-13 MinerU 与 BM25 应用验收
+
+本轮实现并执行 CLI → 结构化产物 → 来源分块 → ES BM25 → MySQL completed，直接调用 Worker，不经过 Kafka。使用项目 MySQL 现有库新增专属测试文档/任务；ES 8.15.3 以 esuser 在独立数据/配置目录 `runtime/bm25-acceptance/es/` 临时运行，仅绑定 127.0.0.1:19200（transport 19300），堆 512MiB。未覆盖共享 ES 配置、未启动共享 9200。验收后本轮临时 ES 已停止，19200/19300 均已确认释放；测试记录、PDF 与解析产物保留在项目忽略目录，未提交 Git。
+
+- 真实成功样例：`/workspace/pdf/test2.pdf`，basic CPU，CLI 与应用处理共 31.49 秒；6 页、11 张图片关联，MySQL 任务 `07b0fea6-005b-45d8-97a9-1ab6824dc688` 为 completed，错误码为空。
+- 索引 `multimodal-rag-bm25-acceptance-20261113` 使用 standard 分词、默认 BM25。查询“购物车 100”命中 3 条，首条为第 2 页“Q: 购物车可以添加多少件商品？A:购物车可以添加 100 件商品。”，保留原文件名、块序号、页码与同页图片标识。
+- 完整报告：`runtime/bm25-acceptance/report.json`。归一化产物位于 `data/parsed/6fbd7d55-46b1-4133-b03a-eacdff6c94d3/v1/2a80db64-afcf-4a77-9c2a-7473763d7387/normalized.json`。
+- 失败验收：使用真实 MySQL、零自动重试预算。实际 CLI 超时（1 秒）任务 `fa2746cb-af3e-4891-8a2b-e4bc992c532d` 保存 MINERU_TIMEOUT/parsing；注入损坏 ZIP 的任务 `55e33416-392b-4c93-88a0-cf86c9a10c64` 保存 INVALID_ZIP/validating；复用真实样本 ZIP，向专属故障索引设置 text=integer 使真实 ES bulk 拒绝写入，任务 `97bc06a3-b9b1-4e89-a01d-eeb6cc153c74` 保存 INDEX_UNAVAILABLE/indexing。三者均为 failed，含 finished_at，未发布 current_searchable_version。故障注入与结果见 `runtime/bm25-acceptance/failures.json`。默认非零预算仍按已有策略有限重试，不会首次暂时失败就终止。
+- 自动检查：py312 `cd backend && python -m pytest` 为 **54 passed, 2 skipped**；`cd frontend && npm run build` 通过。临时 MySQL 实例测试未设置 RAG_TEST_MYSQL_BINARY，按约定跳过；本轮应用验收使用实际项目 MySQL，二者不可混同。
+
+复验需先准备可用项目 MySQL、独立 ES 和 MinerU 模型（该脚本不启动服务）：
+
+```bash
+PATH=/usr/local/miniconda3/envs/py312/bin:$PATH MINERU_DEVICE_MODE=cpu HF_HUB_OFFLINE=1 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 \
+  /usr/local/miniconda3/envs/py312/bin/python scripts/verify_bm25.py \
+  --pdf /workspace/pdf/test2.pdf --query '购物车 100' --tier basic \
+  --es-url http://127.0.0.1:19200 --es-index multimodal-rag-bm25-acceptance-20261113 \
+  --report runtime/bm25-acceptance/report.json
+```
+
+当前服务层支持 BM25 检索及数据库文档范围/版本过滤，HTTP 检索、图片资源和问答 API 仍未实现；advanced/8104、Kafka 真实传输、共享 ES 常驻部署仍待验证。Linux flock 并发实现未覆盖 Windows Worker。下方较早环境状态是历史快照。
+
 ## 2026-11-13 服务器复核与真实图片验收
 
 在 `/workspace/hub-iCQD/殷文翔/Week14/作业2` 执行。共享软件、配置、端口和权限只读检查；仅在项目测试目录保存解析样本与报告，临时启动项目专属 8100 模型做图片推理。未启动 MySQL、Kafka、Redis、ES、Nginx，未修改账号、权限、配置、数据库或索引，未安装/升级依赖。以下是最新状态，2026-11-12 的记录保留为历史。
@@ -42,7 +64,7 @@
 | 4（5） | `page_4_image_1.jpg`、`page_4_image_6.jpg`、`page_4_table_0.jpg` |
 | 5（6） | `page_5_image_0.jpg`、`page_5_table_3.jpg` |
 
-完整核对项保存在同目录 `report.json`，含命令、时长、页码及每张图的关联；`extract/` 保留可直接分析的 Markdown、JSON 和图片。本次验证 basic 档，8104 未监听，未重跑 advanced；历史 advanced 失败不等于本次 GPU 仍不可用。当前 Worker 的 `build_chunks` 仍将 page 设为 null，尚未把此处 JSON 页码与图片关联写入检索来源，这属于后续实现，不能把样本关联成功当作应用来源展示已完成。
+完整核对项保存在同目录 `report.json`，含命令、时长、页码及每张图的关联；`extract/` 保留可直接分析的 Markdown、JSON 和图片。本次验证 basic 档，8104 未监听，未重跑 advanced；历史 advanced 失败不等于本次 GPU 仍不可用。该次独立验证时 Worker 尚未接入来源；本轮已将 JSON 页码、图片关联及块位置写入 BM25 分块，见顶部应用验收。
 
 ### vLLM 实际模型 ID 和真实图片结果
 
@@ -216,9 +238,9 @@ python -m pytest -q
 
 ## 尚未实现和待服务器确认
 
-- Kafka 投递/消费、租约恢复和失败 Topic 的服务器联调；basic 解析与项目安全解压已独立通过，未验证完整 Worker 流程。
-- MinerU 8104/advanced、ES 索引/检索、Redis、Embedding/Reranker 的运行时联调；主模型真实视觉输入已独立通过，应用图片客户端尚未实现。
+- Kafka 投递/消费、租约恢复和失败 Topic 的服务器联调；basic 解析、索引与 MySQL Worker 流程已通过，Kafka 传输仍待验证。
+- MinerU 8104/advanced、共享 ES 常驻部署、Redis、Embedding/Reranker 的运行时联调；主模型真实视觉输入已独立通过，应用图片客户端尚未实现。
 - 图片资源接口、会话/消息 API、真实图文问答及完整业务前端；这些路由尚未注册。上传/文档/任务路由已实现。
 - 共享 MySQL 恢复后的服务端版本/账号/库与迁移验证；非 root 目录写权限、Nginx 接入和四模型共卡峰值预算。当前端口、文件权限和单模型能力检查见最新记录。
 
-上传大小/数量限制、ZIP 安全解压、重试与租约已实现；JSON 页码/图片来源入索引及业务图像预算执行仍待完成。单元测试和独立组件通过不代表完整 RAG 系统已实现或服务器联调成功。
+上传大小/数量限制、ZIP 安全解压、重试与租约已实现；JSON 页码/图片来源已入索引；业务图像预算执行仍待完成。单元测试和独立组件通过不代表完整 RAG 系统已实现或服务器联调成功。

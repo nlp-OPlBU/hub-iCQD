@@ -1,4 +1,6 @@
 """Document persistence and snapshot reads. Transaction boundaries belong to callers."""
+from __future__ import annotations
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -114,3 +116,12 @@ class DocumentRepository:
                                     .offset((page - 1) * page_size).limit(page_size)).all()
         return Page[DocumentRead](items=[document_read(*row) for row in rows], page=page,
                                   page_size=page_size, total=total)
+
+    def searchable_versions(self, document_ids: list[str] | None = None) -> dict[str, int]:
+        query = select(Document.id, ParseTask.version).join(ParseTask, (
+            (ParseTask.document_id == Document.id)
+            & (ParseTask.version == Document.current_searchable_version)
+        )).where(ParseTask.status == 'completed', ParseTask.retrieval_mode == 'bm25')
+        if document_ids is not None:
+            query = query.where(Document.id.in_(document_ids))
+        return dict(self.session.execute(query).all())

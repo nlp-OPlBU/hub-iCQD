@@ -1,46 +1,24 @@
-"""Deterministic text chunks derived from MinerU Markdown output."""
+"""Deterministic, bounded chunks with physical page and block provenance."""
 from __future__ import annotations
 
-import re
-from pathlib import Path
 
-
-def _paragraphs(text: str) -> list[str]:
-    return [part.strip() for part in re.split(r"\n\s*\n", text) if part.strip()]
-
-
-def build_chunks(*, document_id: str, version: int, filename: str, markdown: str,
-                 max_chars: int = 1200) -> list[dict]:
-    """Small deterministic chunker; page stays null unless MinerU exposes it."""
-    chunks: list[dict] = []
-    buffer = ""
-    for paragraph in _paragraphs(markdown):
-        candidate = f"{buffer}\n\n{paragraph}".strip() if buffer else paragraph
-        if len(candidate) <= max_chars:
-            buffer = candidate
-            continue
-        if buffer:
-            chunks.append(_chunk(document_id, version, filename, len(chunks), buffer))
-        buffer = paragraph
-    if buffer:
-        chunks.append(_chunk(document_id, version, filename, len(chunks), buffer))
+def build_chunks(*, document_id: str, version: int, filename: str,
+                 artifact: dict, max_chars: int = 1200) -> list[dict]:
+    if max_chars <= 0:
+        raise ValueError('max_chars must be positive')
+    chunks = []
+    for page in artifact['pages']:
+        page_images = sorted({key for b in page['blocks'] for key in b['image_keys']})
+        for block in page['blocks']:
+            text = block['text']
+            for offset in range(0, len(text), max_chars):
+                index = len(chunks)
+                chunks.append({
+                    'chunk_id': f'{document_id}:{version}:{page["page"]}:{block["block_index"]}:{offset}',
+                    'document_id': document_id, 'version': version, 'filename': filename,
+                    'page': page['page'], 'block_index': block['block_index'],
+                    'char_offset': offset, 'bbox': block['bbox'],
+                    'image_keys': block['image_keys'], 'page_image_keys': page_images,
+                    'chunk_index': index, 'text': text[offset:offset + max_chars],
+                })
     return chunks
-
-
-def _chunk(document_id: str, version: int, filename: str, index: int, text: str) -> dict:
-    return {
-        "chunk_id": f"{document_id}:{version}:{index}",
-        "document_id": document_id,
-        "version": version,
-        "filename": filename,
-        "page": None,
-        "chunk_index": index,
-        "text": text,
-    }
-
-
-def read_markdown(directory: Path) -> str:
-    files = sorted(directory.rglob("*.md"))
-    if not files:
-        raise FileNotFoundError("MinerU output contains no Markdown")
-    return "\n\n".join(path.read_text(encoding="utf-8", errors="replace") for path in files)

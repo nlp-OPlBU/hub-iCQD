@@ -89,3 +89,7 @@
 
 - [Elasticsearch 8.15 dense_vector](https://www.elastic.co/guide/en/elasticsearch/reference/8.15/dense-vector.html)：ES 可保存向量，但向量仍需要独立模型生成。
 - [vLLM 多模态输入](https://docs.vllm.ai/en/stable/features/multimodal_inputs/)：多模态输入能力须结合实际模型和部署验证；在线文档不证明服务器已安装对应版本。
+
+## MinerU/BM25 应用接入补充（2026-11-13）
+
+本轮项目 MySQL 3306 已可访问，成功保存样例 completed 与三类故障 failed。独立临时 ES 8.15.3 使用 19200/19300、独立配置及数据目录完成 standard/BM25 检索，随后停止；没有覆盖共享 ES 配置或启动共享 9200。basic 六页样例的 CLI、来源转换、索引与 MySQL 状态链路通过；advanced/8104、Kafka 实际投递、共享服务常驻和非 root Worker 权限仍待验证。详细数据与复验脚本见 [验证记录](verification.md) 顶部。上文端口不可达为较早检查时的状态。

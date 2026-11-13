@@ -1,13 +1,17 @@
 """MinerU CLI adapter with per-task workspaces, timeout and safe ZIP extraction."""
 from __future__ import annotations
 
+from contextlib import contextmanager
 import logging
 import os
 from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import subprocess
+import signal
+import time
 import zipfile
+import zlib
 
 from app.core.config import Settings
 
@@ -35,7 +39,7 @@ def safe_extract(zip_path: Path, destination: Path, settings: Settings) -> None:
             for info in infos:
                 name = info.filename.replace("\\", "/")
                 path = PurePosixPath(name)
-                if (not name or name.startswith("/") or ":" in path.parts[0]
+                if (not path.parts or not name or name.startswith("/") or ":" in path.parts[0]
                         or any(part in ("", ".", "..") for part in path.parts)):
                     raise MineruError("ZIP_UNSAFE_PATH", "解析产物包含不安全路径", retryable=False)
                 if stat.S_ISLNK((info.external_attr >> 16) & 0o170000):
@@ -63,7 +67,7 @@ def safe_extract(zip_path: Path, destination: Path, settings: Settings) -> None:
                         output.write(chunk)
                 if actual != info.file_size:
                     raise MineruError("ZIP_SIZE_MISMATCH", "解析产物声明大小与实际不符", retryable=False)
-    except (zipfile.BadZipFile, OSError) as exc:
+    except (zipfile.BadZipFile, OSError, RuntimeError, NotImplementedError, EOFError, zlib.error) as exc:
         if isinstance(exc, MineruError):
             raise
         raise MineruError("INVALID_ZIP", "解析产物不是有效 ZIP", retryable=False) from exc
@@ -73,30 +77,63 @@ class MineruRunner:
     def __init__(self, settings: Settings):
         self.settings = settings
 
+    @contextmanager
+    def _slot(self):
+        # OS locks release on process exit; slots are shared across local workers.
+        import fcntl
+        root = self.settings.data_dir / "tmp" / "mineru-slots"
+        root.mkdir(parents=True, exist_ok=True)
+        deadline = time.monotonic() + self.settings.mineru_timeout_seconds
+        slot = None
+        while slot is None:
+            for number in range(self.settings.mineru_max_concurrency):
+                handle = (root / f"{number}.lock").open("a+b")
+                try:
+                    fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    slot = handle
+                    break
+                except BlockingIOError:
+                    handle.close()
+            if slot is None:
+                if time.monotonic() >= deadline:
+                    raise MineruError("MINERU_BUSY", "等待 MinerU 并发名额超时")
+                time.sleep(0.1)
+        try:
+            yield
+        finally:
+            slot.close()
+
     def run(self, pdf_path: Path, output_zip: Path, workspace: Path) -> None:
         command = [
-            self.settings.mineru_command, "parse", str(pdf_path),
-            "--format", "zip", "-o", str(output_zip), "--tier", self.settings.mineru_tier,
+            self.settings.mineru_command, "parse", str(pdf_path.resolve()),
+            "--format", "zip", "-o", str(output_zip.resolve()), "--tier", self.settings.mineru_tier,
         ]
         env = os.environ.copy()
         env["MINERU_HOME"] = str(self.settings.mineru_home)
         env["MINERU_CONFIG"] = str(self.settings.mineru_config)
         workspace.mkdir(parents=True, exist_ok=True)
-        try:
-            completed = subprocess.run(
-                command, cwd=self.settings.mineru_working_dir, env=env,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
-                timeout=self.settings.mineru_timeout_seconds,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise MineruError("MINERU_TIMEOUT", "MinerU 解析超时") from exc
-        except OSError as exc:
-            raise MineruError("MINERU_UNAVAILABLE", "无法启动 MinerU CLI") from exc
-        if completed.returncode != 0:
-            logger.warning("MinerU exited code=%s", completed.returncode)
-            raise MineruError("MINERU_FAILED", "MinerU 解析失败")
-        if not output_zip.is_file() or output_zip.stat().st_size == 0:
-            raise MineruError("MINERU_NO_OUTPUT", "MinerU 未生成解析产物")
+        with self._slot():
+            try:
+                # Files avoid buffering unbounded CLI output in worker memory.
+                with (workspace / "stdout.log").open("wb") as stdout, (workspace / "stderr.log").open("wb") as stderr:
+                    process = subprocess.Popen(command, cwd=workspace, env=env,
+                                               stdout=stdout, stderr=stderr, start_new_session=True)
+                    try:
+                        returncode = process.wait(timeout=self.settings.mineru_timeout_seconds)
+                    except subprocess.TimeoutExpired as exc:
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                        process.wait()
+                        raise MineruError("MINERU_TIMEOUT", "MinerU 解析超时") from exc
+            except OSError as exc:
+                raise MineruError("MINERU_UNAVAILABLE", "无法启动 MinerU CLI") from exc
+            if returncode != 0:
+                logger.warning("MinerU exited code=%s", returncode)
+                raise MineruError("MINERU_FAILED", f"MinerU 解析失败，退出码 {returncode}")
+            if not output_zip.is_file() or output_zip.stat().st_size == 0:
+                raise MineruError("MINERU_NO_OUTPUT", "MinerU 未生成解析产物")
 
 
 def cleanup_workspace(path: Path) -> None:

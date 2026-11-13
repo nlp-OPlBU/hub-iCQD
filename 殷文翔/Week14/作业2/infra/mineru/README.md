@@ -1,18 +1,13 @@
 # MinerU CLI 接入
 
-后续实现入口为 `backend/app/services/mineru_cli.py`。完整的模型下载、保存位置、vLLM 启动和配置示例见 [全本地模型部署指南](../../docs/models.md)。当前仅有文档，未验证服务器安装版本或解析能力。
+Worker 已实现 `mineru-kit parse <PDF绝对路径> --format zip -o <ZIP绝对路径> --tier <配置档位>`，以参数数组启动，不使用 shell。模型部署见 [模型指南](../../docs/models.md)。
 
-用户环境提供的命令格式（仅作参考，本次未执行）：
+`MINERU_COMMAND` 指定可执行程序；`MINERU_HOME`、`MINERU_CONFIG` 作为绝对路径传给子进程。cwd 和输出位于 `DATA_DIR/tmp/tasks/<task_id>/<lease_token>/`，避免多个任务及租约相互覆盖。`MINERU_WORKING_DIR` 保留配置兼容性，不再用作 CLI cwd。超时为 `MINERU_TIMEOUT_SECONDS`；超时杀死 Linux 进程组并回收。CLI 输出写临时文件，不在内存中无限积累。
 
-```sh
-cd /workspace
-mineru-kit parse pdf/test2.pdf --format zip -o output.zip --tier advanced
-```
+Linux Worker 用 `DATA_DIR/tmp/mineru-slots/` 的 OS 文件锁实现 `MINERU_MAX_CONCURRENCY`（默认 1），同机多进程共享名额，退出自动释放；等待名额也有相同超时。所有本机 Worker 须共享 DATA_DIR 及并发配置。该实现使用 POSIX flock，Windows Worker 尚不支持；跨机器 GPU 协调不在此限制内。
 
-应用需要替换成每任务独立的输入、输出绝对路径，并通过参数数组启动子进程。`MINERU_COMMAND`、`MINERU_WORKING_DIR`、`MINERU_HOME`、`MINERU_TIER`、超时和并发通过统一配置控制；Worker 向子进程传递 `MINERU_HOME`，并使用对应独立环境的 CLI。
+ZIP 解压校验路径、符号链接、条目数、单文件及总大小、压缩比与 CRC。当前支持已实测的 MinerU 4.1.7 `structured_content.json` pages/blocks 格式，同级必须存在非空 Markdown；未知格式明确报 `ARTIFACT_INVALID`，不猜测页码或退化为无来源文本。`page_idx` 从 0 转成展示页码 1，文本、表格、图片说明和注释统一为文本块，校验图片引用在产物目录内且对应非空文件。保留 bbox 和图片存储标识，不暴露绝对路径。
 
-新方案规划在 `/workspace/multimodal-rag/mineru/` 保存配置和配套权重，由独立 `mineru-kit vlm-server --engine vllm` 在 `127.0.0.1:8104` 提供专用模型推理。CLI 根据 `config.yaml` 的 `model.vlm.server_url` 调用它。该端点不是 PDF 上传或解析 HTTP API，当前也未启动；不会因此改变业务的 CLI 适配方式。
+校验通过后保存 `normalized.json` 与原始解压文件，fsync 后发布到 `parsed/<document_id>/v<version>/<lease_token>/`；不同租约目录互不删除。ES 失败时产物保留以便诊断。没有自动清理旧尝试目录，清理需结合数据库引用另行安排。
 
-MinerU 内置解析流程及模型适配，权重需另行下载并验证。当前官方 4.x 中，Basic 使用小模型，Standard 与 Advanced 使用小模型及专用 VLM；Advanced 共用 Standard 权重，没有额外一套下载。具体模型由安装版本管理，不能将普通 Qwen 聊天模型直接当成专用解析模型。
-
-后续用实际 ZIP 验证 Markdown、JSON、图片、页码关系与安全解压。Worker 初始并发 1，内部 VLM 请求并发规划 2；与其他模型的 GPU 共用预算待实测。此目录目前不提供模型安装或服务启动脚本。
+2026-11-13 basic CPU 六页样例通过应用解析、真实 MySQL 状态更新和临时 ES 8.15.3 BM25 检索。advanced 依赖本机专用 VLM 8104，尚未验收；该端点不是 PDF HTTP API。默认配置仍为 advanced，不能据此假定 8104 已启动。详细记录见 [验证记录](../../docs/verification.md)。
