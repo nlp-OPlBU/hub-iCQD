@@ -7,6 +7,7 @@ const props = defineProps<{ busy: boolean; limits: Capabilities | null }>()
 const files = defineModel<File[]>({ required: true })
 const emit = defineEmits<{ upload: [files: File[]] }>()
 const input = ref<HTMLInputElement>()
+const dragging = ref(false)
 const totalBytes = computed(() => files.value.reduce((total, file) => total + file.size, 0))
 const error = computed(() => {
   if (!props.limits) return ''
@@ -14,20 +15,49 @@ const error = computed(() => {
   if (totalBytes.value >= props.limits.upload_max_request_bytes) return '所选文件总大小超限，请减少文件后上传（请求还包含表单开销）。'
   return ''
 })
+function addFiles(list: File[]) {
+  files.value = list
+  if (input.value) input.value.value = ''
+}
 function select(event: Event) {
-  files.value = Array.from((event.target as HTMLInputElement).files || [])
+  addFiles(Array.from((event.target as HTMLInputElement).files || []))
+}
+function onDragOver(event: DragEvent) {
+  if (props.busy) return
+  event.preventDefault()
+  dragging.value = true
+}
+function onDragLeave(event: DragEvent) {
+  const current = event.currentTarget as HTMLElement | null
+  if (current && event.relatedTarget instanceof Node && current.contains(event.relatedTarget)) return
+  dragging.value = false
+}
+function onDrop(event: DragEvent) {
+  dragging.value = false
+  if (props.busy) return
+  const dropped = Array.from(event.dataTransfer?.files || [])
+  if (dropped.length) addFiles(dropped)
 }
 watch(files, () => { if (!files.value.length && input.value) input.value.value = '' })
 </script>
 
 <template>
-  <form class="upload-box" @submit.prevent="emit('upload', [...files])">
+  <form
+    class="upload-box"
+    :class="{ 'is-dragging': dragging }"
+    @submit.prevent="emit('upload', [...files])"
+    @dragenter.prevent="onDragOver"
+    @dragover.prevent="onDragOver"
+    @dragleave="onDragLeave"
+    @drop.prevent="onDrop"
+  >
     <h3>批量上传 PDF</h3>
     <p v-if="limits" class="muted">每批最多 {{ limits.upload_max_files }} 个，每个 {{ formatBytes(limits.upload_max_file_bytes) }}，整批请求上限 {{ formatBytes(limits.upload_max_request_bytes) }}。</p>
     <p v-else class="muted">选择多个 PDF；数量和大小由服务器校验。</p>
     <label class="file-picker">选择 PDF 文件
       <input ref="input" type="file" accept=".pdf,application/pdf" multiple :disabled="busy" @change="select" />
     </label>
+    <p class="muted drop-copy">也可以将 PDF 直接拖到这里。</p>
     <ul v-if="files.length" class="selected-files">
       <li v-for="(file, index) in files" :key="index">
         <span>{{ index + 1 }}. {{ file.name }} <small>{{ formatBytes(file.size) }}</small>
@@ -42,5 +72,6 @@ watch(files, () => { if (!files.value.length && input.value) input.value.value =
       <button type="submit" :disabled="busy || !files.length || !!error">{{ busy ? '正在上传…' : `上传${files.length ? ` ${files.length} 个文件` : ''}` }}</button>
       <span v-if="files.length" class="muted">共 {{ formatBytes(totalBytes) }} · 上传后异步解析</span>
     </div>
+    <div v-if="dragging" class="drop-hint">松开以添加 PDF</div>
   </form>
 </template>
