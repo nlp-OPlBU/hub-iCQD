@@ -35,6 +35,29 @@ def png(size=(200, 100)):
     return stream.getvalue()
 
 
+@pytest.mark.parametrize('reference,expected', [('S1', 'completed'), ('S9', 'failed'),
+                                             ('S1 和 S9', 'failed')])
+def test_explicit_unbracketed_model_sources_are_validated(chat_api, monkeypatch, reference, expected):
+    monkeypatch.setattr(LLMClient, 'complete', lambda *args, **kwargs:
+                        f'依据检索证据 {reference}，购物车最多添加100件商品。')
+    response = chat_api.ask({'text': '购物车最多多少件？', 'document_ids': [chat_api.doc1]})
+    assert response.status_code == 200
+    answer = response.json()['assistant_message']
+    assert answer['status'] == expected
+    if expected == 'completed':
+        assert '[S1]' in answer['content'] and answer['sources'][0]['source_id'] == 'S1'
+    else:
+        assert answer['error']['code'] == 'INVALID_MODEL_CITATION' and not answer['sources']
+
+
+def test_code_literals_and_unattributed_source_tokens_do_not_create_citations(chat_api, monkeypatch):
+    monkeypatch.setattr(LLMClient, 'complete', lambda *args, **kwargs:
+                        'S1 是变量名。`来源 S1`\n```text\n证据 S1\n```')
+    answer = chat_api.ask({'text': '代码含义？', 'document_ids': [chat_api.doc1]}).json()['assistant_message']
+    assert answer['status'] == 'completed' and not answer['sources']
+    assert '依据不足' in answer['content']
+
+
 @pytest.fixture
 def model_server():
     requests = []

@@ -1,6 +1,7 @@
 import io
 import json
 import logging
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -39,10 +40,30 @@ def test_env_overrides_dotenv_and_secret_url(monkeypatch, tmp_path):
     assert 'p@ss%/word' not in repr(settings)
 
 
+def test_explicit_deployment_env_file_is_root_relative_and_does_not_merge_dotenv(monkeypatch, tmp_path):
+    from app.core.config import get_settings
+    path = tmp_path / 'deployment.env'
+    path.write_text('APP_PORT=18101\nMYSQL_DATABASE=rag_isolated\n', encoding='utf-8')
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv('RAG_ENV_FILE', os.path.relpath(path, PROJECT_ROOT))
+    get_settings.cache_clear()
+    try:
+        settings = get_settings()
+        assert settings.app_port == 18101 and settings.mysql_database == 'rag_isolated'
+        assert settings.mysql_password.get_secret_value() == ''
+        monkeypatch.setenv('RAG_ENV_FILE', str(tmp_path / 'missing.env'))
+        get_settings.cache_clear()
+        with pytest.raises(ValueError, match='does not exist'):
+            get_settings()
+    finally:
+        get_settings.cache_clear()
+
+
 @pytest.mark.parametrize('options', [
     {'task_lease_seconds': 60, 'task_heartbeat_seconds': 30},
     {'upload_max_files': 0}, {'zip_max_entry_bytes': 200, 'zip_max_uncompressed_bytes': 100},
     {'task_max_retries': -1}, {'image_token_budget': 12000},
+    {'kafka_session_timeout_ms': 6000, 'kafka_heartbeat_interval_ms': 3000},
     {'retrieval_mode': 'hybrid', 'embedding_model': ''},
 ])
 def test_invalid_config_fails_fast(options):

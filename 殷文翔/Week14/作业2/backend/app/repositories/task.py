@@ -60,6 +60,19 @@ def claim_task(session: Session, *, task_id: str, document_id: str, version: int
         return ClaimResult("not_due")
     if task.status not in ("pending", "processing"):
         return ClaimResult("failed")
+    # A redelivery can arrive before the dispatcher recovers the expired lease.
+    # Enforce the same budget on this path, otherwise repeated crashes bypass it.
+    if task.attempts >= task.max_retries + 1:
+        task.status, task.stage = "failed", "failed"
+        task.error_code = "WORKER_LOST"
+        task.error_message = "Worker 租约过期且重试预算已耗尽"
+        task.finished_at = now
+        task.next_attempt_at = None
+        task.lease_owner = task.lease_token = task.lease_expires_at = task.heartbeat_at = None
+        add_parse_failed(session, settings, task_id=task.id, document_id=document.id,
+                         version=task.version, storage_key=document.storage_key)
+        session.flush()
+        return ClaimResult("failed")
 
     token = str(uuid4())
     task.status = "processing"

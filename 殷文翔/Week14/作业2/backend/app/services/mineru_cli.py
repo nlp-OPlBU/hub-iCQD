@@ -9,6 +9,7 @@ import shutil
 import stat
 import subprocess
 import signal
+import sys
 import time
 import zipfile
 import zlib
@@ -108,9 +109,18 @@ class MineruRunner:
             self.settings.mineru_command, "parse", str(pdf_path.resolve()),
             "--format", "zip", "-o", str(output_zip.resolve()), "--tier", self.settings.mineru_tier,
         ]
+        if sys.platform == 'linux':
+            command = [sys.executable, str(Path(__file__).with_name('mineru_subprocess.py')),
+                       str(os.getpid()), *command]
         env = os.environ.copy()
         env["MINERU_HOME"] = str(self.settings.mineru_home)
         env["MINERU_CONFIG"] = str(self.settings.mineru_config)
+        if self.settings.mineru_device_mode:
+            env['MINERU_DEVICE_MODE'] = self.settings.mineru_device_mode
+        if self.settings.mineru_offline:
+            env['HF_HUB_OFFLINE'] = '1'
+        for variable in ('OMP_NUM_THREADS', 'MKL_NUM_THREADS'):
+            env.setdefault(variable, str(self.settings.mineru_cpu_threads))
         workspace.mkdir(parents=True, exist_ok=True)
         with self._slot():
             try:

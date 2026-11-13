@@ -38,7 +38,9 @@ def isolated_mysql(tmp_path_factory):
     with (work / 'server.log').open('wb') as log:
         try:
             process = subprocess.Popen([*common, '--console', '--bind-address=127.0.0.1',
-                f'--port={port}', '--mysqlx=OFF', '--skip-log-bin', '--innodb-buffer-pool-size=32M'],
+                f'--port={port}', f'--socket={work / "mysql.sock"}',
+                f'--pid-file={work / "mysql.pid"}',
+                '--mysqlx=OFF', '--skip-log-bin', '--innodb-buffer-pool-size=32M'],
                 stdout=log, stderr=log, creationflags=flags)
             deadline = time.monotonic() + 60
             while True:

@@ -1,6 +1,6 @@
-# 部署规划与当前限制
+# 部署与当前限制
 
-当前可运行 PDF 批量上传与任务查询/重试、MySQL 迁移与补偿工具、outbox 投递器、可恢复 Worker、BM25 图文问答及两个前端核心页面。basic MinerU/ES 与后端本地模型问答已有独立实测，前端已通过接口模拟浏览器验收；Kafka 真实传输、advanced 和 Nginx/常驻部署仍待完成。此文包含本地开发步骤与后续服务器部署规划，不代表已部署。
+2026-11-13 已完成真实 Kafka 完整链路、异常矩阵与项目独立 Nginx 部署，图文问答及真实浏览器上传流程通过；advanced 额外验证完成，服务器进程继续运行。**当前地址、资源边界、全部启动/复验步骤和限制以 [服务器验收与部署](server-acceptance.md) 为准**。共享配置加载、非 root 账号与开机托管尚未实施。以下保留开发入口与部署顺序参考。
 
 ## 本地基础工程
 
@@ -33,30 +33,35 @@ npm run dev
 
 使用 `backend/requirements-lock.txt` 可复现本次验收的完整 Python 依赖；常规运行/开发依赖分别为 requirements.txt 和 requirements-dev.txt。依赖升级后重跑验证并更新锁文件。
 
-## 后续服务器部署规划
+## 部署顺序参考
 
-用户已确认单卡 48GB 显存、CPU 20 核、内存 90GB。全本地模型的选型、服务器保存位置、环境准备、下载、vLLM 启动命令、MinerU 配置和验收步骤统一见 [模型部署指南](models.md)。其中代码块是服务器执行参考，未写入或执行当前占位脚本。
+用户已确认单卡 48GB 显存、CPU 20 核、内存 90GB。全本地模型的选型、服务器保存位置、环境准备、下载、vLLM 启动命令、MinerU 配置和验收步骤统一见 [模型部署指南](models.md)。已提供两个模型启动入口；执行前须确认相应端口未被已运行的项目进程占用。
 
 1. 在服务器只读确认软件版本、进程状态、端口、权限、认证、GPU 资源以及 MinerU 与模型能力，记录至环境说明。
 2. 在服务器选定项目目录，准备隔离的 Python 环境与前端依赖，使用已提交的依赖清单和锁文件并验证服务器兼容性。
 3. 将 `.env.example` 复制为服务器本地 `.env`，填写真实连接信息；创建项目专属 MySQL 数据库与账号、Kafka Topic、ES 索引，确认数据目录可被 API 与 Worker 共同访问。
 4. 按模型指南准备项目专属权重与隔离环境，逐个验证图文问答（8100）、Embedding（8102）、Reranker（8103）、MinerU 专用 VLM（8104）及 CLI 解析。图文向量与 ES 索引未验证前使用 BM25，重排保持关闭。
-5. 实现并分别启动 API、outbox 投递器、PDF Worker；业务 API 规划使用 `8001`。原有 `8000` 不自动调整，若占用同一 GPU 必须计入共卡预算。Worker 继承项目 `MINERU_HOME`，通过 CLI 调用本地模型。
+5. 分别启动已实现的 API、outbox 投递器、PDF Worker；业务 API 使用 `8001`。原有 `8000` 不自动调整，若占用同一 GPU 必须计入共卡预算。Worker 继承项目 `MINERU_HOME`，通过 CLI 调用本地模型。
 6. 构建前端，在审核现有站点路由后配置项目专属 Nginx 片段，处理 `/api/`、受控资源访问、上传体积及请求超时。配置校验通过后再按实际部署授权加载。
 7. 执行真实 PDF 上传、状态、重试和图文问答联调；随后根据服务器情况增加进程托管。当前不预设服务器具备某一种进程管理器。
 
 ## 脚本位置
 
-| 文件 | 后续职责 |
+| 文件 | 当前职责 |
 | --- | --- |
-| `scripts/check_environment.sh` | 只读检查命令、服务连通性与版本，输出脱敏摘要 |
+| `scripts/check_environment.sh` | 已实现：只读检查命令、TCP/HTTP 连通性与版本，输出脱敏摘要，不启动服务 |
 | `scripts/init_mysql.sh` | 已实现：对配置中的已有项目数据库执行 Alembic upgrade head，不创建账号或共享服务 |
 | `scripts/start_api.sh` | 已实现：启动基础 API，不启动共享基础设施 |
 | `scripts/start_dispatcher.sh` | 已实现：启动 outbox 投递器 |
 | `scripts/start_worker.sh` | 已实现：启动 PDF 消费者 |
 | `scripts/build_frontend.sh` | 已实现：npm ci + npm run build |
-| `scripts/dev.sh`、`scripts/dev.ps1` | 项目开发辅助入口，不假设 Windows 有服务器软件 |
+| `scripts/dev.sh` | API/投递器/Worker 的前台监督与退出清理，可选独立 Nginx；不启动共享基础设施 |
+| `scripts/dev.ps1` | Windows API 开发入口；Worker 的 Linux flock/进程保护不冒充 Windows 支持 |
+| `scripts/start_vlm.sh`、`scripts/start_mineru_vlm.sh` | 从配置启动本地问答模型和匹配 MinerU 版本的专用 VLM |
+| `scripts/render_nginx.py` | 生成 server.conf 和独立 prefix 配置；不复制到共享目录或 reload |
+| `infra/kafka/topics.sh` | 读取同一配置，幂等创建两个项目 Topic，不删除/更改其他 Topic |
+| `scripts/start_private_mysql.py` | 可选的隔离原生 MySQL；显式新目录/非 3306 端口，不读全局配置；不是默认共享实例启动器 |
 
 环境材料中的基础设施启动命令保留为参考，不写入一键启动脚本；避免重复启动或改变共享服务。
 
-上表未标“已实现”的脚本继续保留为空。已实现 Bash 脚本为 UTF-8/LF，默认使用系统 conda 环境 `py312` 的解释器，可通过 PYTHON 指定项目解释器；本轮未在 Linux 服务器执行它们。
+上述入口已在本轮 Linux 服务器执行（PowerShell 入口仅静态检查）；Bash 为 UTF-8/LF，默认使用 conda `py312` 解释器，可通过 PYTHON 覆盖。systemd 模板仅供审阅，没有安装或启用。

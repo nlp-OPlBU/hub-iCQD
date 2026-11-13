@@ -41,6 +41,9 @@ class KafkaTaskConsumer:
             enable_auto_commit=False,
             auto_offset_reset="earliest",
             max_poll_interval_ms=settings.kafka_max_poll_interval_ms,
+            session_timeout_ms=settings.kafka_session_timeout_ms,
+            heartbeat_interval_ms=settings.kafka_heartbeat_interval_ms,
+            bootstrap_timeout_ms=settings.kafka_publish_timeout_seconds * 1000,
             consumer_timeout_ms=settings.kafka_consumer_poll_seconds * 1000,
         )
 

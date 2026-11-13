@@ -24,6 +24,21 @@ SYSTEM = '''你是文档问答助手。只依据下方检索证据回答问题�
 不要编造来源ID、文档名、页码或链接；不要生成图片链接，相关图片由服务端附加。使用中文 Markdown。'''
 
 
+def normalize_explicit_citations(answer):
+    """Canonicalize explicit source labels, never infer a citation from answer content.
+
+    Real local models sometimes write '检索证据 S1 和 S2' instead of '[S1] [S2]'.
+    Preserve code literals and leave standalone identifiers alone. Unknown IDs
+    remain visible to the same validation as ordinary bracketed citations.
+    """
+    pattern = r'((?:检索证据|证据|来源)\s*)(S[1-9]\d*(?:\s*(?:和|、|及|,|，|与)\s*S[1-9]\d*)*)(?!\w)'
+    parts = re.split(r'(```[\s\S]*?```|`[^`\n]*`)', answer)
+    for index in range(0, len(parts), 2):
+        parts[index] = re.sub(pattern, lambda match: match[1] + re.sub(
+            r'S[1-9]\d*', lambda ref: '[' + ref[0] + ']', match[2]), parts[index])
+    return ''.join(parts)
+
+
 @contextmanager
 def transaction(factory):
     try:
@@ -140,7 +155,7 @@ def generate(factory, settings, conversation_id, payload, versions):
         label = '用户原图' if image_id in user_parts else '文档图片，来源 ' + ','.join(
             source['source_id'] for source in sources if image_id in source['image_ids'])
         messages[1]['content'].extend([{'type': 'text', 'text': label}, part])
-    answer = model.complete(messages, image_tokens=image_tokens)
+    answer = normalize_explicit_citations(model.complete(messages, image_tokens=image_tokens))
     cited = set(re.findall(r'\[(S[0-9]+)\]', answer))
     allowed = {source['source_id'] for source in sources}
     if cited - allowed:

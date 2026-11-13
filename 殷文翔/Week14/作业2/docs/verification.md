@@ -1,5 +1,39 @@
 # 验收记录
 
+## 2026-11-13 完整异常验证与项目服务器部署
+
+**首个里程碑已通过真实服务验收**：批量 PDF 经 MySQL → outbox → Kafka → 独立 Worker → MinerU → ES 完成处理，四种状态可通过 API 查询，已完成内容可限定文档检索。完整可复现步骤、当前端口、进程启动/停止与限制见 [服务器部署与完整链路复验](server-acceptance.md)。以下为本轮执行结果，覆盖较早“Kafka/advanced/部署待验证”的结论。
+
+| 检查 | 本轮实际结果 |
+| --- | --- |
+| py312 全量后端回归，显式 `RAG_TEST_MYSQL_BINARY=/usr/sbin/mysqld` | **111 passed, 3 skipped**；新增 Worker/outbox 的真实隔离 MySQL 双后端验证，跳过项见复验文档 |
+| 真实 pipeline 测试 | **1 passed，188.48 秒**；UUID 专属测试库、Topic/消费组和 ES 索引；实际 API/dispatcher/Worker/独立 Nginx 进程，未模拟 Kafka/MinerU/ES/模型 |
+| 前端 `npm run build` | TypeScript 与 Vite 构建通过 |
+| Chromium 接口模拟回归 `npm run test:ui` | **18 passed** |
+| Chromium 真实部署 `npm run test:server` | **1 passed，约 2.3 分钟（advanced）**；页面批量上传两份 PDF、轮询完成、指定文档图文问题、答案和真实来源图片可加载；无 API 模拟 |
+| advanced 部署追加验证 | 真实 HTTP 上传 → outbox/Kafka → Worker → MinerU 专用 VLM → ES → completed，**62.31 秒**，6 页、14 张图片关联；查询“购物车 100”命中第 2 页 |
+| Nginx/脚本 | 独立 prefix 的 `nginx -t`、页面 SPA、同源上传/查询/图片代理均通过；Bash 语法与 Python 编译检查通过；PowerShell 仅静态检查 |
+
+异常矩阵本次全部执行：
+
+- **重复消费**：真实 Kafka 重发已完成事件；等待消费组实际 committed offset 前进，attempts 和产物引用保持不变。
+- **outbox 补偿**：只让测试投递器连接关闭端口，真实连接失败后 MySQL 保留 pending、尝试次数和错误；切回真实 broker 后原事件成功发布。另有双数据库故障注入覆盖 broker 已确认、DB 标记丢失后的租约重发。
+- **Worker 崩溃**：HTTP 已读到 processing 后 SIGKILL 实际 Worker，MySQL 租约过期回到 pending，重启 Worker 后第二次执行完成。真实进程树测试确认 guardian 在父 Worker 死亡后杀掉 MinerU 及组内子进程。另修复重复消息直接接管过期租约时可绕过重试预算的问题，预算耗尽落 failed/WORKER_LOST 和单个失败事件。
+- **解析超时**：真实 MinerU CLI 超时一秒，任务 failed/MINERU_TIMEOUT，finished_at 已保存；当前检索版本未发布。
+- **索引失败**：专属错误 ES mapping 将 text 定义为 integer，真实 PDF 解析后 bulk item 被拒绝；failed/INDEX_UNAVAILABLE、错误阶段和失败 Topic 确认。
+- **旧版本隔离**：保留专属 ES v1 sentinel chunk；人工重试 v2 后实际成功，旧事件重发无影响；HTTP 检索仅返回 v2，查询旧 sentinel 没有命中，ES 原 v1 仍存在。
+- **真实图片**：观察代理原样转发至本地 Qwen3.5-4B，逐个 data URL 解码并用 Pillow 验证图片；请求图片数量为 3、1、4，最终同时含用户原图和文档图。模型回答“问答技能”“100 件”，页码和受控资源均可访问；同 key 重放没有新增模型请求。
+
+完整 pipeline 报告位于 `runtime/pipeline-acceptance/ab9390aa5a6d413abf1d12d3e56e3444/report.json`，状态 passed。报告、原图、解析产物及日志仅保存在忽略目录；该测试的临时库、Topic/消费组、索引和应用进程已清理。前两次调试分别发现 Kafka 客户端默认连接等待未受发布超时配置约束、以及测试使用的旧版 admin 方法不匹配 kafka-python 3.0.13；已修正并清理对应专属测试资源，以最终通过报告为准。
+
+独立部署另保留 `runtime/deployment/`：项目配置 0600、私有 MySQL 13306（业务账号非 root、独立库）、API 8001、专属 Topic/ES 索引、独立 Nginx 18080、Qwen 8100 和 MinerU VLM 8104。原项目 `.env`、共享配置和共享进程均未调整；没有注册 systemd 或加载共享 Nginx。启动入口、项目数据/密钥保管和当前 root 运行限制见复验文档。真实浏览器截图位于 `frontend/test-results/server-pipeline.png`。
+
+MinerU 专用 VLM 首次使用原规划 16384 窗口被当前 vLLM 拒绝，实测有效上限为 **8192**，现已修正配置和指南；没有设置强制越界开关。advanced 的任务 `404873b9-8968-424c-ace6-83cd4ff8f058`、文档 `3815fe61-fc93-4a68-8a86-6b27bad700c9` 及结果保存在 `runtime/deployment/advanced-report.json`。两模型驻留和本轮低并发 CPU 小模型解析时 GPU 约 24005MiB / 49140MiB，不代表四模型共卡或并发压力验收。
+
+advanced 图文追加检查曾返回依据不足；诊断确认实际模型回答内容正确，明确引用 S1/S2，但没有写成方括号，旧逻辑因缺少 `[S1]` 回退。已规范明确的“证据/来源 S数字”引用，代码字面量和无来源描述的独立标识不转换；未知编号仍拒绝。新增 SQLite/真实 MySQL 双后端的合法/未知/混合编号与代码场景检查，最新全量为上述 111 passed。修复后同一 advanced 文档真实图文问题通过，引用第 1、2 页；另重跑完整 pipeline 和 advanced 真实浏览器，均通过。
+
+仍有限制：BM25、未接入 Embedding/Reranker；未配置鉴权/公网 TLS、非 root 服务账号、开机托管和自动数据回收；同版本过期但仍存活 Worker 的 ES 并发写隔离未专项验证；依赖声明中的 MinerU/openai 冲突仍存在。不能将本轮项目 loopback 部署解释为共享站点或高可用生产部署完成。
+
 ## 2026-11-13 前端两个核心页面验收
 
 本轮完成文档管理页并补齐图文问答页，新增只读 `/api/capabilities`，从统一配置向前端提供视觉开关和上传限制。未变更数据库、模型开关、共享服务或部署配置。

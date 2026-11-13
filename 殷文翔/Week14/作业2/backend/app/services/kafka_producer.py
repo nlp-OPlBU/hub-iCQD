@@ -43,6 +43,10 @@ class KafkaEventPublisher:
                 acks="all",
                 retries=0,
                 linger_ms=0,
+                bootstrap_timeout_ms=self.settings.kafka_publish_timeout_seconds * 1000,
+                max_block_ms=self.settings.kafka_publish_timeout_seconds * 1000,
+                request_timeout_ms=self.settings.kafka_publish_timeout_seconds * 1000,
+                delivery_timeout_ms=self.settings.kafka_publish_timeout_seconds * 1000,
                 key_serializer=lambda value: value.encode("utf-8"),
                 value_serializer=lambda value: json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
             )

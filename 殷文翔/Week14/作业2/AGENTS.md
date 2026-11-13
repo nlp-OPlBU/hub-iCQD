@@ -5,7 +5,7 @@
 本文件适用于当前项目根目录及全部子目录。用户的明确指令优先于本文。
 当前开发环境未必是服务器部署环境，若为windows则为用户个人开发环境。
 
-当前项目已实现统一配置、JSON 日志、FastAPI 入口与健康检查、SQLAlchemy 数据模型和 Alembic 首版迁移、PDF 批量上传与文档/任务查询、文件补偿工具，并已初始化可构建的 Vue/Vite 工程。解析 Worker、outbox 投递器、检索、问答、后续状态流转 repositories 与大部分业务 UI 仍待实现；API 契约见 docs/api.md，实际检查见 docs/verification.md。不得把占位文件或契约当作已实现功能；服务器部署需另行安排。
+当前项目已实现统一配置、JSON 日志、FastAPI/健康检查、SQLAlchemy/Alembic、批量上传与补偿、MySQL/outbox/Kafka/可恢复 Worker、MinerU/ES BM25、受控图片、会话/图文问答及 Vue 核心页面。2026-11-13 真实异常矩阵、basic 与 advanced 链路、Nginx 真实浏览器验收通过，已在项目专属资源上完成本机独立部署。当前地址/复现见 docs/server-acceptance.md；证据与限制见 docs/verification.md。共享配置加载、非 root 账号、开机托管、鉴权/公网 TLS、向量/重排仍未完成；不得将历史契约或本机部署当作这些能力已就绪。
 
 开始工作时阅读 `REMADE.md` 和 `docs/environment.md`。修改结构、选型、接口或配置时同步更新对应文档。环境文档中的命令只作参考，不代表有权启动、停止或修改共享服务。
 

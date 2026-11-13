@@ -99,3 +99,9 @@
 本轮完成 BM25 文本与用户图片问答的真实应用验收：独立临时 MySQL（随机本机端口）、ES 8.15.3（19200/19300）和 Qwen3.5-4B vLLM（8100）通过，过程与证据见 [verification.md](verification.md) 顶部。没有改动共享服务配置或 .env；独立测试服务均已停止，8100/19200/19300 释放、GPU 回到 1MiB。应用视觉开关默认仍为 false，部署时显式开启并核对实际模型图片上限。
 
 Python 项目新增运行依赖 Pillow 12.3.0 和 httpx 0.28.1，均已在 py312 中存在，无须改动 MinerU/vLLM 的安装。前端新增 marked、DOMPurify 及 Playwright 开发检查，锁文件已更新。Chromium 验证所需的 libgbm/wayland-server 仅以 .deb 解压副本放在项目 runtime 并通过 LD_LIBRARY_PATH 使用，未改系统包或共享服务。常驻部署、最大多图与并发压力、advanced/8104、Embedding/Reranker 仍待验证。
+
+## 完整异常矩阵与项目独立部署（2026-11-13）
+
+本轮复核 Kafka 9092 与 ES 9200 已在线，可通过真实管理/检索请求；仅创建和使用项目专属 Topic/索引，没有修改或重启共享服务。因共享 MySQL 3306 未监听，项目使用全新私有原生实例 13306（--no-defaults、独立数据/socket/PID、项目业务账号和随机密码）；没有启动共享 MySQL。API 8001、独立 Nginx 18080、Qwen 8100 与 MinerU 专用 VLM 8104 已运行，原 .env 未改动，实际配置在忽略目录 runtime/deployment/project.env，权限 0600。
+
+真实 Kafka 完整链路和重复消费、补偿、强杀恢复、超时、ES 失败、旧版本隔离及真实图片输入均通过。advanced 六页 PDF 约 62 秒完成，6 页、14 张图片关联，检索命中实际第 2 页；8104 的实际 ID 为 mineru-vlm、有效上下文 8192，原规划 16384 被当前 vLLM 拒绝，现已修正。两个模型同时驻留 GPU 约 24005MiB / 49140MiB；解析小模型本轮使用 CPU。非 root、开机托管、四模型共卡、高并发、鉴权和公网入口未验收；共享 Nginx 配置未加载。可复现步骤、进程状态、测试记录和其他限制见 [服务器验收](server-acceptance.md) 及 [验证记录](verification.md) 顶部，本节覆盖此前的服务离线快照。

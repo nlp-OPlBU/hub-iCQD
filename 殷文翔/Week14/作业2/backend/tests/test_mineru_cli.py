@@ -1,5 +1,10 @@
 import json
 import subprocess
+import os
+from pathlib import Path
+import signal
+import sys
+import time
 import zipfile
 
 import pytest
@@ -77,7 +82,7 @@ def test_runner_arguments_workspace_and_timeout(tmp_path, monkeypatch):
         runner.run(pdf, output, output.parent)
     assert err.value.code == 'MINERU_TIMEOUT' and killed
     args, options = calls[0]
-    assert args[2] == str(pdf) and options['cwd'] == output.parent
+    assert args[args.index('parse') + 1] == str(pdf) and options['cwd'] == output.parent
     assert options.get('shell', False) is False
 
 
@@ -91,3 +96,45 @@ def test_concurrency_slot_is_released_and_bounded(tmp_path):
         assert err.value.code == 'MINERU_BUSY'
     with second._slot():
         pass
+
+
+@pytest.mark.skipif(sys.platform != 'linux', reason='Linux parent-death signal')
+def test_worker_hard_crash_kills_mineru_and_its_children(tmp_path):
+    guardian = Path(__file__).parents[1] / 'app/services/mineru_subprocess.py'
+    pidfile = tmp_path / 'children'
+    # Real subprocess tree, no MinerU/model dependency: crash the simulated Worker.
+    cli = ('import os,subprocess,sys,time; '
+           'child=subprocess.Popen([sys.executable,"-c","import time; time.sleep(60)"]); '
+           f'open({str(pidfile)!r},"w").write(str(os.getpid())+" "+str(child.pid)); '
+           'time.sleep(60)')
+    parent_code = ('import os,subprocess,sys,time; '
+                   f'subprocess.Popen([sys.executable,{str(guardian)!r},str(os.getpid()),'
+                   f'sys.executable,"-c",{cli!r}],start_new_session=True); time.sleep(60)')
+    parent = subprocess.Popen([sys.executable, '-c', parent_code])
+    pids = []
+    try:
+        deadline = time.monotonic() + 5
+        while not pidfile.exists() and time.monotonic() < deadline:
+            time.sleep(.02)
+        assert pidfile.exists()
+        pids = [int(pid) for pid in pidfile.read_text().split()]
+        parent.kill()
+        parent.wait(timeout=5)
+        def running(pid):
+            path = Path(f'/proc/{pid}/stat')
+            try:
+                return path.read_text().split(') ')[1].split()[0] != 'Z'
+            except FileNotFoundError:
+                return False
+        while any(running(pid) for pid in pids) and time.monotonic() < deadline:
+            time.sleep(.02)
+        assert not any(running(pid) for pid in pids)
+    finally:
+        if parent.poll() is None:
+            parent.kill()
+            parent.wait()
+        for pid in pids:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass

@@ -175,6 +175,7 @@ ImageRead 字段：`id, kind, url, media_type, size_bytes, width, height, docume
 - 在短事务中锁定会话 next_sequence，分配用户及助手消息两个连续序号并保存；模型请求在事务外执行，结束后更新助手结果。消息 `status=pending/completed/failed` 与解析任务状态独立；用户消息持久化后 completed，助手消息可能 pending 或 failed。相同会话并发问题按分配序号排序，不能按模型返回顺序排序。
 - AnswerResponse 为 `{ "user_message": MessageRead, "assistant_message": MessageRead }`。MessageRead 包含 id、conversation_id、sequence、role、status、content、images、sources、error、created_at、updated_at；content 是 Markdown。SourceReference 包含 source_id（本次证据标记 S1/S2）、document_id、version、filename、page、chunk_id、image_ids、images（ImageRead），页码未知为 null。来源由服务端从实际命中生成；文档名以 MySQL 为准。只保存最终回答引用的实际证据；模型引用不存在的 S 编号则持久化 INVALID_MODEL_CITATION。没有命中或没有有效引用时统一回答依据不足、sources=[]。模型生成的 Markdown 链接会移除，图片引用由服务端使用实际来源补齐。
 - document_scope JSON 持久化本次实际检索的 document_id/version 快照；来源不随后续文档重试被改写。无检索证据时说明依据不足，sources=[]。
+- 模型明确写成“证据 S1”“来源 S1 和 S2”的引用会规范为 `[S1]`、`[S2]` 后执行相同的来源校验；未知编号仍拒绝。代码字面量和没有来源描述的独立 S 标识不会被推断为引用，未提供有效引用仍回退依据不足。
 - 用户原图、检索到的文档图片和文字要共同传到视觉模型；仅传路径或文字说明不符合契约。`LLM_VISION_ENABLED=false` 且问题带图片时返回 503 VISION_NOT_READY。该开关只有真实图片输入验证后才可开启。
 - 前端 Markdown 禁止不安全 HTML/URL，图片仅允许受控资源地址；服务端将图片转换为受控 data URL 等模型可访问形式。文档和检索片段是数据，不能作为系统指令或执行授权。
 

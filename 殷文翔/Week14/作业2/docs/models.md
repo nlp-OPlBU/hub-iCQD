@@ -2,7 +2,9 @@
 
 记录日期：2026-11-11；2026-11-13 更新：项目与模型依赖统一使用系统 conda 环境 `py312`。目标是非垂类、通用图文 RAG。已实测服务器为 CPU 20 核、单张 RTX 4090 49140MiB、90GiB 内存，驱动 615.78.08，CUDA 推理可用。
 
-本文是模型部署指南，不是常驻部署完成记录。Python 依赖已安装在 conda `py312`（MinerU 4.1.7、vLLM 0.25.1），Qwen3.5-4B、Embedding、Reranker 及 MinerU 权重已下载。2026-11-13 按 6.1 节参数临时启动 Qwen3.5-4B，实际 `/v1/models` 返回 `rag-vlm`，文本、双图片及真实 PDF 裁剪图输入均通过；复测启动约 76–78 秒，显存约 14GiB，测试后服务已停止。8102/8103/8104、四服务共卡与业务问答链路尚未验证。以下命令用于服务器 Linux Bash；其他显存预算和并发参数仍需实测，详见 [verification.md](verification.md)。
+本文是模型部署指南，当前项目独立部署见下一段。以下先保留单组件验证背景：Python 依赖已安装在 conda `py312`（MinerU 4.1.7、vLLM 0.25.1），Qwen3.5-4B、Embedding、Reranker 及 MinerU 权重已下载。2026-11-13 按 6.1 节参数临时启动 Qwen3.5-4B，实际 `/v1/models` 返回 `rag-vlm`，文本、双图片及真实 PDF 裁剪图输入均通过；复测启动约 76–78 秒，显存约 14GiB，测试后服务已停止。该早期单组件阶段尚未验证其他端点；当前 8104 和业务链路结果见下一段。以下命令用于服务器 Linux Bash；其他显存预算和并发参数仍需实测，详见 [verification.md](verification.md)。
+
+2026-11-13 部署追加：Qwen 8100 与 MinerU 专用 VLM 8104 已在项目独立部署中同时运行；后者实际模型 ID `mineru-vlm`、有效窗口 8192。原规划 16384 被 vLLM 拒绝，启动入口和下方命令已修正，没有强制覆盖模型限制。advanced 六页 PDF 已经真实 Kafka/Worker 完成并可检索；两模型驻留 GPU 约 24GB。完整步骤见 [服务器验收](server-acceptance.md)，不代表 Embedding/Reranker 或四模型共卡已验证。
 
 ## 1. 推荐组合与各阶段职责
 
@@ -43,7 +45,7 @@ PDF → MinerU CLI → 文本/表格/图片及来源 → 分块
 | Qwen3.5-4B | 0.32 | 约 15.4GB | BF16，16K 上下文，最多 2 个序列，每请求最多 4 张图 |
 | Embedding 2B | 0.15 | 约 7.2GB | BF16，8K 输入，最多 2 个序列，每输入最多 1 张图 |
 | Reranker 2B | 0.15 | 约 7.2GB | BF16，8K 输入，最多 2 个序列，每评分对最多 2 张图 |
-| MinerU 专用 VLM | 0.18 | 约 8.6GB | BF16，16K 上下文，最多 2 个序列 |
+| MinerU 专用 VLM | 0.18 | 约 8.6GB | BF16，8K 上下文，最多 2 个序列 |
 | 其余空间 | 约 0.20 | 约 9.6GB | MinerU 小模型、其他开销与余量 |
 
 `--gpu-memory-utilization` 相对于整张 GPU，不是剩余显存，也不是跨进程显存硬隔离。以上是配置预算而非实测值，Pooling 服务也不保证按该比例实际占用。权重之外还包括 KV cache、视觉编码、中间计算及运行时开销，不能只按参数量判断是否能共卡。
@@ -269,7 +271,7 @@ mineru-kit vlm-server \
   --served-model-name mineru-vlm \
   --dtype bfloat16 \
   --gpu-memory-utilization 0.18 \
-  --max-model-len 16384 \
+  --max-model-len 8192 \
   --max-num-seqs 2 \
   --max-num-batched-tokens 4096 \
   --enforce-eager
@@ -323,7 +325,7 @@ mineru-kit parse /absolute/path/input.pdf \
 
 ## 8. 业务配置与启用条件
 
-[.env.example](../.env.example) 已给出新端口、模型别名和 2048 维的规划配置，但读取这些配置的业务代码尚未实现。vLLM 不会自动读取项目 `.env`；第 6 节参数需由终端或后续项目托管配置传入。MinerU 则使用自己的 `MINERU_HOME/config.yaml`，业务 `.env` 与 MinerU 配置不是同一个文件。
+[.env.example](../.env.example) 已给出端口、模型别名和 2048 维的规划配置；问答和 MinerU 业务适配已实现，Embedding/Reranker 尚未实现。vLLM 本身不读取项目 `.env`；`scripts/start_vlm.sh`、`scripts/start_mineru_vlm.sh` 通过统一配置（支持 RAG_ENV_FILE）构造启动参数。MinerU 则使用自己的 `MINERU_HOME/config.yaml`，业务配置与 MinerU YAML 是不同文件。
 
 | 业务配置项 | 规划值 | 启用条件 |
 | --- | --- | --- |

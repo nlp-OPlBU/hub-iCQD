@@ -10,4 +10,6 @@ ZIP 解压校验路径、符号链接、条目数、单文件及总大小、压�
 
 校验通过后保存 `normalized.json` 与原始解压文件，fsync 后发布到 `parsed/<document_id>/v<version>/<lease_token>/`；不同租约目录互不删除。ES 失败时产物保留以便诊断。没有自动清理旧尝试目录，清理需结合数据库引用另行安排。
 
-2026-11-13 basic CPU 六页样例通过应用解析、真实 MySQL 状态更新和临时 ES 8.15.3 BM25 检索。advanced 依赖本机专用 VLM 8104，尚未验收；该端点不是 PDF HTTP API。默认配置仍为 advanced，不能据此假定 8104 已启动。详细记录见 [验证记录](../../docs/verification.md)。
+2026-11-13 basic CPU 六页样例通过完整 Kafka/Worker 异常矩阵；advanced 使用 CPU 小模型 + 本机 8104 专用 VLM 的六页样例也已完成真实队列处理和 ES 检索，约 62 秒、6 页、14 张图片关联。该端点是版本匹配的模型推理服务，不是 PDF HTTP API；当前模型有效窗口 8192。使用 `scripts/start_mineru_vlm.sh` 从统一配置和 MinerU YAML 启动，实际状态仍需检查 `/health`、`/v1/models`。默认档位不等于服务在线。详细记录见 [服务器验收](../../docs/server-acceptance.md)。
+
+Linux CLI guardian 使用 parent-death signal：Worker 强杀后终止组内 MinerU 子进程；正常超时同样杀进程组。MySQL 租约和 outbox 仍负责恢复任务。可用 `MINERU_DEVICE_MODE=cpu`、`MINERU_OFFLINE=true` 与 `MINERU_CPU_THREADS=2` 复现本轮 CPU/离线小模型设置，GPU 共卡并发尚未压力验证。

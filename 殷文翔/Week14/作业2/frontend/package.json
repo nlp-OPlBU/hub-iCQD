@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "test:server": "playwright test --config playwright.server.config.ts"
   },
   "dependencies": {
     "dompurify": "^3.4.17",

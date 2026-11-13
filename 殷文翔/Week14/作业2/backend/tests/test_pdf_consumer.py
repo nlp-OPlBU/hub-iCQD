@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, event, select
+from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
@@ -77,16 +77,33 @@ def record(value):
     return SimpleNamespace(topic="t", partition=0, offset=1, key=None, value=value)
 
 
-@pytest.fixture
-def worker_env(tmp_path, monkeypatch):
-    engine = create_engine(f"sqlite:///{tmp_path / 'worker.db'}",
-                           connect_args={"check_same_thread": False})
+@pytest.fixture(params=['sqlite', 'mysql'])
+def worker_env(request, tmp_path, monkeypatch):
+    root_engine = None
+    if request.param == 'mysql':
+        from alembic import command
+        from alembic.config import Config
+        from app.core.config import PROJECT_ROOT
+        from app.db.session import create_db_engine
+        root_engine, mysql = request.getfixturevalue('isolated_mysql')
+        database = 'rag_worker_' + uuid4().hex
+        with root_engine.begin() as connection:
+            connection.execute(text(f'CREATE DATABASE `{database}` CHARACTER SET utf8mb4'))
+        engine = create_db_engine(mysql.model_copy(update={'mysql_database': database}))
+        config = Config(str(PROJECT_ROOT / 'backend/alembic.ini'))
+        with engine.connect() as connection:
+            config.attributes['connection'] = connection
+            command.upgrade(config, 'head')
+            connection.commit()
+    else:
+        engine = create_engine(f"sqlite:///{tmp_path / 'worker.db'}",
+                               connect_args={"check_same_thread": False})
 
-    @event.listens_for(engine, "connect")
-    def enable_fks(connection, _):
-        connection.execute("PRAGMA foreign_keys=ON")
+        @event.listens_for(engine, "connect")
+        def enable_fks(connection, _):
+            connection.execute("PRAGMA foreign_keys=ON")
 
-    Base.metadata.create_all(engine)
+        Base.metadata.create_all(engine)
     settings = Settings(_env_file=None, data_dir=tmp_path / "data",
                         task_max_retries=3, task_retry_base_seconds=5,
                         task_retry_max_seconds=300, task_lease_seconds=120,
@@ -95,6 +112,29 @@ def worker_env(tmp_path, monkeypatch):
     monkeypatch.setattr("app.main.create_db_engine", lambda _: engine)
     yield engine, factory, settings
     engine.dispose()
+    if root_engine is not None:
+        with root_engine.begin() as connection:
+            connection.execute(text(f'DROP DATABASE `{database}`'))
+
+
+def test_expired_redelivery_cannot_bypass_retry_budget(worker_env):
+    _, factory, settings = worker_env
+    document_id, task_id, payload = seed(factory, settings, max_retries=0)
+    now = utcnow()
+    with factory() as session, session.begin():
+        claim_task(session, task_id=task_id, document_id=document_id, version=1,
+                   worker_id='crashed', settings=settings, now=now)
+    processor = FakeProcessor()
+    worker = make_worker(settings, factory, processor)
+    assert worker.handle_message(payload, now=now + timedelta(seconds=121))['outcome'] == 'failed'
+    assert worker.handle_message(payload, now=now + timedelta(seconds=122))['outcome'] == 'failed'
+    assert processor.calls == 0
+    with factory() as session:
+        task = session.get(ParseTask, task_id)
+        assert task.attempts == 1 and task.error_code == 'WORKER_LOST'
+        assert task.finished_at and task.lease_token is None
+        assert len(session.scalars(select(OutboxEvent).where(
+            OutboxEvent.event_type == 'pdf.parse.failed')).all()) == 1
 
 
 def seed(factory, settings, *, max_retries=3, status="pending"):

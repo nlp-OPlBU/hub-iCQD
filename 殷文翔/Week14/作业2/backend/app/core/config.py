@@ -1,5 +1,6 @@
 """One configuration source for API, migrations and future workers."""
 from functools import lru_cache
+import os
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -40,6 +41,8 @@ class Settings(BaseSettings):
     kafka_failed_topic: str = "multimodal-rag.pdf.failed"
     kafka_consumer_group: str = "multimodal-rag-pdf-workers"
     kafka_max_poll_interval_ms: PositiveInt = 3600000
+    kafka_session_timeout_ms: PositiveInt = 10000
+    kafka_heartbeat_interval_ms: PositiveInt = 3000
     kafka_publish_timeout_seconds: PositiveInt = 10
     kafka_consumer_poll_seconds: PositiveInt = 1
     redis_host: str = "localhost"
@@ -60,6 +63,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "http://127.0.0.1:8100/v1"
     llm_api_key: SecretStr = SecretStr("EMPTY")
     llm_model: str = "rag-vlm"
+    llm_model_path: Path = Path("models/Qwen3.5-4B")
+    llm_gpu_memory_utilization: float = Field(default=0.32, gt=0, le=1)
+    llm_max_num_seqs: PositiveInt = 2
     llm_vision_enabled: bool = False
     llm_timeout_seconds: PositiveInt = 120
     mineru_command: str = "mineru-kit"
@@ -69,6 +75,12 @@ class Settings(BaseSettings):
     mineru_tier: str = "advanced"
     mineru_timeout_seconds: PositiveInt = 1800
     mineru_max_concurrency: PositiveInt = 1
+    mineru_device_mode: Literal['cpu', 'cuda'] | None = None
+    mineru_offline: bool = False
+    mineru_cpu_threads: PositiveInt = 2
+    mineru_vlm_gpu_memory_utilization: float = Field(default=0.18, gt=0, le=1)
+    mineru_vlm_max_model_len: PositiveInt = 8192
+    mineru_vlm_max_num_seqs: PositiveInt = 2
 
     retrieval_mode: Literal["bm25", "hybrid"] = "bm25"
     embedding_base_url: str = "http://127.0.0.1:8102/v1"
@@ -117,12 +129,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_and_resolve(self):
-        for name in ("data_dir", "log_dir", "mineru_working_dir", "mineru_home", "mineru_config", "es_ca_certs"):
+        for name in ("data_dir", "log_dir", "mineru_working_dir", "mineru_home", "mineru_config", "es_ca_certs", "llm_model_path"):
             value = getattr(self, name)
             if value is not None:
                 setattr(self, name, (PROJECT_ROOT / value).resolve() if not value.is_absolute() else value.resolve())
         if self.task_heartbeat_seconds * 2 >= self.task_lease_seconds:
             raise ValueError("TASK_LEASE_SECONDS must exceed twice TASK_HEARTBEAT_SECONDS")
+        if self.kafka_heartbeat_interval_ms * 2 >= self.kafka_session_timeout_ms:
+            raise ValueError("KAFKA_SESSION_TIMEOUT_MS must exceed twice KAFKA_HEARTBEAT_INTERVAL_MS")
         if self.upload_max_file_bytes > self.upload_max_request_bytes:
             raise ValueError("UPLOAD_MAX_FILE_BYTES exceeds UPLOAD_MAX_REQUEST_BYTES")
         if self.zip_max_entry_bytes > self.zip_max_uncompressed_bytes:
@@ -150,4 +164,9 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    selected = Path(os.environ.get('RAG_ENV_FILE', PROJECT_ROOT / '.env'))
+    if not selected.is_absolute():
+        selected = PROJECT_ROOT / selected
+    if 'RAG_ENV_FILE' in os.environ and not selected.is_file():
+        raise ValueError('RAG_ENV_FILE does not exist')
+    return Settings(_env_file=selected)

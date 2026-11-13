@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
-# Create project topics only. Never deletes or alters unrelated shared topics.
+# Only creates configured project topics; uses the same settings as API/Worker.
 set -euo pipefail
-
-BOOTSTRAP="${KAFKA_BOOTSTRAP_SERVERS:-localhost:9092}"
-PARSE_TOPIC="${KAFKA_PDF_TOPIC:-multimodal-rag.pdf.parse}"
-FAILED_TOPIC="${KAFKA_FAILED_TOPIC:-multimodal-rag.pdf.failed}"
-PARTITIONS="${KAFKA_TOPIC_PARTITIONS:-3}"
-REPLICATION="${KAFKA_TOPIC_REPLICATION_FACTOR:-1}"
-KAFKA_TOPICS_BIN="${KAFKA_TOPICS_BIN:-kafka-topics.sh}"
-
-for topic in "$PARSE_TOPIC" "$FAILED_TOPIC"; do
-  "$KAFKA_TOPICS_BIN" --bootstrap-server "$BOOTSTRAP" --create --if-not-exists \
-    --topic "$topic" --partitions "$PARTITIONS" \
-    --replication-factor "$REPLICATION"
-done
-
-"$KAFKA_TOPICS_BIN" --bootstrap-server "$BOOTSTRAP" --describe \
-  --topic "$PARSE_TOPIC" --topic "$FAILED_TOPIC"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+exec "${PYTHON:-/usr/local/miniconda3/envs/py312/bin/python}" "$PROJECT_ROOT/scripts/init_topics.py" "$@"

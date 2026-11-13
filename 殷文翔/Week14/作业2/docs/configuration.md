@@ -4,7 +4,7 @@
 
 ## 加载规则
 
-配置优先级为显式 Settings 参数 > 进程环境变量 > **项目根目录 .env** > 代码默认值。应用不自动加载 `.env.example`，它只供复制/审阅；不从当前工作目录猜测 `.env`。get_settings 缓存一个进程的配置，修改后重启项目进程。
+配置优先级为显式 Settings 参数 > 进程环境变量 > **项目根目录 .env** > 代码默认值。运行入口可通过 `RAG_ENV_FILE=runtime/deployment/project.env` 选择单独的部署文件（替代默认 .env，不合并；指定文件不存在立即报错），相对文件名基于项目根目录。应用不自动加载 `.env.example`，它只供复制/审阅；不从当前工作目录猜测 `.env`。get_settings 缓存一个进程的配置，修改后重启项目进程。
 
 DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERTS 等相对路径均基于项目根目录。创建 Settings 不创建目录、不访问网络，也不操作环境文档中的 `/workspace` 路径；Linux 服务器的路径配置不应直接照搬为 Windows 运行路径。MINERU_COMMAND 可以是 PATH 中的可执行命令或部署环境绝对路径，subprocess 调用不经 shell。
 
@@ -26,10 +26,14 @@ DATA_DIR、LOG_DIR、MinerU 工作目录/配置/模型配置目录及 ES_CA_CERT
 | TASK_LEASE_SECONDS / HEARTBEAT_SECONDS | 120 / 30 秒；租约必须大于两倍心跳 |
 | OUTBOX_MAX_RETRIES / LEASE_SECONDS | 10 / 60 秒；投递器租约与解析租约独立 |
 | OUTBOX_POLL_SECONDS / BATCH_SIZE | 1 秒 / 20 条；投递器和崩溃恢复轮询节奏 |
-| KAFKA_PUBLISH_TIMEOUT_SECONDS | 10 秒；等待 broker 发送确认的上限 |
+| KAFKA_PUBLISH_TIMEOUT_SECONDS | 10 秒；分别限制 bootstrap、等待入队、请求和 broker 确认；整个 publish 可能包含连续阶段，不是全调用总时限 |
+| KAFKA_SESSION_TIMEOUT_MS / HEARTBEAT_INTERVAL_MS | 10000 / 3000；session 必须超过两倍 heartbeat，须在 broker 允许范围内；独立于 MySQL 任务租约 |
 | KAFKA_CONSUMER_POLL_SECONDS | 1 秒；Worker 单次 poll 等待 |
 | KAFKA_MAX_POLL_INTERVAL_MS | 3600000；需结合处理隔离方案服务器验证 |
 | MINERU_TIMEOUT_SECONDS / MAX_CONCURRENCY | 1800 秒 / 1 |
+| MINERU_DEVICE_MODE / OFFLINE / CPU_THREADS | 可选 cpu/cuda（未设时沿用 MinerU 自动选择）/ false / 2；Worker 向 CLI 传设备、离线和 CPU 线程环境 |
+| MINERU_VLM_GPU_MEMORY_UTILIZATION / MAX_MODEL_LEN / MAX_NUM_SEQS | 0.18 / 8192 / 2；专用 VLM 启动入口使用，端口与模型名来自 MINERU_CONFIG 的 model.vlm |
+| LLM_MODEL_PATH / GPU_MEMORY_UTILIZATION / MAX_NUM_SEQS | models/Qwen3.5-4B / 0.32 / 2；项目本地 VLM 启动入口使用，端口取 LLM_BASE_URL |
 | IMAGE_MAX_UPLOAD_FILES / MAX_FILE_BYTES | 4 张 / 每张 10 MiB |
 | IMAGE_MAX_PIXELS / MAX_EDGE | 原图 20000000 像素 / 模型输入最大边 2048 |
 | IMAGE_MAX_CONTEXT_COUNT / MAX_CONTEXT_BYTES | 用户和检索图合计 8 张 / 模型输入图合计 20 MiB |
@@ -61,6 +65,8 @@ BM25 为默认模式，重排和视觉能力默认关闭。hybrid 需要独立 e
 ## MinerU 与 BM25 实现补充（2026-11-13）
 
 CLI 的实际 cwd 是每次租约独立目录，`MINERU_WORKING_DIR` 仅保留兼容旧配置；模型和配置仍使用绝对路径。Linux 本机各 Worker 共享 DATA_DIR 下的 flock 槽位限制并发，Windows Worker 未验证且暂不支持。默认超时 1800 秒同时作为等待名额上限；取得名额后解析再计时。ZIP 限制和产物支持格式见 [MinerU 接入](../infra/mineru/README.md)。
+
+Linux CLI 由独立进程组的 guardian 启动，设置 parent-death signal；Worker 被 SIGKILL 后 guardian 会终止组内 MinerU 及子进程，避免恢复 Worker 与孤立解析进程同时占资源。普通解析超时也会杀掉该进程组。该机制已有真实进程树测试；MySQL 状态恢复仍靠持久租约与 outbox，不依赖操作系统进程存在。脱离原进程组自行 daemonize 的第三方子进程不在本机制保证范围内。
 
 `ES_TIMEOUT_SECONDS=30` 控制单次 ES HTTP 超时，`ES_BULK_BATCH_SIZE=200` 控制每批分块数。默认 standard 分词与 ES 默认 BM25；未验证 IK 时不启用 IK。分块不跨页、不跨来源块，最多 1200 字符，ID 为 `文档ID:版本:页码:块序号:字符偏移`。保存直接关联的 image_keys 和同页关联的 page_image_keys，二者不等同于图像内容本身。查询只接受数据库确认的当前已完成版本，并与用户文档范围相交。`retrieval.retrieve` 是服务入口，已接入 `/api/search` 和问答接口；HTTP 层严格检查显式范围，不静默移除不可用项，并限定任务 index_name 与当前 ES_INDEX 一致。
 

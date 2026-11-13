@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import create_engine, event, select
+from sqlalchemy import create_engine, event, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
@@ -28,22 +28,42 @@ class FakePublisher:
         self.closed = True
 
 
-@pytest.fixture
-def outbox_env(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'outbox.db'}",
-                           connect_args={"check_same_thread": False})
+@pytest.fixture(params=['sqlite', 'mysql'])
+def outbox_env(request, tmp_path):
+    root_engine = None
+    if request.param == 'mysql':
+        from alembic import command
+        from alembic.config import Config
+        from app.core.config import PROJECT_ROOT
+        from app.db.session import create_db_engine
+        root_engine, mysql = request.getfixturevalue('isolated_mysql')
+        database = 'rag_outbox_' + new_id().replace('-', '')
+        with root_engine.begin() as connection:
+            connection.execute(text(f'CREATE DATABASE `{database}` CHARACTER SET utf8mb4'))
+        engine = create_db_engine(mysql.model_copy(update={'mysql_database': database}))
+        config = Config(str(PROJECT_ROOT / 'backend/alembic.ini'))
+        with engine.connect() as connection:
+            config.attributes['connection'] = connection
+            command.upgrade(config, 'head')
+            connection.commit()
+    else:
+        engine = create_engine(f"sqlite:///{tmp_path / 'outbox.db'}",
+                               connect_args={"check_same_thread": False})
 
-    @event.listens_for(engine, "connect")
-    def enable_fks(connection, _):
-        connection.execute("PRAGMA foreign_keys=ON")
+        @event.listens_for(engine, "connect")
+        def enable_fks(connection, _):
+            connection.execute("PRAGMA foreign_keys=ON")
 
-    Base.metadata.create_all(engine)
+        Base.metadata.create_all(engine)
     settings = Settings(_env_file=None, data_dir=tmp_path / "data",
                         outbox_max_retries=2, task_max_retries=3,
                         outbox_poll_seconds=1, task_retry_base_seconds=5)
     factory = sessionmaker(bind=engine, expire_on_commit=False)
     yield engine, factory, settings
     engine.dispose()
+    if root_engine is not None:
+        with root_engine.begin() as connection:
+            connection.execute(text(f'DROP DATABASE `{database}`'))
 
 
 def seed(factory, settings, *, status="pending"):
@@ -141,3 +161,22 @@ def test_expired_publishing_lease_is_reclaimed_after_dispatcher_crash(outbox_env
     assert stats["published"] == 1
     assert len(publisher.calls) == 1
     assert read_event(factory).status == "published"
+
+
+def test_publish_acknowledged_but_mark_lost_is_redelivered(outbox_env, monkeypatch):
+    from app.workers import outbox_dispatcher
+    _, factory, settings = outbox_env
+    seed(factory, settings)
+    publisher = FakePublisher()
+    dispatcher = OutboxDispatcher(settings, factory, publisher, owner='before-crash')
+    original = outbox_dispatcher.mark_published
+    def lost_ack(*args, **kwargs):
+        raise RuntimeError('Lost DB acknowledgement after broker confirmation')
+    monkeypatch.setattr(outbox_dispatcher, 'mark_published', lost_ack)
+    now = utcnow()
+    with pytest.raises(RuntimeError, match='Lost DB'):
+        dispatcher.run_once(now=now)
+    assert read_event(factory).status == 'publishing'
+    monkeypatch.setattr(outbox_dispatcher, 'mark_published', original)
+    assert dispatcher.run_once(now=now + timedelta(seconds=settings.outbox_lease_seconds + 1))['published'] == 1
+    assert len(publisher.calls) == 2 and publisher.calls[0] == publisher.calls[1]
