@@ -1,0 +1,21 @@
+{
+  "mappings": {
+    "properties": {
+      "chunk_id": {"type": "keyword"},
+      "document_id": {"type": "keyword"},
+      "version": {"type": "integer"},
+      "filename": {"type": "keyword"},
+      "page": {"type": "integer"},
+      "chunk_index": {"type": "integer"},
+      "block_index": {"type": "integer"},
+      "char_offset": {"type": "integer"},
+      "char_end": {"type": "integer"},
+      "evidence_type": {"type": "keyword"},
+      "text_origin": {"type": "keyword"},
+      "bbox": {"type": "float", "index": false},
+      "image_keys": {"type": "keyword"},
+      "page_image_keys": {"type": "keyword"},
+      "text": {"type": "text", "analyzer": "standard"}
+    }
+  }
+}

@@ -1,0 +1,19 @@
+# Review/replace placeholders. Do not copy into systemd or enable without deployment authorization.
+[Unit]
+Description=Project PDF RAG API, dispatcher, Worker and private Nginx
+After=network.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+WorkingDirectory=__PROJECT_ROOT__
+Environment="RAG_ENV_FILE=runtime/deployment/project.env"
+ExecStart=__PYTHON__ "__PROJECT_ROOT__/scripts/run_project.py" --nginx-config "__PROJECT_ROOT__/runtime/deployment/nginx/nginx.conf"
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=90
+KillMode=control-group
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
