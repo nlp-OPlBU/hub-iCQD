@@ -1,5 +1,9 @@
 # 多模态 RAG 项目目录说明
 
+> 2026-11-13 图文重排更新：8103 Reranker 已部署，已接入混合候选评分与 RAG，真实图文问答及显式降级已验证。此前“重排未接入/待部署”描述由[图文重排说明](docs/reranking.md)覆盖；并发与开机托管仍未验收。
+
+> 2026-11-13 向量检索更新：本机 8102 Embedding 已部署，真实文本/图片 2048 维、历史回填及 BM25+向量 RRF 混合召回已验证；本页较早的“Embedding 待部署/仅支持 BM25”记录由[向量检索与回填说明](docs/vector-retrieval.md)覆盖。Reranker 仍未接入。
+
 ## 当前阶段
 
 已实现批量 PDF 上传、MySQL/outbox、Kafka 投递与可恢复 Worker、MinerU CLI/安全产物处理、ES BM25、图文问答和 Vue 两个核心页面。2026-11-13 已完成真实 Kafka 完整链路、重复消费/outbox 补偿/Worker 强杀恢复/超时/索引失败/旧版本隔离/真实图片异常矩阵，以及真实 Nginx 浏览器批量上传和图文问答验收。项目独立部署运行于本机 API 8001、Nginx 18080、专属 MySQL 13306、Qwen 8100、MinerU VLM 8104，复用 Kafka 9092 与 ES 9200 的项目专属 Topic/索引；advanced 六页样例约 62 秒完成并可检索。未更改原 .env、共享服务配置或加载共享 Nginx；尚未配置非 root 账号、开机托管、鉴权和公网 TLS。当前地址、复现步骤、证据与限制见 [服务器部署验收](docs/server-acceptance.md) 和 [验证记录](docs/verification.md)。
@@ -7,6 +11,10 @@
 优先阅读 [API 契约](docs/api.md)（文档/任务/版本、逐文件上传结果、重试、图片和问答）、[数据库与迁移](docs/database.md) 和 [基础工程启动](docs/deployment.md)。
 
 已补充 [全本地模型部署指南](docs/models.md)：服务器已确认单卡 RTX 4090 49140MiB、CPU 20 核、90GiB 内存；Qwen3.5-4B（8100）与 MinerU 专用 VLM（8104）已在项目独立部署中运行，文本/图像问答及 advanced 解析通过；Embedding、Reranker、四模型共卡与开机托管仍待落实。
+
+## 图文分块与来源查看
+
+已补齐正文/表格/图片独立证据、表格内嵌图片校验、页码/块位置/字符范围和检索回答共用来源。文档列表及回答引用可打开原始 PDF 与解析证据并列查看页，按引用版本和页码定位并高亮证据文本。新规则用于后续解析；旧数据和会话不自动改写。接口、兼容与部署限制见 [图文分块与来源查看](docs/evidence.md)，本轮检查见 [验证记录](docs/verification.md)。
 
 ## 环境适配后的技术规划
 
@@ -33,6 +41,8 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 作业2/
 ├── AGENTS.md  # 后续开发与验证约定
 ├── REMADE.md  # 目录说明（本文件）
+├── start.sh  # Linux 一键启动缺失模块；已启动跳过，--check 只读
+├── stop.sh  # 安全停止项目应用和私有 MySQL，保留全部模型；--check 预览
 ├── .env.example  # 脱敏的服务器环境配置示例
 ├── .gitignore  # 忽略密钥、运行数据与构建产物
 ├── backend/  # FastAPI、独立 Worker 与测试
@@ -210,6 +220,10 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 
 ## 开发入口与约定
 
+当前 Linux 部署支持在项目根目录执行 `bash start.sh`：检查并后台启动缺失的项目模块，已启动则提示跳过；`bash start.sh --check` 只读检查。配置、日志、共享依赖边界及参数见 [一键启动说明](docs/deployment.md#一键启动当前部署linux)。此入口复用既有部署，不初始化数据库、不启动共享 Kafka/ES、不接入尚未实现的向量/重排。
+
+配套 `bash stop.sh` 按顺序优雅停止项目独立 Nginx、API、投递器、Worker 和私有 MySQL，保留 vLLM/MinerU 等全部模型服务和共享基础设施；`bash stop.sh --check` 预览目标。超时不强杀，保留后续模块及数据库。参数和支持边界见 [安全停止说明](docs/deployment.md#安全停止项目linux保留模型)。
+
 - [AGENTS.md](AGENTS.md)：模块边界、任务一致性、模型与文件处理、配置及验收要求。
 - [.env.example](.env.example)：不含真实密钥的配置结构示例；已提供地址和规划默认值都需要服务器核验。
 - [docs/architecture.md](docs/architecture.md)：组件关系和异步任务链路。
@@ -218,6 +232,7 @@ Temporal 和 Neo4j 虽在环境材料中列出，但暂不纳入当前功能链�
 - [docs/api.md](docs/api.md)：已实现的健康/上传/查询接口，以及后续业务接口的统一契约。
 - [docs/database.md](docs/database.md)：6 张业务表、迁移原理、升级和回滚方法。
 - [docs/configuration.md](docs/configuration.md)：配置加载、限制、日志与路径约定。
+- [docs/logging.md](docs/logging.md)：当前日志文件位置、实时查看、任务排错及日志保留限制。
 - [docs/verification.md](docs/verification.md)：实际检查结果与未验证项。
 
 后端 outbox/Kafka/Worker 与人工重试已有测试；basic MinerU/ES 与 MySQL Worker 已联调，检索、受控图片和问答已完成真实本地模型应用验收。文档管理与问答 UI 已通过接口模拟浏览器验收；Kafka、advanced 和本机独立部署已通过；向量/重排、共享站点和开机托管仍待完成。不把模拟测试当服务器联调通过。服务器材料中的原始密码没有复制进本项目。
