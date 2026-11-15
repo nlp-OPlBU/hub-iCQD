@@ -1,0 +1,53 @@
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.*
+!.env.example
+
+# ========================
+# Runtime Data & Databases
+# ========================
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite*
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+/dist/
+*.egg-info/
+.pytest_cache/
+.test-artifacts/
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+.cache/
+
+# ========================
+# Web (Node / pnpm / Vite)
+# ========================
+node_modules/
+.pnpm-store/
+web/dist/
+*.tsbuildinfo
+coverage/
+*.log
+
+# ========================
+# IDE & OS
+# ========================
+.idea/
+.vscode/
+.DS_Store
+._*

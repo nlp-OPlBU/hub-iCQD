@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multimodal-rag-api"
+version = "0.1.0"
+description = "API backend for a multimodal RAG knowledge base"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "python-multipart>=0.0.9", "pydantic-settings>=2.4", "httpx[socks]>=0.27"]
+
+[project.optional-dependencies]
+services = ["aiokafka>=0.11", "elasticsearch>=8.15", "sentence-transformers>=3.0"]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
