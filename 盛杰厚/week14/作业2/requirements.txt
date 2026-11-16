@@ -1,0 +1,33 @@
+# 多模态 RAG 问答（Kafka + MinerU）—— 依赖
+# 装法： conda activate py312 && pip install -r requirements.txt
+
+# ── 消息队列（本作业的主线）──
+kafka-python>=2.0.2          # KafkaProducer / KafkaConsumer / KafkaAdminClient
+
+# ── Web 后端 ──
+fastapi>=0.110
+uvicorn>=0.27
+python-multipart>=0.0.9      # FastAPI 解析 Form / File（多文件上传、带图提问都靠它）
+requests>=2.31
+
+# ── 向量检索 ──
+numpy
+faiss-cpu>=1.8               # 向量索引（IndexIDMap2 + IndexFlatIP = 归一化后的余弦）
+
+# ── Embedding ──
+# 默认用百炼 text-embedding-v4（走上面的 openai 客户端，不需要额外依赖）。
+# 只有切到 EMBED_BACKEND=local（本地 bge-small-zh-v1.5）才需要下面这两行：
+# sentence-transformers>=3.0   # 会自动带上 torch；模型可走本地 HF/ModelScope 缓存，完全离线
+# torch>=2.1
+
+# ── 内置兜底 PDF 解析器（没有 MinerU 时用这套）──
+pdfplumber>=0.11             # 文本行 / 表格 / 图片框坐标
+pypdfium2>=4                 # 按图片框渲染成 PNG（矢量图也能拿到）
+pillow>=10                   # 图片裁切、格式与尺寸修正（百炼要求边长 > 28px）
+
+# ── 大模型：阿里百炼（DashScope）OpenAI 兼容模式 ──
+openai>=1.40                 # 只用作 HTTP 客户端，模型服务是百炼
+
+# ── 仅生成示例 PDF / 跑冒烟测试用 ──
+reportlab>=4
+matplotlib>=3.7
