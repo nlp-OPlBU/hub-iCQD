@@ -1,0 +1,4 @@
+-- 数据库和账号由管理员按 docs/database.md 与 MYSQL_* 配置创建。
+-- 本文件不含管理员凭据，不硬编码或重复维护业务表结构。
+-- 业务表唯一迁移入口：在 backend 目录运行 python -m alembic upgrade head。
+-- 可审阅 SQL：python -m alembic upgrade head --sql。
