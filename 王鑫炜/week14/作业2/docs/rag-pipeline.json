@@ -1,0 +1,177 @@
+{
+  "captured_at": "2026-11-12T21:30:05.516884+08:00",
+  "documents": [
+    {
+      "id": "4c156b4686b746aca610e7b920c28db4",
+      "name": "Redis与Kafka实践笔记.pdf",
+      "sha256": "75e0a2b772434cf9e9662a21ec665a2ba9745d20f1523cc81afd8d761e38ead0",
+      "size": 72980,
+      "pages": 1,
+      "status": "completed",
+      "attempt": 1,
+      "created_at": "2026-11-12T13:10:54.743570+00:00",
+      "updated_at": "2026-11-12T13:26:28.088709+00:00",
+      "error": null,
+      "parser": "MinerU 2.5.4 / pipeline",
+      "chunk_count": 12,
+      "image_count": 0
+    },
+    {
+      "id": "5c07301e266e49dca4a366974891f3b0",
+      "name": "多模态RAG架构说明.pdf",
+      "sha256": "98ac4d9144902f5daf2a069f87117a76ac20cf0b749ff20ea531b42d9e4cba8e",
+      "size": 92293,
+      "pages": 1,
+      "status": "completed",
+      "attempt": 2,
+      "created_at": "2026-11-12T13:10:54.743042+00:00",
+      "updated_at": "2026-11-12T13:26:52.126750+00:00",
+      "error": null,
+      "parser": "MinerU 2.5.4 / pipeline",
+      "chunk_count": 11,
+      "image_count": 1
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "queued",
+      "detail": "attempt=1",
+      "created_at": "2026-11-12T13:10:54.743237+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 2,
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "event": "queued",
+      "detail": "attempt=1",
+      "created_at": "2026-11-12T13:10:54.743738+00:00",
+      "name": "Redis与Kafka实践笔记.pdf"
+    },
+    {
+      "id": 3,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "kafka_published",
+      "detail": "5c07301e266e49dca4a366974891f3b0:1",
+      "created_at": "2026-11-12T13:14:29.281901+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 4,
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "event": "kafka_published",
+      "detail": "4c156b4686b746aca610e7b920c28db4:1",
+      "created_at": "2026-11-12T13:14:29.287441+00:00",
+      "name": "Redis与Kafka实践笔记.pdf"
+    },
+    {
+      "id": 5,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "processing",
+      "detail": "worker started attempt=1",
+      "created_at": "2026-11-12T13:14:59.307973+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 6,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "failed",
+      "detail": "MinerU 未生成 content_list.json，不能标记解析完成",
+      "created_at": "2026-11-12T13:25:10.049527+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 7,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "offset_committed",
+      "detail": "wxw14.pdf.parse:0:0",
+      "created_at": "2026-11-12T13:25:10.062254+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 8,
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "event": "processing",
+      "detail": "worker started attempt=1",
+      "created_at": "2026-11-12T13:25:10.066395+00:00",
+      "name": "Redis与Kafka实践笔记.pdf"
+    },
+    {
+      "id": 9,
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "event": "completed",
+      "detail": "MinerU 2.5.4 / pipeline; chunks=12; images=0",
+      "created_at": "2026-11-12T13:26:28.088736+00:00",
+      "name": "Redis与Kafka实践笔记.pdf"
+    },
+    {
+      "id": 10,
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "event": "offset_committed",
+      "detail": "wxw14.pdf.parse:0:1",
+      "created_at": "2026-11-12T13:26:28.100468+00:00",
+      "name": "Redis与Kafka实践笔记.pdf"
+    },
+    {
+      "id": 13,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "queued",
+      "detail": "attempt=2",
+      "created_at": "2026-11-12T13:26:40.115642+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 14,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "kafka_published",
+      "detail": "5c07301e266e49dca4a366974891f3b0:2",
+      "created_at": "2026-11-12T13:26:40.644814+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 15,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "processing",
+      "detail": "worker started attempt=2",
+      "created_at": "2026-11-12T13:26:40.649716+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 16,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "completed",
+      "detail": "MinerU 2.5.4 / pipeline; chunks=11; images=1",
+      "created_at": "2026-11-12T13:26:52.126772+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    },
+    {
+      "id": 17,
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "event": "offset_committed",
+      "detail": "wxw14.pdf.parse:0:4",
+      "created_at": "2026-11-12T13:26:52.137591+00:00",
+      "name": "多模态RAG架构说明.pdf"
+    }
+  ],
+  "outbox": [
+    {
+      "event_id": "5c07301e266e49dca4a366974891f3b0:1",
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "sent_at": "2026-11-12T13:14:29.281858+00:00",
+      "last_error": null
+    },
+    {
+      "event_id": "4c156b4686b746aca610e7b920c28db4:1",
+      "doc_id": "4c156b4686b746aca610e7b920c28db4",
+      "sent_at": "2026-11-12T13:14:29.287366+00:00",
+      "last_error": null
+    },
+    {
+      "event_id": "5c07301e266e49dca4a366974891f3b0:2",
+      "doc_id": "5c07301e266e49dca4a366974891f3b0",
+      "sent_at": "2026-11-12T13:26:40.644776+00:00",
+      "last_error": null
+    }
+  ]
+}

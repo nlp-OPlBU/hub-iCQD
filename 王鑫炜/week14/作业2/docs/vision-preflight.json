@@ -1,0 +1,16 @@
+{
+  "test": "real_deepseek_image_input",
+  "answer": "三个组件是：Web upload、Kafka queue、MinerU worker。Kafka queue（消息队列）让上传请求不必等待解析，它作为异步缓冲，使Web端提交后立即返回，解析任务由后台Worker处理。",
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 280,
+    "completion_tokens": 50,
+    "total_tokens": 330,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 280
+  },
+  "image_input_count": 1
+}

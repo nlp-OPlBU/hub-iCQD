@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-11-12T21:45:48.352972+08:00",
+  "final_directory": "/Users/wxw/Desktop/hub-iCQD/王鑫炜/week14/作业2",
+  "assignment1_directory": "/Users/wxw/Desktop/hub-iCQD/王鑫炜/week14/作业1",
+  "startup_script": "scripts/start.sh",
+  "health": {
+    "redis": true,
+    "kafka": true,
+    "worker": true,
+    "worker_last_seen": "2026-11-12T13:45:47.888401+00:00",
+    "llm": true,
+    "model": "deepseek-flash",
+    "parser": "MinerU",
+    "topic": "wxw14.pdf.parse"
+  },
+  "completed_documents": 2,
+  "chunks": 23,
+  "document_images": 1,
+  "redis_restored_messages": 4,
+  "assignment1_screenshots": 2,
+  "assignment2_screenshots": 10,
+  "broken_markdown_links": [],
+  "secret_leaks_in_git_visible_files": [],
+  "after_split_tests": "19 passed",
+  "services_stopped_after_verification": true,
+  "data_volumes_preserved": true
+}

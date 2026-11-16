@@ -1,0 +1,9 @@
+Redis PING: True
+Key: wxw14:demo:chat:coursework14 LLEN: 6 TTL: 604800
+LRANGE history:
+{"role": "user", "content": "Redis 如何保存历史对话？", "run_id": "ab8a60c5"}
+{"role": "assistant", "content": "通过 List 追加并读取消息，设置 TTL 和长度上限。"}
+{"role": "user", "content": "Redis 如何保存历史对话？", "run_id": "599b990a"}
+{"role": "assistant", "content": "通过 List 追加并读取消息，设置 TTL 和长度上限。"}
+{"role": "user", "content": "Redis 如何保存历史对话？", "run_id": "bf50bdcf"}
+{"role": "assistant", "content": "通过 List 追加并读取消息，设置 TTL 和长度上限。"}

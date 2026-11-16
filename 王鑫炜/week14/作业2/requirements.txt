@@ -1,0 +1,12 @@
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+python-multipart>=0.0.20,<1
+redis>=5,<8
+confluent-kafka>=2.8,<3
+httpx>=0.27,<1
+python-dotenv>=1,<2
+pymupdf>=1.24,<2
+pillow>=10,<13
+rank-bm25==0.2.2
+mineru[core]==2.5.4
+pytest>=8,<10

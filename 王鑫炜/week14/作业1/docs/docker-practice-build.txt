@@ -1,0 +1,88 @@
+#0 building with "orbstack" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.practice
+#1 transferring dockerfile: 287B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/python:3.12-slim
+#2 DONE 11.4s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 101B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 3.35kB done
+#4 DONE 0.0s
+
+#5 [1/4] FROM docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b
+#5 resolve docker.io/library/python:3.12-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b 0.0s done
+#5 sha256:3617028275c0b0ffabe98f1d7eaa6b85624af2f457678f185c307ff3c1d31ae6 5.68kB / 5.68kB done
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 0B / 30.21MB 0.1s
+#5 sha256:0373269344dc260a94623aecbafee3cf336984ad3bbe8a49ac047d85aa69be9b 0B / 1.27MB 0.1s
+#5 sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b 10.37kB / 10.37kB done
+#5 sha256:c61cffc3bacb94ed026ff8b45d5114b7693dd0420baca0a1ace0e3d0ce9035fd 1.75kB / 1.75kB done
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 2.10MB / 30.21MB 4.2s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 7.34MB / 30.21MB 4.8s
+#5 sha256:0373269344dc260a94623aecbafee3cf336984ad3bbe8a49ac047d85aa69be9b 0B / 1.27MB 5.2s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 9.44MB / 30.21MB 6.1s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 11.53MB / 30.21MB 6.2s
+#5 sha256:0373269344dc260a94623aecbafee3cf336984ad3bbe8a49ac047d85aa69be9b 1.05MB / 1.27MB 6.2s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 13.63MB / 30.21MB 6.4s
+#5 sha256:0373269344dc260a94623aecbafee3cf336984ad3bbe8a49ac047d85aa69be9b 1.27MB / 1.27MB 6.3s done
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 0B / 12.06MB 6.4s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 15.73MB / 30.21MB 6.8s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 18.87MB / 30.21MB 8.0s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 20.97MB / 30.21MB 8.3s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 1.05MB / 12.06MB 8.7s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 23.07MB / 30.21MB 9.1s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 25.17MB / 30.21MB 9.3s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 2.10MB / 12.06MB 9.3s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 5.24MB / 12.06MB 9.9s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 27.26MB / 30.21MB 10.1s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 29.36MB / 30.21MB 10.6s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 6.29MB / 12.06MB 10.8s
+#5 sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 30.21MB / 30.21MB 10.9s done
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 7.34MB / 12.06MB 11.0s
+#5 extracting sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 0.1s
+#5 sha256:70b4f81c82dc6ea2a5fc08c59c75940cc3f45dad8e2038b7773cd1b6ac24c7a0 0B / 249B 11.0s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 9.44MB / 12.06MB 11.5s
+#5 extracting sha256:acd43e9bebc37bc4ba7a5f47bd7598913337803e53d468f37d940f11f5d5f1ef 0.5s done
+#5 sha256:70b4f81c82dc6ea2a5fc08c59c75940cc3f45dad8e2038b7773cd1b6ac24c7a0 249B / 249B 11.4s done
+#5 extracting sha256:0373269344dc260a94623aecbafee3cf336984ad3bbe8a49ac047d85aa69be9b 0.0s done
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 10.49MB / 12.06MB 11.8s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 11.53MB / 12.06MB 12.0s
+#5 sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 12.06MB / 12.06MB 12.5s done
+#5 extracting sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 0.1s
+#5 extracting sha256:0ba3a3e89cd986f09d548ebfd13261fd4ad86bb310bb69923010538e0c5ce222 0.2s done
+#5 extracting sha256:70b4f81c82dc6ea2a5fc08c59c75940cc3f45dad8e2038b7773cd1b6ac24c7a0 done
+#5 DONE 12.9s
+
+#6 [2/4] WORKDIR /practice
+#6 DONE 0.3s
+
+#7 [3/4] RUN pip install --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple redis==7.4.1 confluent-kafka==2.16.1 python-dotenv==1.2.4
+#7 0.599 Looking in indexes: https://mirrors.aliyun.com/pypi/simple
+#7 0.712 Collecting redis==7.4.1
+#7 0.766   Downloading https://mirrors.aliyun.com/pypi/packages/4a/2e/2677f3f93dae0497e7e33b6637302e7f3744efc553f34231183e32584885/redis-7.4.1-py3-none-any.whl (410 kB)
+#7 2.910 Collecting confluent-kafka==2.16.1
+#7 3.046   Downloading https://mirrors.aliyun.com/pypi/packages/9a/02/e8379994c83fcd568f3b9815c663120aff8b2f095e2d0317d75d3a372118/confluent_kafka-2.16.1-cp312-cp312-manylinux_2_28_aarch64.whl (5.2 MB)
+#7 19.15      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.2/5.2 MB 320.1 kB/s eta 0:00:00
+#7 19.43 Collecting python-dotenv==1.2.4
+#7 19.46   Downloading https://mirrors.aliyun.com/pypi/packages/60/d1/38f3a3405989a89ac18390803e70c6ad7c7760da4f9b83cbeca0c44a0c72/python_dotenv-1.2.4-py3-none-any.whl (23 kB)
+#7 19.49 Installing collected packages: redis, python-dotenv, confluent-kafka
+#7 19.73 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+#7 19.73 Successfully installed confluent-kafka-2.16.1 python-dotenv-1.2.4 redis-7.4.1
+#7 19.92 
+#7 19.92 [notice] A new release of pip is available: 25.0.1 -> 26.3
+#7 19.92 [notice] To update, run: pip install --upgrade pip
+#7 DONE 20.0s
+
+#8 [4/4] COPY redis_demo.py kafka_demo.py ./
+#8 DONE 0.0s
+
+#9 exporting to image
+#9 exporting layers 0.1s done
+#9 writing image sha256:56b011c8036283559bb849ef3359ee7b5e4820e7f098058fd1d12acbf0ec7ec3 done
+#9 naming to docker.io/library/wxw-week14-practice:local done
+#9 DONE 0.1s

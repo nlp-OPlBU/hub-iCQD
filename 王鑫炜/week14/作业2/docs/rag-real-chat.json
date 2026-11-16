@@ -1,0 +1,244 @@
+[
+  {
+    "storage": "Redis List",
+    "message_count": 4,
+    "ttl_seconds": 604796,
+    "messages": [
+      {
+        "role": "user",
+        "text": "请结合文档架构图，图文混排解释 PDF 上传到完成问答的流程，重点说明 Kafka 和 Redis 的分工。请简洁回答。",
+        "image_url": null,
+        "created_at": "2026-11-12T13:27:13.569965+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "上传阶段：浏览器可一次上传多份 PDF，后端保存原文件，并在 SQLite 同一事务中写入文档元数据和 outbox，接口立即返回 202，不等待 MinerU 完成[来源2]。文档初始状态为 queued[来源6]。\n\n上图展示数据路径：PDF upload → Kafka task → MinerU worker → Text + figures，再进入 Retrieve + vision LLM；Redis 对话历史也汇入该问答环节[来源5]。Kafka 承担异步解析任务：Dispatcher 在 Kafka 确认后将 outbox 标为已发送[来源2]；Worker 领取任务后状态变为 processing，调用 MinerU 存储文本片段和图片后变为 completed，最后提交消费 offset，失败则标为 failed 并允许重试[来源6]。\n\nRedis 的分工是保存对话历史，供检索与视觉大模型问答时使用[来源5]。需注意：Kafka 消费成功后、提交 offset 前崩溃会造成重复投递；本作业用至少一次处理、文档 ID 和 attempt 校验及 Redis 互斥锁，保证同一代任务不重复写入解析结果，但不能称为端到端 exactly-once[来源4]。问答阶段，视觉大模型同时接收用户问题、用户附图、检索片段和文档插图，返回校验后的文字块与图片块，前端按顺序图文混排[来源1]。",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "上传阶段：浏览器可一次上传多份 PDF，后端保存原文件，并在 SQLite 同一事务中写入文档元数据和 outbox，接口立即返回 202，不等待 MinerU 完成[来源2]。文档初始状态为 queued[来源6]。"
+          },
+          {
+            "type": "image",
+            "url": "/assets/parsed/5c07301e266e49dca4a366974891f3b0/figure-10.png",
+            "caption": "多模态RAG架构说明.pdf · 第1页 · 图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。"
+          },
+          {
+            "type": "text",
+            "text": "上图展示数据路径：PDF upload → Kafka task → MinerU worker → Text + figures，再进入 Retrieve + vision LLM；Redis 对话历史也汇入该问答环节[来源5]。Kafka 承担异步解析任务：Dispatcher 在 Kafka 确认后将 outbox 标为已发送[来源2]；Worker 领取任务后状态变为 processing，调用 MinerU 存储文本片段和图片后变为 completed，最后提交消费 offset，失败则标为 failed 并允许重试[来源6]。"
+          },
+          {
+            "type": "text",
+            "text": "Redis 的分工是保存对话历史，供检索与视觉大模型问答时使用[来源5]。需注意：Kafka 消费成功后、提交 offset 前崩溃会造成重复投递；本作业用至少一次处理、文档 ID 和 attempt 校验及 Redis 互斥锁，保证同一代任务不重复写入解析结果，但不能称为端到端 exactly-once[来源4]。问答阶段，视觉大模型同时接收用户问题、用户附图、检索片段和文档插图，返回校验后的文字块与图片块，前端按顺序图文混排[来源1]。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-7",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "检索文档文本和图片说明，关联同页插图。视觉大模型同时接收用户问题、用户附图、检索片段和文档插图；返回经过校验的文字块与图片块，前端按顺序图文混排。回答标注文档名称和页码。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 9.134
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-3",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "浏览器一次可上传多份 PDF。后端先保存原文件，并在 SQLite 的同一事务中写入文档元数据和 outbox。  \n接口返回 202，不等待 MinerU 完成。Dispatcher 在 Kafka 确认后将 outbox 标为已发送。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 5.663
+          },
+          {
+            "id": "4c156b4686b746aca610e7b920c28db4-0",
+            "doc_id": "4c156b4686b746aca610e7b920c28db4",
+            "page": 1,
+            "kind": "text",
+            "text": "Redis 与 Kafka：分工与边界",
+            "image_url": null,
+            "name": "Redis与Kafka实践笔记.pdf",
+            "score": 6.227
+          },
+          {
+            "id": "4c156b4686b746aca610e7b920c28db4-7",
+            "doc_id": "4c156b4686b746aca610e7b920c28db4",
+            "page": 1,
+            "kind": "text",
+            "text": "Kafka 消费成功后到提交 offset 前发生崩溃，会造成重复投递。本作业采用至少一次处理、文档 ID 和 attempt 校验及 Redis 互斥锁，保证同一代任务不会重复写入解析结果。不能把这一机制宣称为端到端 exactly-once。",
+            "image_url": null,
+            "name": "Redis与Kafka实践笔记.pdf",
+            "score": 2.938
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-10",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "image",
+            "text": "图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。",
+            "image_url": "/assets/parsed/5c07301e266e49dca4a366974891f3b0/figure-10.png",
+            "name": "多模态RAG架构说明.pdf",
+            "score": 2.404
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-5",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "文档最初为待解析（queued）。Kafka Worker 领取任务后写为解析中（processing），调用真实 MinerU，存储文本片段和图片后写为解析完成（completed），最后提交消费 offset。失败时显示 failed 并允许重试。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 2.398
+          }
+        ],
+        "created_at": "2026-11-12T13:27:13.569983+00:00",
+        "model": "deepseek-flash",
+        "usage": {
+          "prompt_tokens": 928,
+          "completion_tokens": 328,
+          "total_tokens": 1256,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 928
+        },
+        "image_input_count": 1,
+        "history_messages": 0,
+        "retrieval_query": "请结合文档架构图，图文混排解释 PDF 上传到完成问答的流程，重点说明 Kafka 和 Redis 的分工。请简洁回答。",
+        "rewrite_usage": null,
+        "elapsed_ms": 4603
+      },
+      {
+        "role": "user",
+        "text": "这张图中，哪个组件使浏览器不需要等待解析？请联系刚才的文档说明原因，并用文档插图辅助回答。150字以内。",
+        "image_url": "/assets/questions/585e552ade464c06be585d4814281e44/5e0e516254bf4da786081fac7b0fd012.png",
+        "created_at": "2026-11-12T13:30:01.312256+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "使浏览器不必等待解析的是 Kafka 队列：上传接口保存文件并写入元数据与 outbox 后立即返回 202，不等待 MinerU 完成，Dispatcher 在 Kafka 确认后才把 outbox 标为已发送[来源1]。\n\n图中 PDF upload 后接 Kafka task，再由 MinerU worker 处理；解析被异步转交，故浏览器无需等待[来源1][来源3]。",
+        "blocks": [
+          {
+            "type": "text",
+            "text": "使浏览器不必等待解析的是 Kafka 队列：上传接口保存文件并写入元数据与 outbox 后立即返回 202，不等待 MinerU 完成，Dispatcher 在 Kafka 确认后才把 outbox 标为已发送[来源1]。"
+          },
+          {
+            "type": "image",
+            "url": "/assets/parsed/5c07301e266e49dca4a366974891f3b0/figure-10.png",
+            "caption": "多模态RAG架构说明.pdf · 第1页 · 图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。"
+          },
+          {
+            "type": "text",
+            "text": "图中 PDF upload 后接 Kafka task，再由 MinerU worker 处理；解析被异步转交，故浏览器无需等待[来源1][来源3]。"
+          }
+        ],
+        "sources": [
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-3",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "浏览器一次可上传多份 PDF。后端先保存原文件，并在 SQLite 的同一事务中写入文档元数据和 outbox。  \n接口返回 202，不等待 MinerU 完成。Dispatcher 在 Kafka 确认后将 outbox 标为已发送。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 15.266
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-7",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "检索文档文本和图片说明，关联同页插图。视觉大模型同时接收用户问题、用户附图、检索片段和文档插图；返回经过校验的文字块与图片块，前端按顺序图文混排。回答标注文档名称和页码。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 14.948
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-5",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "文档最初为待解析（queued）。Kafka Worker 领取任务后写为解析中（processing），调用真实 MinerU，存储文本片段和图片后写为解析完成（completed），最后提交消费 offset。失败时显示 failed 并允许重试。",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 6.95
+          },
+          {
+            "id": "4c156b4686b746aca610e7b920c28db4-5",
+            "doc_id": "4c156b4686b746aca610e7b920c28db4",
+            "page": 1,
+            "kind": "text",
+            "text": "Kafka 是持久化事件流平台。Producer 发送文档 ID、事件 ID、重试代次等元数据。PDF 字节保存在共享持久卷，消息只传引用，避免大消息。Worker 的 Consumer 使用同一个 group，按分区顺序处理并手动提交 offset。",
+            "image_url": null,
+            "name": "Redis与Kafka实践笔记.pdf",
+            "score": 3.4
+          },
+          {
+            "id": "4c156b4686b746aca610e7b920c28db4-0",
+            "doc_id": "4c156b4686b746aca610e7b920c28db4",
+            "page": 1,
+            "kind": "text",
+            "text": "Redis 与 Kafka：分工与边界",
+            "image_url": null,
+            "name": "Redis与Kafka实践笔记.pdf",
+            "score": 5.029
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-2",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "text",
+            "text": "一、上传与异步解析 ",
+            "image_url": null,
+            "name": "多模态RAG架构说明.pdf",
+            "score": 4.776
+          },
+          {
+            "id": "5c07301e266e49dca4a366974891f3b0-10",
+            "doc_id": "5c07301e266e49dca4a366974891f3b0",
+            "page": 1,
+            "kind": "image",
+            "text": "图1：Kafka 异步文档解析与 Redis 对话历史的数据路径。",
+            "image_url": "/assets/parsed/5c07301e266e49dca4a366974891f3b0/figure-10.png",
+            "name": "多模态RAG架构说明.pdf",
+            "score": 0.0
+          }
+        ],
+        "created_at": "2026-11-12T13:30:01.312267+00:00",
+        "model": "deepseek-flash",
+        "usage": {
+          "prompt_tokens": 1534,
+          "completion_tokens": 119,
+          "total_tokens": 1653,
+          "prompt_tokens_details": {
+            "cached_tokens": 0
+          },
+          "prompt_cache_hit_tokens": 0,
+          "prompt_cache_miss_tokens": 1534
+        },
+        "image_input_count": 2,
+        "history_messages": 2,
+        "retrieval_query": "这张图中，哪个组件使浏览器不需要等待解析？请联系刚才的文档说明原因，并用文档插图辅助回答。150字以内。\n图中文字：Which component keeps the upload request fast? Web upload -> Kafka queue -> MinerU worker；Question: Why does the browser not wait for parsing? 检索：PDF 上传后浏览器为何不等待解析，哪个组件使上传请求快速返回，Kafka 队列与 MinerU worker 的分工及文档说明。",
+        "rewrite_usage": {
+          "model": "deepseek-flash",
+          "usage": {
+            "prompt_tokens": 653,
+            "completion_tokens": 68,
+            "total_tokens": 721,
+            "prompt_tokens_details": {
+              "cached_tokens": 0
+            },
+            "prompt_cache_hit_tokens": 0,
+            "prompt_cache_miss_tokens": 653
+          },
+          "image_input_count": 1
+        },
+        "elapsed_ms": 7926
+      }
+    ]
+  }
+]
