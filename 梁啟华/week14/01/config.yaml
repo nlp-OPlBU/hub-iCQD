@@ -1,0 +1,28 @@
+# 本地可直接运行的配置（内容与 config.example.yaml 相同，改这里即可）
+redis:
+  host: 127.0.0.1
+  port: 6379
+  db: 0
+  password: ""
+  socket_timeout_seconds: 3
+
+  key_prefix: chat
+  max_messages: 50
+  ttl_seconds: 604800
+
+kafka:
+  bootstrap_servers: 127.0.0.1:9092
+  topic: chat-messages
+  group_id: chat-history-writer
+
+  api_version: "3.8"
+
+  acks: all
+  request_timeout_ms: 5000
+  retries: 3
+
+  auto_offset_reset: earliest
+  enable_auto_commit: true
+  auto_commit_interval_ms: 5000
+  poll_timeout_ms: 1000
+  idle_timeout_seconds: 0

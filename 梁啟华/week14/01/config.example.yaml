@@ -1,0 +1,42 @@
+# =============================================================================
+# 教学示例统一配置文件（示例，可直接复制为 config.yaml 使用）
+#
+# 约定：
+#   1. 代码里不写死任何 host / port / topic / 超时 / 过期时间，全部从这里读取；
+#   2. 需要自定义时执行：copy config.example.yaml config.yaml（Windows）
+#      或 cp config.example.yaml config.yaml（macOS / Linux）；
+#   3. 所有值都可以用环境变量覆盖（见 config_loader.py），方便在容器/CI 中运行。
+# =============================================================================
+
+# ---------------------------- Redis（程序一） --------------------------------
+redis:
+  host: 127.0.0.1          # Redis 地址；连 Docker 容器时通常就是本机
+  port: 6379               # Redis 端口，需与 docker-compose.yml 的端口映射一致
+  db: 0                    # 逻辑库编号 0-15，不同示例用不同 db 可避免 key 互相干扰
+  password: ""             # 没有密码就留空字符串
+  socket_timeout_seconds: 3   # 连接/读写超时，避免 Redis 没启动时一直卡住
+
+  key_prefix: chat         # key 前缀，最终 key 形如 chat:session:demo:messages
+  max_messages: 50         # 每个会话最多保留最近多少条消息（List 会被 LTRIM 截断）
+  ttl_seconds: 604800      # 会话过期时间（秒），604800 = 7 天；每次追加消息都会续期
+
+# ---------------------------- Kafka（程序二） --------------------------------
+kafka:
+  # 逗号分隔的 broker 列表；本机 docker-compose 暴露在 127.0.0.1:9092
+  bootstrap_servers: 127.0.0.1:9092
+  topic: chat-messages          # 对话消息主题（不存在时由 broker 自动创建）
+  group_id: chat-history-writer # 消费组 id：同组内消费者分摊分区，不同组各自独立消费全量
+
+  # broker 主版本.次版本，需与 docker-compose.yml 里的镜像一致（apache/kafka:3.8.0 → "3.8"）
+  # 显式写死可跳过客户端启动时的版本探测；留空则自动探测（个别网络环境会探测超时）
+  api_version: "3.8"
+
+  acks: all                     # 生产者确认级别：all=所有 ISR 副本确认（最安全）
+  request_timeout_ms: 5000      # 生产者发送/等待 broker 响应的超时
+  retries: 3                    # 发送失败后的重试次数
+
+  auto_offset_reset: earliest   # 新消费组没有提交过 offset 时从最早的消息开始读
+  enable_auto_commit: true      # 教学示例使用自动提交 offset；生产环境常改为手动提交
+  auto_commit_interval_ms: 5000 # 自动提交 offset 的间隔
+  poll_timeout_ms: 1000         # 单次 poll 最长阻塞时间（毫秒）
+  idle_timeout_seconds: 0       # 连续多久没有新消息就自动退出；0 表示一直等待（Ctrl+C 退出）

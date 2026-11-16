@@ -1,0 +1,130 @@
+# ============================================
+# 多模态 RAG 问答系统 - 主配置文件
+# ============================================
+
+# -------- 服务配置 --------
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+
+# -------- 存储配置 --------
+storage:
+  # 基础路径（相对于项目根目录）
+  base_dir: "storage"
+  upload_dir: "storage/uploads"          # 上传的 PDF 原始文件
+  parsed_dir: "storage/parsed"          # MinerU 解析输出目录
+  image_dir: "storage/images"            # 问答时用户上传的图片
+  db_path: "storage/app.db"              # SQLite 数据库文件
+
+# -------- Kafka 配置 --------
+kafka:
+  bootstrap_servers:
+    - "localhost:9092"
+  # 文件上传任务 Topic
+  topic_upload: "rag-upload-tasks"
+  # 消费者组
+  consumer_group: "rag-parser-group"
+  # 消费者批处理参数
+  poll_timeout_ms: 1000
+  max_poll_records: 10
+
+# -------- PDF 解析配置 (MinerU) --------
+parser:
+  # MinerU / magic-pdf 配置
+  backend: "magic-pdf"                   # 可选: "magic-pdf", "pymupdf"
+  # 模型路径（MinerU 需要本地模型）
+  model_dir: "models/magic-pdf"
+  # 输出格式
+  output_format: "markdown"              # markdown, json
+  # 解析时是否提取图片
+  extract_images: true
+  # 线程数
+  workers: 2
+  # 备选解析器（当 MinerU 不可用时的降级方案）
+  fallback_to_pymupdf: true
+
+# -------- 向量存储配置 --------
+vector_store:
+  backend: "chromadb"                    # chromadb, faiss
+  # ChromaDB 持久化路径
+  persist_dir: "storage/chroma_db"
+  # 集合名称
+  collection_name: "rag_documents"
+  # 每次分块的最大字符数
+  chunk_size: 1000
+  # 分块重叠字符数
+  chunk_overlap: 100
+  # 检索返回的 top K 数量
+  top_k: 5
+
+# -------- Embedding 配置 --------
+embedding:
+  # 可选: "local", "api"
+  backend: "api"
+  # API 模式（推荐）
+  api:
+    url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model: "text-embedding-v3"
+    api_key: "${DASHSCOPE_API_KEY}"
+    dimensions: 1024
+
+# -------- LLM 配置（用于多模态问答） --------
+llm:
+  # 可选: "openai", "dashscope", "qwen-vl"
+  backend: "qwen-vl"
+  # 文本模型
+  text_model: "qwen-plus"
+  # 多模态（Vision）模型
+  vision_model: "qwen-vl-plus"
+  # API 基础地址
+  api_base: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  # API Key（支持环境变量引用 ${ENV_NAME}）
+  api_key: "${DASHSCOPE_API_KEY}"
+  # 超时秒数
+  timeout: 60
+  # 温度
+  temperature: 0.7
+  # 最大 token
+  max_tokens: 2000
+
+# -------- Prompt 配置 --------
+prompt:
+  # RAG 系统提示词
+  system_prompt: |
+    你是一个专业的知识库问答助手。请根据检索到的文档内容来回答用户的问题。
+    
+    规则：
+    1. 如果检索到的文档中有相关内容，请基于这些内容给出准确回答。
+    2. 如果回答中包含文档中的图片（以 ![描述](路径) 格式给出），请直接渲染图片。
+    3. 如果检索结果中没有足够信息，请坦诚告知用户。
+    4. 回答时请使用 Markdown 格式，支持图文混排。
+    
+    检索到的文档内容：
+    {context}
+    
+    ---
+    用户问题：{question}
+    
+    请给出回答：
+  # 直接问答（无 RAG 上下文）系统提示词
+  chat_prompt: |
+    你是一个智能问答助手，支持文本和图片理解。请准确、友好地回答用户的问题。
+
+# -------- 文件上传配置 --------
+upload:
+  # 支持的文件扩展名
+  allowed_extensions:
+    - ".pdf"
+  # 单文件最大大小（MB）
+  max_file_size_mb: 50
+  # 单次最大上传数量
+  max_file_count: 10
+  # 图片上传最大大小（MB）
+  max_image_size_mb: 10
+
+# -------- 日志配置 --------
+logging:
+  level: "INFO"                          # DEBUG, INFO, WARNING, ERROR
+  file: "storage/app.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
