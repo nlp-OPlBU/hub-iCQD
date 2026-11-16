@@ -1,0 +1,21 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["data", "logs", "frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -m 'not gpu'"
+markers = [
+    "integration: 需要真实中间件（MySQL / Redis / Kafka / Milvus）",
+    "gpu: 需要 GPU 与 vLLM 的端到端用例，默认不跑",
+]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
