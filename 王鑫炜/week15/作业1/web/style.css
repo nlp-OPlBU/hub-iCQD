@@ -1,0 +1,100 @@
+:root {
+  color-scheme: light;
+  --canvas: #eef3ee;
+  --surface: #fff;
+  --ink: #1b3027;
+  --muted: #4c6459;
+  --line: #d6e2d9;
+  --accent: #264f3d;
+  --accent-hover: #193d2e;
+  --error: #9a3029;
+  font: 100%/1.6 system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none; }
+body { margin: 0; }
+
+main {
+  width: min(100% - 2rem, 58rem);
+  margin: clamp(2.5rem, 8vw, 6rem) auto;
+}
+
+header { margin-bottom: 2rem; }
+h1, h2, p { margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.2; }
+header p { margin-top: .7rem; color: var(--muted); }
+
+.workspace {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: var(--surface);
+}
+
+form, .response { padding: clamp(1.2rem, 4vw, 2.25rem); }
+form { display: grid; gap: .65rem; }
+label, h2 { font-weight: 650; }
+label[for="framework"] { margin-top: .5rem; }
+
+textarea, select, button {
+  width: 100%;
+  min-height: 2.8rem;
+  font: inherit;
+  border-radius: .65rem;
+}
+
+textarea, select {
+  border: 1px solid #839b8c;
+  color: var(--ink);
+  background: var(--surface);
+  padding: .55rem .75rem;
+}
+
+textarea { min-height: 9rem; resize: vertical; }
+textarea::placeholder { color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+button {
+  margin-top: .65rem;
+  border: 0;
+  color: #fff;
+  background: var(--accent);
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button:hover:enabled { background: var(--accent-hover); }
+button:disabled { background: #586d62; cursor: wait; }
+select:disabled { color: var(--muted); }
+
+.response {
+  background: #f7faf6;
+  border-top: 1px solid var(--line);
+  min-height: 12rem;
+}
+
+h2 { font-size: 1.25rem; margin-bottom: 1rem; }
+.status { color: var(--muted); }
+.error { color: var(--error); }
+
+.sentiment {
+  width: fit-content;
+  background: #e0ede1;
+  color: #204f39;
+  padding: .15rem .65rem;
+  border-radius: 2rem;
+  font-weight: 650;
+}
+
+.sentiment[data-tone="negative"] { background: #f6e8db; color: #703b23; }
+.reply { margin-top: .85rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* 手机端纵向排列，宽屏时让输入区与回应区并排。 */
+@media (min-width: 45rem) {
+  .workspace { grid-template-columns: 1fr 1fr; }
+  .response { border-top: 0; border-left: 1px solid var(--line); }
+}

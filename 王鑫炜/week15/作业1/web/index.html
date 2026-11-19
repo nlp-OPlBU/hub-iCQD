@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>情绪回应助手</title>
+  <link rel="stylesheet" href="/web/style.css">
+  <script src="/web/app.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>情绪回应助手</h1>
+      <p>写下一件想分享的事，看看助手如何识别情绪并回应。</p>
+    </header>
+
+    <div class="workspace">
+      <form id="emotion-form">
+        <label for="text">想分享的内容</label>
+        <textarea id="text" name="text" maxlength="1000" required
+          placeholder="例如：今天终于完成了准备很久的演讲。"></textarea>
+
+        <label for="framework">运行框架</label>
+        <select id="framework" name="framework" required disabled>
+          <option value="">正在加载…</option>
+        </select>
+
+        <button id="submit" type="submit" disabled>识别并回应</button>
+        <p id="error" class="error" role="alert" hidden></p>
+      </form>
+
+      <section class="response" aria-labelledby="response-title">
+        <h2 id="response-title">助手回应</h2>
+        <!-- 提交后由脚本更新结果，屏幕阅读器可播报更新内容。 -->
+        <div aria-live="polite" aria-atomic="true">
+          <p id="status" class="status">提交后，这里会显示识别结果和回复。</p>
+          <p id="sentiment" class="sentiment" hidden></p>
+          <p id="reply" class="reply" hidden></p>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>
