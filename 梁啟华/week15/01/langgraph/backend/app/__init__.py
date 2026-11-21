@@ -1,0 +1,1 @@
+"""LangGraph emotion-support backend."""
