@@ -1,0 +1,12 @@
+.env
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+.venv
+venv/
+tests/
+*.md
+run_all.py
+cli.py

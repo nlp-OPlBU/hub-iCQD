@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>情绪回声 · LangGraph 版</title>
+  <style>
+    :root {
+      --ink: #1e2233;
+      --muted: #6b7280;
+      --line: #e5e7f0;
+      --accent: #4f46e5;
+      --accent-dark: #4338ca;
+      --bg: #f4f5fb;
+      --card: #ffffff;
+      --positive: #15803d;
+      --positive-bg: #dcfce7;
+      --negative: #b45309;
+      --negative-bg: #fef3c7;
+      --neutral: #475569;
+      --neutral-bg: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 48px 20px 64px;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 420px at 8% -8%, #e6e4ff 0%, transparent 60%),
+        radial-gradient(760px 380px at 100% 0%, #e0f2fe 0%, transparent 55%),
+        var(--bg);
+    }
+    .shell { width: min(720px, 100%); margin: 0 auto; }
+    header { margin-bottom: 26px; }
+    .tag {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: #ecebff;
+      color: var(--accent-dark);
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+    h1 { margin: 14px 0 8px; font-size: 34px; letter-spacing: -.02em; }
+    .sub { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+    .card {
+      margin-top: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--card);
+      box-shadow: 0 14px 34px rgba(30, 34, 51, .06);
+    }
+    label { display: block; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+    textarea {
+      width: 100%;
+      min-height: 128px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      outline: none;
+      resize: vertical;
+      font: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--ink);
+      background: #fbfbfe;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(79, 70, 229, .12);
+      background: #fff;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    #count { color: var(--muted); font-size: 12px; }
+    button {
+      font: inherit;
+      cursor: pointer;
+      border: 0;
+      border-radius: 10px;
+      transition: transform .12s, background .18s, box-shadow .18s;
+    }
+    #send {
+      padding: 11px 22px;
+      color: #fff;
+      background: var(--accent);
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 8px 18px rgba(79, 70, 229, .24);
+    }
+    #send:hover:not(:disabled) { background: var(--accent-dark); transform: translateY(-1px); }
+    #send:disabled { opacity: .55; cursor: wait; transform: none; }
+    .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .examples button {
+      padding: 7px 12px;
+      border: 1px dashed #cdd1e6;
+      background: #fafaff;
+      color: #4b5069;
+      font-size: 12px;
+    }
+    .examples button:hover { border-color: var(--accent); color: var(--accent-dark); }
+    .error {
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fef2f2;
+      color: #b91c1c;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .pill { padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .pill.positive { color: var(--positive); background: var(--positive-bg); }
+    .pill.negative { color: var(--negative); background: var(--negative-bg); }
+    .pill.neutral  { color: var(--neutral);  background: var(--neutral-bg); }
+    .meta { color: var(--muted); font-size: 12px; }
+    .confidence {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .bar { flex: 1; height: 6px; border-radius: 999px; background: #edeef6; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); transition: width .4s ease; }
+    #conf { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .reason { margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .reply {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #f8f8fe;
+      border: 1px solid #ecebfa;
+    }
+    .reply-label { color: var(--accent-dark); font-size: 12px; font-weight: 600; letter-spacing: .06em; }
+    .reply p { margin: 8px 0 0; font-size: 15px; line-height: 1.85; }
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .flow em { color: #c3c7db; font-style: normal; }
+    footer { margin-top: 26px; text-align: center; color: #9aa0b6; font-size: 12px; line-height: 1.7; }
+    @media (max-width: 540px) {
+      body { padding: 28px 14px 44px; }
+      h1 { font-size: 27px; }
+      .card { padding: 17px; border-radius: 15px; }
+      .result-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <span class="tag">LangGraph 版 · 三进程演示</span>
+      <h1>情绪回声</h1>
+      <p class="sub">进程1 识别情绪，进程2 给出鼓励或排解。写下此刻想说的话，看看它怎么回应。</p>
+    </header>
+
+    <section class="card">
+      <label for="text">此刻想说的话</label>
+      <textarea id="text" maxlength="500" placeholder="例如：今天升职了，太开心了"></textarea>
+      <div class="row">
+        <span id="count">0 / 500</span>
+        <button id="send">开始分析</button>
+      </div>
+      <div class="examples">
+        <button type="button" data-text="今天升职了，太开心了">正向示例</button>
+        <button type="button" data-text="最近压力很大，晚上总是失眠。">负面示例</button>
+        <button type="button" data-text="今天下午三点开会。">中性示例</button>
+      </div>
+      <p id="error" class="error" hidden></p>
+    </section>
+
+    <section id="result" class="card" hidden>
+      <div class="result-head">
+        <span id="sentiment" class="pill"></span>
+        <span id="meta" class="meta"></span>
+      </div>
+      <div class="confidence">
+        <span>置信度</span>
+        <div class="bar"><i id="bar"></i></div>
+        <b id="conf">0%</b>
+      </div>
+      <p id="reasoning" class="reason"></p>
+      <div class="reply">
+        <span class="reply-label">回应</span>
+        <p id="reply"></p>
+      </div>
+      <div class="flow">
+        <span>你</span><em>→</em><span>进程1 识别</span><em>→</em><span>进程2 回应</span>
+      </div>
+    </section>
+
+    <footer>演示用途，不构成心理诊断或治疗建议。</footer>
+  </main>
+
+  <script>
+    const textEl = document.getElementById('text');
+    const countEl = document.getElementById('count');
+    const sendBtn = document.getElementById('send');
+    const errorEl = document.getElementById('error');
+    const resultEl = document.getElementById('result');
+    const pillEl = document.getElementById('sentiment');
+    const metaEl = document.getElementById('meta');
+    const barEl = document.getElementById('bar');
+    const confEl = document.getElementById('conf');
+    const reasoningEl = document.getElementById('reasoning');
+    const replyEl = document.getElementById('reply');
+
+    const LABELS = { positive: '正向', negative: '负面', neutral: '中性' };
+
+    function syncCount() {
+      countEl.textContent = `${textEl.value.length} / 500`;
+    }
+    textEl.addEventListener('input', syncCount);
+    textEl.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submit();
+    });
+    syncCount();
+
+    document.querySelectorAll('.examples button').forEach((button) => {
+      button.addEventListener('click', () => {
+        textEl.value = button.dataset.text;
+        syncCount();
+        textEl.focus();
+      });
+    });
+
+    sendBtn.addEventListener('click', submit);
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.hidden = false;
+    }
+
+    function setLoading(loading) {
+      sendBtn.disabled = loading;
+      sendBtn.textContent = loading ? '分析中…' : '开始分析';
+    }
+
+    function render(data) {
+      const sentiment = data.sentiment || 'neutral';
+      pillEl.textContent = LABELS[sentiment] || sentiment;
+      pillEl.className = `pill ${sentiment}`;
+      metaEl.textContent = `${data.provider} · ${data.elapsed_ms} ms`;
+      const confidence = Math.round((data.confidence || 0) * 100);
+      barEl.style.width = `${confidence}%`;
+      confEl.textContent = `${confidence}%`;
+      reasoningEl.textContent = data.reasoning ? `判断依据：${data.reasoning}` : '';
+      replyEl.textContent = data.response_text || '';
+      resultEl.hidden = false;
+    }
+
+    async function submit() {
+      const text = textEl.value.trim();
+      if (!text) {
+        showError('请先输入一点内容。');
+        return;
+      }
+      errorEl.hidden = true;
+      resultEl.hidden = true;
+      setLoading(true);
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.detail || `请求失败（${response.status}）`);
+        }
+        render(data);
+      } catch (error) {
+        showError(error.message || '请求失败，请检查三个进程是否都已启动。');
+      } finally {
+        setLoading(false);
+      }
+    }
+  </script>
+</body>
+</html>
