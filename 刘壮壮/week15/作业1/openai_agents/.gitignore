@@ -1,0 +1,10 @@
+# 环境变量（包含 API Key 等敏感信息）
+.env
+
+# Python 缓存与虚拟环境
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
