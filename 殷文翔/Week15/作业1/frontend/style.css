@@ -1,0 +1,87 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: clamp(1rem, 6vw, 4rem) 1rem;
+    background: #eef4f1;
+    color: #19342d;
+    font: 1rem/1.65 system-ui, sans-serif;
+}
+
+.panel {
+    max-width: 38rem;
+    margin: 0 auto;
+    padding: clamp(1.25rem, 4vw, 2.25rem);
+    border: 1px solid #d7e5de;
+    border-radius: 1rem;
+    background: #fff;
+}
+
+h1, h2, p {
+    margin: 0;
+}
+
+h1 {
+    margin-bottom: 1.25rem;
+    font-size: 1.75rem;
+}
+
+form {
+    display: grid;
+    gap: 0.625rem;
+}
+
+label, h2 {
+    font-weight: 650;
+}
+
+textarea, button {
+    font: inherit;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    color: inherit;
+    border: 1px solid #879f94;
+    border-radius: 0.5rem;
+    resize: vertical;
+}
+
+button {
+    justify-self: start;
+    padding: 0.5rem 1.25rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #205c49;
+    color: #fff;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+.reply {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #f1f6f3;
+}
+
+.reply h2 {
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+#chat-reply {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#chat-reply[data-state="error"] {
+    color: #92342b;
+}

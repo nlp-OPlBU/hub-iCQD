@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>情感回应</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <main class="panel">
+        <h1>情感回应</h1>
+        <form id="chat-form">
+            <label for="chat-text">说说你今天的感受</label>
+            <textarea id="chat-text" name="text" rows="5" required
+                      placeholder="例如：今天完成了一件一直想做的事，很开心。"></textarea>
+            <button id="send-button" type="submit">发送</button>
+        </form>
+        <section class="reply" aria-labelledby="reply-heading">
+            <h2 id="reply-heading">回复</h2>
+            <p id="chat-reply" role="status">发送消息后，回复会显示在这里。</p>
+        </section>
+    </main>
+</body>
+</html>

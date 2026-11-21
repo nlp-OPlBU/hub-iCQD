@@ -1,0 +1,24 @@
+services:
+  sentiment:
+    image: week15-agents:v1
+    env_file: .env
+    command: ["python", "-m", "uvicorn", "openai_agents_version.sentiment_service.main:app", "--host", "0.0.0.0", "--port", "8001"]
+
+  response:
+    image: week15-agents:v1
+    env_file: .env
+    command: ["python", "-m", "uvicorn", "openai_agents_version.response_service.main:app", "--host", "0.0.0.0", "--port", "8002"]
+
+  backend:
+    image: week15-agents:v1
+    env_file: .env
+    environment:
+      SENTIMENT_ANALYZER_REQUEST_URL: http://sentiment:8001/sentiment
+      RESPONSE_REQUEST_URL: http://response:8002/response
+    depends_on: [sentiment, response]
+    ports: ["127.0.0.1:8000:8000"]
+
+  frontend:
+    image: week15-agents:v1
+    command: ["python", "-m", "http.server", "8080", "--directory", "/app/frontend"]
+    ports: ["127.0.0.1:8080:8080"]
