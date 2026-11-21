@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>情感陪伴助手</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="title">
+          <h1>情感陪伴助手</h1>
+          <p>先识别情绪，再给出回应 · 正向鼓励 / 负面排解</p>
+        </div>
+        <div class="controls">
+          <label for="backend">后端实现</label>
+          <select id="backend" aria-label="选择后端实现">
+            <option value="agents">OpenAI Agents</option>
+            <option value="langgraph">LangGraph</option>
+          </select>
+          <button id="clear" type="button" class="ghost">清空对话</button>
+        </div>
+      </header>
+
+      <div id="status" class="status">正在检查后端…</div>
+
+      <section id="messages" class="messages" aria-live="polite"></section>
+
+      <form id="chat-form" class="composer">
+        <textarea
+          id="input"
+          rows="1"
+          maxlength="4000"
+          placeholder="说说你现在的心情…（Enter 发送，Shift + Enter 换行）"
+          required
+        ></textarea>
+        <button id="send" type="submit">发送</button>
+      </form>
+
+      <p class="footnote">
+        情感识别与回复由大模型生成，仅作情绪陪伴参考，不替代专业心理帮助。
+      </p>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
