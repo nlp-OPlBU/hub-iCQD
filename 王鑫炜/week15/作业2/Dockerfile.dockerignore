@@ -1,0 +1,9 @@
+# 默认排除所有文件，只将 Agents 运行所需的代码和依赖清单送入构建上下文。
+**
+!作业1/
+!作业1/requirements-agents.txt
+!作业1/app/
+!作业1/app/*.py
+作业1/app/langgraph_flow.py
+!作业1/web/
+!作业1/web/*
