@@ -1,0 +1,74 @@
+categories:
+  - id: report
+    name: ESG / 可持续发展报告编制
+    keywords: ["ESG报告", "社会责任报告", "可持续发展报告", "ESG信息披露", "环境社会及管治报告"]
+    queries:
+      - "ESG报告 编制 中标 成交"
+      - "社会责任报告 编制 中标 结果公告"
+      - "可持续发展报告 编制 中标 成交"
+  - id: consulting
+    name: ESG 管理咨询 / 治理体系
+    keywords: ["ESG咨询", "ESG管理咨询", "ESG治理体系", "ESG战略", "ESG提升"]
+    queries:
+      - "ESG 管理咨询 中标 成交"
+      - "ESG 治理体系 招标 中标"
+      - "ESG 咨询服务 采购 结果公告"
+  - id: dualcarbon
+    name: 双碳规划 / 碳达峰碳中和路径
+    keywords: ["碳达峰", "碳中和", "双碳", "十五五", "达峰行动"]
+    queries:
+      - "碳达峰 碳中和 规划 中标 成交"
+      - "双碳 实施方案 中标 结果公告"
+      - "十五五 双碳 规划 中标"
+  - id: platform
+    name: 碳管理平台 / 碳核算 / 碳足迹
+    keywords: ["碳管理平台", "碳核算", "碳足迹", "能碳", "碳监测", "碳排放管理"]
+    queries:
+      - "碳管理平台 中标 成交"
+      - "碳核算 平台 中标 公告"
+      - "碳足迹 平台 中标 成交"
+  - id: carbonasset
+    name: 碳资产 / CCER / 碳汇开发
+    keywords: ["CCER", "碳资产", "碳汇", "减排量", "林业碳汇"]
+    queries:
+      - "CCER 开发 中标 成交"
+      - "碳汇 项目 中标 成交"
+      - "碳资产管理 中标 公告"
+  - id: zerocarbon
+    name: 零碳园区 / 绿色工厂
+    keywords: ["零碳园区", "绿色工厂", "低碳园区", "零碳工厂", "近零碳"]
+    queries:
+      - "零碳园区 中标 成交"
+      - "绿色工厂 评价 中标 公告"
+  - id: greenfinance
+    name: 绿色金融 / ESG 评级
+    keywords: ["绿色金融", "ESG评级", "转型金融", "绿色债券"]
+    queries:
+      - "ESG 评级 提升 中标 服务"
+      - "绿色金融 咨询 中标 成交"
+  - id: supplychain
+    name: 绿色供应链 / 绿色采购
+    keywords: ["绿色供应链", "绿色采购", "供应链ESG"]
+    queries:
+      - "绿色供应链 平台 中标 成交"
+      - "供应链 ESG 管理 中标"
+
+# appended to every query, one pass per year, to cover the 2-year analysis window
+year_suffixes: ["2024", "2025", "2026"]
+
+domains:
+  priority: ["ccgp.gov.cn", "ggzy.gov.cn", "cebpubservice.com", "chinabidding.cn",
+             "bidding.csg.cn", "chnenergybidding.com.cn", "zfcg.", "ggzyjy", "sina.cn", "stockstar.com"]
+  block: ["docin.com", "renrendoc.com", "book118.com", "wenku.", "baike.baidu.com"]
+
+filters:
+  must_match: ["中标", "成交", "结果公告", "结果公示", "候选人", "定标", "中选"]
+  exclude: ["招聘", "培训课程", "考证", "代写", "论文", "范文", "模板下载"]
+
+watch_queries:
+  - "ESG 报告编制 中标 2026年11月"
+  - "ESG 管理咨询 中标 2026年11月"
+  - "碳管理平台 中标 2026年11月"
+  - "零碳园区 中标 2026年11月"
+  - "CCER 碳汇 中标 2026年11月"
+  - "碳足迹 中标 2026年11月"

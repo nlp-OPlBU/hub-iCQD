@@ -1,0 +1,18 @@
+{
+  "total": 129,
+  "in_window": 21,
+  "fetched_ok": 29,
+  "by_section": {
+    "policy": 41,
+    "industry": 20,
+    "company": 37,
+    "peers": 31
+  },
+  "by_tier": {
+    "3": 7,
+    "2": 14,
+    "1": 42,
+    "0": 66
+  },
+  "empty_queries": 0
+}

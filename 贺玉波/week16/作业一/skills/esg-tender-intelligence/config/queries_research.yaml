@@ -1,0 +1,48 @@
+categories:
+  - id: report
+    name: ESG / 可持续发展报告编制
+    keywords: ["ESG报告", "社会责任报告", "可持续发展报告", "ESG信息披露"]
+    queries:
+      - "ESG报告 编制 中标 成交 金额 2026 万元"
+      - "2025 ESG报告编制 中标 金额 万元 结果公告"
+      - "2024年 ESG报告编制 中标 金额 万元 服务"
+      - "乌海能源 可持续发展报告编制 发布服务 中标 金额"
+  - id: consulting
+    name: ESG 管理咨询 / 治理体系
+    keywords: ["ESG咨询", "ESG管理咨询", "ESG治理", "ESG综合咨询"]
+    queries:
+      - "ESG 管理咨询 中标 金额 2026 采购 万元"
+      - "ESG 咨询 中标 2025 万元 服务项目"
+  - id: dualcarbon
+    name: 双碳规划 / 碳达峰碳中和路径
+    keywords: ["碳达峰", "碳中和", "双碳", "达峰"]
+    queries:
+      - "碳达峰 碳中和 规划 中标 成交 金额 2026 万元"
+  - id: platform
+    name: 碳管理平台 / 碳核算 / 碳足迹
+    keywords: ["碳管理平台", "碳核算", "碳足迹", "碳排放双控"]
+    queries:
+      - "碳管理平台 中标 成交 金额 2026 万元"
+      - "碳足迹 平台 绿色供应链 中标 金额 2026 万元"
+  - id: carbonasset
+    name: 碳资产 / CCER / 碳汇开发
+    keywords: ["CCER", "碳资产", "碳汇", "减排量"]
+    queries:
+      - "CCER 碳汇 项目 开发 中标 金额 2026 万元"
+  - id: zerocarbon
+    name: 零碳园区 / 绿色工厂
+    keywords: ["零碳园区", "零碳工厂", "绿色工厂", "近零碳"]
+    queries:
+      - "零碳园区 建设方案 中标 金额 2025 2024 万元"
+
+year_suffixes: []
+
+domains:
+  priority: ["ccgp.gov.cn", "qixin.com", "chnenergybidding.com.cn", "cntaiping.com",
+             "cg.gt.cn", "crrcgc.cc", "bidding.csg.cn", "stockstar.com", "ixbang.com",
+             "bidcenter.com.cn", "fgw.beijing.gov.cn", "emslg.com", "juhua.ccccnet.com"]
+  block: ["docin.com", "renrendoc.com", "book118.com", "wenku.", "baike.baidu.com"]
+
+filters:
+  must_match: ["中标", "成交", "结果公告", "结果公示", "候选人", "中选", "采购结果"]
+  exclude: ["招聘", "培训课程", "考证", "代写", "论文", "范文", "模板下载", "Access Restricted"]
