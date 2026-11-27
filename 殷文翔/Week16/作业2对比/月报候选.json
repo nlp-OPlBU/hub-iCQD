@@ -1,0 +1,40 @@
+{
+  "runs": [
+    {
+      "group": "政策与标准",
+      "query": "2026年11月 煤矿 入井人数 监测 联网 甲烷 ISO 国家矿山安全监察局",
+      "results": [
+        {"url":"https://www.chinamine-safety.gov.cn/zfxxgk/fdzdgknr/tzgg/202611/t20261109_738732.shtml","title":"国家矿山安全监察局关于强化信息化系统建设的通知","published":"2026-11-09"},
+        {"url":"https://www.samr.gov.cn/xw/sj/art/2026/art_6b49b9ded49648888a8f2b7dfa11dc09.html","title":"市场监管总局煤矿甲烷监测标准立项消息","published":"2026-11-16"},
+        {"url":"https://www.iso.org/standard/94735.html","title":"ISO/AWI 26859 项目页"}
+      ]
+    },
+    {
+      "group": "政策与标准",
+      "query": "2026年11月 中国煤矿安全 自然相关披露 财政部 煤矿甲烷排放标准",
+      "results": [
+        {"url":"https://kjs.mof.gov.cn/gongzuotongzhi/202611/t20261109_4004283.htm","title":"财政部关于 ISSB 自然相关披露实务公告草案征求意见的函","published":"2026-11-09"},
+        {"url":"https://www.mee.gov.cn/ywgz/fgbz/bz/bzwb/dqhjbh/dqgdwrywrwpfbz/202412/t20241211_1098417.shtml","title":"煤层气（煤矿瓦斯）排放标准 GB 21522—2024","published":"2024-12-11"},
+        {"url":"https://www.chinamine-safety.gov.cn/zfxxgk/fdzdgknr/tzgg/202611/t20261109_738732.shtml?utm_source=homework","title":"国家矿山安全监察局煤矿监测联网通知","published":"2026-11-09"}
+      ]
+    },
+    {
+      "group": "行业动态与实践",
+      "query": "2026年11月 煤炭电力 10月份能源生产 COP31 甲烷 新能源 喀什 华电",
+      "results": [
+        {"url":"https://www.stats.gov.cn/sj/zxfbhjd/202611/t20261116_1965837.html","title":"国家统计局 2026 年 10 月份能源生产情况","published":"2026-11-16"},
+        {"url":"https://www.chnenergy.com.cn/gjnyjtww/newCE0302/202611/6c90a89138d84317a74f191d33a72910.shtml","title":"国家能源集团科研总院甲烷监测技术展示","published":"2026-11-19"},
+        {"url":"https://wap.sasac.gov.cn/n2588025/n2588124/c36240415/content.html","title":"中国华电喀什热电联产项目全容量投产","published":"2026-11-24"}
+      ]
+    },
+    {
+      "group": "公司动态",
+      "query": "中国神华 601088 2026年11月 10月运营数据 新疆煤制气 50% 股权转让",
+      "results": [
+        {"url":"https://static.cninfo.com.cn/finalpage/2026-11-17/1225672989.PDF","title":"中国神华新疆煤制气股权交易进展公告","published":"2026-11-17"},
+        {"url":"https://static.cninfo.com.cn/finalpage/2026-10-24/1225620900.PDF","title":"中国神华新疆煤制气股权交易原公告","published":"2026-10-24"},
+        {"url":"https://money.finance.sina.com.cn/corp/view/vCB_AllBulletinDetail.php?id=12705587&stockid=601088","title":"中国神华 10 月份主要运营数据公告","published":"2026-11-14"}
+      ]
+    }
+  ]
+}
