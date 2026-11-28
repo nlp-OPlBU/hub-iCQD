@@ -1,0 +1,155 @@
+{
+  "sample": {
+    "count": 37,
+    "priced": 35,
+    "sum_cny": 70837772,
+    "median_cny": 1120100,
+    "min_cny": 220000,
+    "max_cny": 11394640
+  },
+  "by_theme": {
+    "ESG披露与治理": {
+      "count": 5,
+      "priced": 3,
+      "sum_cny": 938000,
+      "median_cny": 290000,
+      "min_cny": 250000,
+      "max_cny": 398000
+    },
+    "产品碳足迹与认证": {
+      "count": 6,
+      "priced": 6,
+      "sum_cny": 3711980,
+      "median_cny": 504990.0,
+      "min_cny": 220000,
+      "max_cny": 1360000
+    },
+    "碳排放核查与管理": {
+      "count": 21,
+      "priced": 21,
+      "sum_cny": 47403152,
+      "median_cny": 2890000,
+      "min_cny": 336000,
+      "max_cny": 4515000
+    },
+    "能碳数字平台": {
+      "count": 2,
+      "priced": 2,
+      "sum_cny": 14754640,
+      "median_cny": 7377320.0,
+      "min_cny": 3360000,
+      "max_cny": 11394640
+    },
+    "零碳园区与双碳规划": {
+      "count": 3,
+      "priced": 3,
+      "sum_cny": 4030000,
+      "median_cny": 1410000,
+      "min_cny": 1120000,
+      "max_cny": 1500000
+    }
+  },
+  "by_year": {
+    "2024": {
+      "count": 1,
+      "priced": 1,
+      "sum_cny": 1360000,
+      "median_cny": 1360000,
+      "min_cny": 1360000,
+      "max_cny": 1360000
+    },
+    "2025": {
+      "count": 10,
+      "priced": 10,
+      "sum_cny": 5414032,
+      "median_cny": 383500.0,
+      "min_cny": 220000,
+      "max_cny": 1500000
+    },
+    "2026": {
+      "count": 26,
+      "priced": 24,
+      "sum_cny": 64063740,
+      "median_cny": 2945000.0,
+      "min_cny": 235000,
+      "max_cny": 11394640
+    }
+  },
+  "by_price_band": {
+    "<10万": {
+      "count": 0,
+      "priced": 0,
+      "sum_cny": 0,
+      "median_cny": null,
+      "min_cny": null,
+      "max_cny": null
+    },
+    "10万–<30万": {
+      "count": 4,
+      "priced": 4,
+      "sum_cny": 995000,
+      "median_cny": 242500.0,
+      "min_cny": 220000,
+      "max_cny": 290000
+    },
+    "30万–<50万": {
+      "count": 6,
+      "priced": 6,
+      "sum_cny": 2541980,
+      "median_cny": 428990.0,
+      "min_cny": 336000,
+      "max_cny": 495000
+    },
+    "50万–<100万": {
+      "count": 6,
+      "priced": 6,
+      "sum_cny": 4167052,
+      "median_cny": 649026.0,
+      "min_cny": 550000,
+      "max_cny": 887000
+    },
+    "100万–<500万": {
+      "count": 18,
+      "priced": 18,
+      "sum_cny": 51739100,
+      "median_cny": 3150000.0,
+      "min_cny": 1120000,
+      "max_cny": 4515000
+    },
+    "500万–<1000万": {
+      "count": 0,
+      "priced": 0,
+      "sum_cny": 0,
+      "median_cny": null,
+      "min_cny": null,
+      "max_cny": null
+    },
+    "≥1000万": {
+      "count": 1,
+      "priced": 1,
+      "sum_cny": 11394640,
+      "median_cny": 11394640,
+      "min_cny": 11394640,
+      "max_cny": 11394640
+    }
+  },
+  "largest": {
+    "date": "2026-08-21",
+    "theme": "能碳数字平台",
+    "buyer": "广德绥安环保能源有限公司",
+    "project": "广德经开区零碳园区能碳管理平台建设运营服务一期（二次）",
+    "lot": "GDS-QT-GK-2026016",
+    "supplier": "固德威技术股份有限公司（联合体成员：安徽明生恒卓科技有限公司）",
+    "amount_cny": 11394640,
+    "evidence": "结果公告",
+    "url": "https://ggzyjy.xuancheng.gov.cn/xcspfront/shcgxm/022004/022004004/20260821/6896d3e3-d202-483c-9274-bcabed2dbd06.html"
+  },
+  "excluding_largest": {
+    "count": 36,
+    "priced": 34,
+    "sum_cny": 59443132,
+    "median_cny": 1120050.0,
+    "min_cny": 220000,
+    "max_cny": 4515000
+  }
+}
