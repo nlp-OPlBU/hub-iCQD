@@ -1,0 +1,72 @@
+client:
+  name: 中国神华能源股份有限公司
+  short: 中国神华
+  ticker: "601088.SH / 01088.HK"
+  industry: 煤炭开采与煤电一体化（综合能源）
+  aliases: ["中国神华", "神华", "601088", "01088", "国家能源集团"]
+  peers: ["陕西煤业", "中煤能源", "兖矿能源", "国家能源集团"]
+  core_topics:
+    - 碳排放与双碳目标
+    - 安全生产与职业健康
+    - 绿色矿山与生态修复
+    - 能源保供与转型平衡
+    - 公司治理与合规
+    - 乡村振兴与社会责任
+  latest_report: 2025年度环境、社会及公司治理报告（2026-03-31 发布，毕马威 ISAE3000 有限保证鉴证）
+  rating_snapshot:
+    MSCI: BB（2026-06-30，与上年持平，A股同业第5）
+    伦交所: A（2026-08-11，较上年 A- 提升，A股同业第1）
+    Wind: AA（2026-07-01，连续五年 AA）
+
+report:
+  sections:
+    - id: policy
+      title: 政策、标准与评级动态
+      queries:
+        - "财政部 企业可持续披露准则 2026年11月 进展"
+        - "CCER 方法学 2026年11月 生态环境部 发布"
+        - "全国碳排放权交易市场 2026年度 配额总量 分配方案 钢铁 水泥 铝冶炼"
+        - "欧盟 CBAM 2026年 正式实施 中国 钢铁 铝 影响"
+        - "COP31 2026 气候变化大会 时间 地点 煤炭 化石能源"
+        - "中央企业上市公司ESG蓝皮书2026 发布 社会责任蓝皮书"
+        - "2026中国企业ESG大会 11月23日 北京 中国经营报"
+    - id: industry
+      title: 行业动态与最佳实践
+      queries:
+        - "煤炭行业社会责任蓝皮书 2026 煤炭上市公司 ESG报告 发布"
+        - "2026中国能源上市公司可持续发展ESG评价报告 能源ESG指数"
+        - "国家能源集团 2026 双碳 绿色低碳 转型 行动"
+    - id: company
+      title: 公司动态与 ESG 影响
+      queries:
+        - "中国神华 2026年11月 新闻 ESG 绿色"
+        - "中国神华 2026年 三季报 营业收入 净利润 煤炭产量"
+        - "中国神华 2025年度 ESG报告 碳排放 总量 目标 生态治理"
+        - "中国神华 ESG治理体系优化及报告编制咨询服务 中标 德勤 金额"
+        - "中国神华 物资公司 绿色供应链 ESG实践报告 3.47亿元 国能e购"
+        - "中国神华 MSCI ESG评级 BB 2026年6月 新浪财经"
+        - "中国神华 2026年11月 能源保供 进博会 绿色供应链"
+    - id: peers
+      title: 对标企业 ESG 关键行动
+      queries:
+        - "陕西煤业 2025年度 可持续发展报告 绿色矿山 绿色工厂 2026"
+        - "中煤能源 2026 可持续发展报告 ESG 碳排放 绿色"
+        - "兖矿能源 2026 ESG 可持续发展 报告 绿色 转型"
+        - "中国神华 伦交所 ESG评级 A 2026年8月 行业第1"
+
+scoring:
+  positive_keywords: ["ESG", "可持续", "双碳", "碳达峰", "碳中和", "碳排放", "碳市场", "CCER",
+                      "CBAM", "绿色", "低碳", "披露", "评级", "准则", "指引", "监管", "气候",
+                      "转型", "生态", "安全", "治理", "社会责任"]
+  negative_keywords: ["招聘", "培训课程", "考证", "代写", "文库", "下载", "优惠", "广告",
+                      "研修班", "公开课", "范文"]
+  source_tiers:
+    tier1: ["gov.cn", "mof.gov.cn", "casc.org.cn", "csrc.gov.cn", "mee.gov.cn", "ndrc.gov.cn",
+            "sse.com.cn", "szse.cn", "hkexnews.hk", "cninfo.com.cn", "sasac.gov.cn",
+            "unfccc.int", "un.org"]
+    tier2: ["chnenergy.com.cn", "shenhuachina.com", "shenhuachina.cn", "ceic.com", "chinacoal.com",
+            "chinacoalenergy.com", "shccig.com", "shxcoal.com", "shandong-energy.com",
+            "people.com.cn", "xinhuanet.com", "news.cn", "ce.cn", "yicai.com", "cls.cn",
+            "21jingji.com", "chinanews.com.cn", "gmw.cn", "cctd.com.cn", "cnstock.com"]
+    tier3: ["sina.com.cn", "sina.cn", "eastmoney.com", "163.com", "sohu.com", "ifeng.com",
+            "bjx.com.cn", "stockstar.com", "cet.com.cn", "toutiao.com", "10jqka.com.cn"]
